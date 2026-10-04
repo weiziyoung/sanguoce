@@ -12,6 +12,8 @@ dist/
 *.md
 !/README.md
 !/THIRD_PARTY_NOTICES.md
+/AGENTS.md
+/PLAN.md
 /docs/
 /internal/
 /plans/
