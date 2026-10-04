@@ -1,0 +1,552 @@
+{
+  "cards": {
+    "sha": "/assets/cards/sha.png",
+    "shan": "/assets/cards/shan.png",
+    "tao": "/assets/cards/tao.png",
+    "bagua": "/assets/cards/bagua.png",
+    "jueying": "/assets/cards/jueying.png",
+    "dilu": "/assets/cards/dilu.png",
+    "zhuahuang": "/assets/cards/zhuahuang.png",
+    "chitu": "/assets/cards/chitu.png",
+    "dawan": "/assets/cards/dawan.png",
+    "zixin": "/assets/cards/zixin.png",
+    "zhuge": "/assets/cards/zhuge.png",
+    "cixiong": "/assets/cards/cixiong.png",
+    "qinggang": "/assets/cards/qinggang.png",
+    "qinglong": "/assets/cards/qinglong.png",
+    "zhangba": "/assets/cards/zhangba.png",
+    "guanshi": "/assets/cards/guanshi.png",
+    "fangtian": "/assets/cards/fangtian.png",
+    "qilin": "/assets/cards/qilin.png",
+    "hanbing": "/assets/cards/hanbing.png",
+    "renwang": "/assets/cards/renwang.png",
+    "wugu": "/assets/cards/wugu.png",
+    "taoyuan": "/assets/cards/taoyuan.png",
+    "nanman": "/assets/cards/nanman.png",
+    "wanjian": "/assets/cards/wanjian.png",
+    "wuzhong": "/assets/cards/wuzhong.png",
+    "juedou": "/assets/cards/juedou.png",
+    "shunshou": "/assets/cards/shunshou.png",
+    "guohe": "/assets/cards/guohe.png",
+    "jiedao": "/assets/cards/jiedao.png",
+    "wuxie": "/assets/cards/wuxie.png",
+    "lebu": "/assets/cards/lebu.png",
+    "shandian": "/assets/cards/shandian.png"
+  },
+  "generals": {
+    "standard.guanyu": "/assets/generals/standard.guanyu.png",
+    "standard.zhangfei": "/assets/generals/standard.zhangfei.png",
+    "standard.zhaoyun": "/assets/generals/standard.zhaoyun.png",
+    "standard.huangyueying": "/assets/generals/standard.huangyueying.png",
+    "standard.sunquan": "/assets/generals/standard.sunquan.png",
+    "standard.huatuo": "/assets/generals/standard.huatuo.png",
+    "standard.simayi": "/assets/generals/standard.simayi.png",
+    "standard.lvmeng": "/assets/generals/standard.lvmeng.png",
+    "standard.zhangliao": "/assets/generals/standard.zhangliao.png",
+    "standard.xuzhu": "/assets/generals/standard.xuzhu.png",
+    "standard.zhouyu": "/assets/generals/standard.zhouyu.png",
+    "standard.huanggai": "/assets/generals/standard.huanggai.png",
+    "standard.machao": "/assets/generals/standard.machao.png",
+    "standard.xiahoudun": "/assets/generals/standard.xiahoudun.png",
+    "standard.zhenji": "/assets/generals/standard.zhenji.png",
+    "standard.guojia": "/assets/generals/standard.guojia.png",
+    "standard.diaochan": "/assets/generals/standard.diaochan.png",
+    "standard.zhugeliang": "/assets/generals/standard.zhugeliang.png",
+    "standard.ganning": "/assets/generals/standard.ganning.png",
+    "standard.lvbu": "/assets/generals/standard.lvbu.png",
+    "standard.caocao": "/assets/generals/standard.caocao.png",
+    "standard.liubei": "/assets/generals/standard.liubei.png",
+    "standard.daqiao": "/assets/generals/standard.daqiao.png",
+    "standard.luxun": "/assets/generals/standard.luxun.png",
+    "standard.sunshangxiang": "/assets/generals/standard.sunshangxiang.png"
+  },
+  "cardAudio": {
+    "sha": {
+      "male": "/assets/audio/cards/sha-male.mp3",
+      "female": "/assets/audio/cards/sha-female.mp3"
+    },
+    "shan": {
+      "male": "/assets/audio/cards/shan-male.mp3",
+      "female": "/assets/audio/cards/shan-female.mp3"
+    },
+    "tao": {
+      "male": "/assets/audio/cards/tao-male.mp3",
+      "female": "/assets/audio/cards/tao-female.mp3"
+    },
+    "bagua": {
+      "male": "/assets/audio/cards/bagua-male.mp3",
+      "female": "/assets/audio/cards/bagua-female.mp3"
+    },
+    "jueying": {
+      "male": "/assets/audio/cards/jueying-male.mp3",
+      "female": "/assets/audio/cards/jueying-female.mp3"
+    },
+    "dilu": {
+      "male": "/assets/audio/cards/dilu-male.mp3",
+      "female": "/assets/audio/cards/dilu-female.mp3"
+    },
+    "zhuahuang": {
+      "male": "/assets/audio/cards/zhuahuang-male.mp3",
+      "female": "/assets/audio/cards/zhuahuang-female.mp3"
+    },
+    "chitu": {
+      "male": "/assets/audio/cards/chitu-male.mp3",
+      "female": "/assets/audio/cards/chitu-female.mp3"
+    },
+    "dawan": {
+      "male": "/assets/audio/cards/dawan-male.mp3",
+      "female": "/assets/audio/cards/dawan-female.mp3"
+    },
+    "zixin": {
+      "male": "/assets/audio/cards/zixin-male.mp3",
+      "female": "/assets/audio/cards/zixin-female.mp3"
+    },
+    "zhuge": {
+      "male": "/assets/audio/cards/zhuge-male.mp3",
+      "female": "/assets/audio/cards/zhuge-female.mp3"
+    },
+    "cixiong": {
+      "male": "/assets/audio/cards/cixiong-male.mp3",
+      "female": "/assets/audio/cards/cixiong-female.mp3"
+    },
+    "qinggang": {
+      "male": "/assets/audio/cards/qinggang-male.mp3",
+      "female": "/assets/audio/cards/qinggang-female.mp3"
+    },
+    "qinglong": {
+      "male": "/assets/audio/cards/qinglong-male.mp3",
+      "female": "/assets/audio/cards/qinglong-female.mp3"
+    },
+    "zhangba": {
+      "male": "/assets/audio/cards/zhangba-male.mp3",
+      "female": "/assets/audio/cards/zhangba-female.mp3"
+    },
+    "guanshi": {
+      "male": "/assets/audio/cards/guanshi-male.mp3",
+      "female": "/assets/audio/cards/guanshi-female.mp3"
+    },
+    "fangtian": {
+      "male": "/assets/audio/cards/fangtian-male.mp3",
+      "female": "/assets/audio/cards/fangtian-female.mp3"
+    },
+    "qilin": {
+      "male": "/assets/audio/cards/qilin-male.mp3",
+      "female": "/assets/audio/cards/qilin-female.mp3"
+    },
+    "hanbing": {
+      "male": "/assets/audio/cards/hanbing-male.mp3",
+      "female": "/assets/audio/cards/hanbing-female.mp3"
+    },
+    "renwang": {
+      "male": "/assets/audio/cards/renwang-male.mp3",
+      "female": "/assets/audio/cards/renwang-female.mp3"
+    },
+    "wugu": {
+      "male": "/assets/audio/cards/wugu-male.mp3",
+      "female": "/assets/audio/cards/wugu-female.mp3"
+    },
+    "taoyuan": {
+      "male": "/assets/audio/cards/taoyuan-male.mp3",
+      "female": "/assets/audio/cards/taoyuan-female.mp3"
+    },
+    "nanman": {
+      "male": "/assets/audio/cards/nanman-male.mp3",
+      "female": "/assets/audio/cards/nanman-female.mp3"
+    },
+    "wanjian": {
+      "male": "/assets/audio/cards/wanjian-male.mp3",
+      "female": "/assets/audio/cards/wanjian-female.mp3"
+    },
+    "wuzhong": {
+      "male": "/assets/audio/cards/wuzhong-male.mp3",
+      "female": "/assets/audio/cards/wuzhong-female.mp3"
+    },
+    "juedou": {
+      "male": "/assets/audio/cards/juedou-male.mp3",
+      "female": "/assets/audio/cards/juedou-female.mp3"
+    },
+    "shunshou": {
+      "male": "/assets/audio/cards/shunshou-male.mp3",
+      "female": "/assets/audio/cards/shunshou-female.mp3"
+    },
+    "guohe": {
+      "male": "/assets/audio/cards/guohe-male.mp3",
+      "female": "/assets/audio/cards/guohe-female.mp3"
+    },
+    "jiedao": {
+      "male": "/assets/audio/cards/jiedao-male.mp3",
+      "female": "/assets/audio/cards/jiedao-female.mp3"
+    },
+    "wuxie": {
+      "male": "/assets/audio/cards/wuxie-male.mp3",
+      "female": "/assets/audio/cards/wuxie-female.mp3"
+    },
+    "lebu": {
+      "male": "/assets/audio/cards/lebu-male.mp3",
+      "female": "/assets/audio/cards/lebu-female.mp3"
+    },
+    "shandian": {
+      "male": "/assets/audio/cards/shandian-male.mp3",
+      "female": "/assets/audio/cards/shandian-female.mp3"
+    }
+  },
+  "generalAudio": {
+    "standard.guanyu": {
+      "skills": {
+        "standard.wusheng": [
+          "/assets/audio/generals/standard.guanyu/standard.wusheng-1.mp3",
+          "/assets/audio/generals/standard.guanyu/standard.wusheng-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.wusheng": "standard.wusheng"
+      },
+      "death": "/assets/audio/generals/standard.guanyu/death.mp3",
+      "selection": "/assets/audio/generals/standard.guanyu/standard.wusheng-1.mp3"
+    },
+    "standard.zhangfei": {
+      "skills": {
+        "standard.paoxiao": [
+          "/assets/audio/generals/standard.zhangfei/standard.paoxiao-1.mp3",
+          "/assets/audio/generals/standard.zhangfei/standard.paoxiao-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.zhangfei/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhangfei/standard.paoxiao-1.mp3"
+    },
+    "standard.zhaoyun": {
+      "skills": {
+        "standard.longdan": [
+          "/assets/audio/generals/standard.zhaoyun/standard.longdan-1.mp3",
+          "/assets/audio/generals/standard.zhaoyun/standard.longdan-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.longdan.sha": "standard.longdan",
+        "standard.longdan.shan": "standard.longdan"
+      },
+      "death": "/assets/audio/generals/standard.zhaoyun/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhaoyun/standard.longdan-1.mp3"
+    },
+    "standard.huangyueying": {
+      "skills": {
+        "standard.jizhi": [
+          "/assets/audio/generals/standard.huangyueying/standard.jizhi-1.mp3",
+          "/assets/audio/generals/standard.huangyueying/standard.jizhi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.huangyueying/death.mp3",
+      "selection": "/assets/audio/generals/standard.huangyueying/selection.mp3"
+    },
+    "standard.sunquan": {
+      "skills": {
+        "standard.zhiheng": [
+          "/assets/audio/generals/standard.sunquan/standard.zhiheng-1.mp3",
+          "/assets/audio/generals/standard.sunquan/standard.zhiheng-2.mp3"
+        ],
+        "standard.jiuyuan": [
+          "/assets/audio/generals/standard.sunquan/standard.jiuyuan-1.mp3",
+          "/assets/audio/generals/standard.sunquan/standard.jiuyuan-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.sunquan/death.mp3",
+      "selection": "/assets/audio/generals/standard.sunquan/standard.zhiheng-1.mp3"
+    },
+    "standard.huatuo": {
+      "skills": {
+        "standard.qingnang": [
+          "/assets/audio/generals/standard.huatuo/standard.qingnang-1.mp3",
+          "/assets/audio/generals/standard.huatuo/standard.qingnang-2.mp3"
+        ],
+        "standard.jijiu": [
+          "/assets/audio/generals/standard.huatuo/standard.jijiu-1.mp3",
+          "/assets/audio/generals/standard.huatuo/standard.jijiu-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.jijiu": "standard.jijiu"
+      },
+      "death": "/assets/audio/generals/standard.huatuo/death.mp3",
+      "selection": "/assets/audio/generals/standard.huatuo/standard.qingnang-1.mp3"
+    },
+    "standard.simayi": {
+      "skills": {
+        "standard.fankui": [
+          "/assets/audio/generals/standard.simayi/standard.fankui-1.mp3",
+          "/assets/audio/generals/standard.simayi/standard.fankui-2.mp3"
+        ],
+        "standard.guicai": [
+          "/assets/audio/generals/standard.simayi/standard.guicai-1.mp3",
+          "/assets/audio/generals/standard.simayi/standard.guicai-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.simayi/death.mp3",
+      "selection": "/assets/audio/generals/standard.simayi/standard.fankui-1.mp3"
+    },
+    "standard.lvmeng": {
+      "skills": {
+        "standard.keji": [
+          "/assets/audio/generals/standard.lvmeng/standard.keji-1.mp3",
+          "/assets/audio/generals/standard.lvmeng/standard.keji-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.lvmeng/death.mp3",
+      "selection": "/assets/audio/generals/standard.lvmeng/standard.keji-1.mp3"
+    },
+    "standard.zhangliao": {
+      "skills": {
+        "standard.tuxi": [
+          "/assets/audio/generals/standard.zhangliao/standard.tuxi-1.mp3",
+          "/assets/audio/generals/standard.zhangliao/standard.tuxi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.zhangliao/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhangliao/standard.tuxi-1.mp3"
+    },
+    "standard.xuzhu": {
+      "skills": {
+        "standard.luoyi": [
+          "/assets/audio/generals/standard.xuzhu/standard.luoyi-1.mp3",
+          "/assets/audio/generals/standard.xuzhu/standard.luoyi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.xuzhu/death.mp3",
+      "selection": "/assets/audio/generals/standard.xuzhu/standard.luoyi-1.mp3"
+    },
+    "standard.zhouyu": {
+      "skills": {
+        "standard.yingzi": [
+          "/assets/audio/generals/standard.zhouyu/standard.yingzi-1.mp3",
+          "/assets/audio/generals/standard.zhouyu/standard.yingzi-2.mp3"
+        ],
+        "standard.fanjian": [
+          "/assets/audio/generals/standard.zhouyu/standard.fanjian-1.mp3",
+          "/assets/audio/generals/standard.zhouyu/standard.fanjian-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.zhouyu/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhouyu/standard.yingzi-1.mp3"
+    },
+    "standard.huanggai": {
+      "skills": {
+        "standard.kurou": [
+          "/assets/audio/generals/standard.huanggai/standard.kurou-1.mp3",
+          "/assets/audio/generals/standard.huanggai/standard.kurou-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.huanggai/death.mp3",
+      "selection": "/assets/audio/generals/standard.huanggai/standard.kurou-1.mp3"
+    },
+    "standard.machao": {
+      "skills": {
+        "standard.tieji": [
+          "/assets/audio/generals/standard.machao/standard.tieji-1.mp3",
+          "/assets/audio/generals/standard.machao/standard.tieji-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.machao/death.mp3",
+      "selection": "/assets/audio/generals/standard.machao/standard.tieji-1.mp3"
+    },
+    "standard.xiahoudun": {
+      "skills": {
+        "standard.ganglie": [
+          "/assets/audio/generals/standard.xiahoudun/standard.ganglie-1.mp3",
+          "/assets/audio/generals/standard.xiahoudun/standard.ganglie-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.xiahoudun/death.mp3",
+      "selection": "/assets/audio/generals/standard.xiahoudun/standard.ganglie-1.mp3"
+    },
+    "standard.zhenji": {
+      "skills": {
+        "standard.luoshen": [
+          "/assets/audio/generals/standard.zhenji/standard.luoshen-1.mp3",
+          "/assets/audio/generals/standard.zhenji/standard.luoshen-2.mp3"
+        ],
+        "standard.qingguo": [
+          "/assets/audio/generals/standard.zhenji/standard.qingguo-1.mp3",
+          "/assets/audio/generals/standard.zhenji/standard.qingguo-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.qingguo": "standard.qingguo"
+      },
+      "death": "/assets/audio/generals/standard.zhenji/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhenji/selection.mp3"
+    },
+    "standard.guojia": {
+      "skills": {
+        "standard.tiandu": [
+          "/assets/audio/generals/standard.guojia/standard.tiandu-1.mp3",
+          "/assets/audio/generals/standard.guojia/standard.tiandu-2.mp3"
+        ],
+        "standard.yiji": [
+          "/assets/audio/generals/standard.guojia/standard.yiji-1.mp3",
+          "/assets/audio/generals/standard.guojia/standard.yiji-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.guojia/death.mp3",
+      "selection": "/assets/audio/generals/standard.guojia/standard.tiandu-1.mp3"
+    },
+    "standard.diaochan": {
+      "skills": {
+        "standard.lijian": [
+          "/assets/audio/generals/standard.diaochan/standard.lijian-1.mp3",
+          "/assets/audio/generals/standard.diaochan/standard.lijian-2.mp3"
+        ],
+        "standard.biyue": [
+          "/assets/audio/generals/standard.diaochan/standard.biyue-1.mp3",
+          "/assets/audio/generals/standard.diaochan/standard.biyue-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.diaochan/death.mp3",
+      "selection": "/assets/audio/generals/standard.diaochan/selection.mp3"
+    },
+    "standard.zhugeliang": {
+      "skills": {
+        "standard.guanxing": [
+          "/assets/audio/generals/standard.zhugeliang/standard.guanxing-1.mp3",
+          "/assets/audio/generals/standard.zhugeliang/standard.guanxing-2.mp3"
+        ],
+        "standard.kongcheng": [
+          "/assets/audio/generals/standard.zhugeliang/standard.kongcheng-1.mp3",
+          "/assets/audio/generals/standard.zhugeliang/standard.kongcheng-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.zhugeliang/death.mp3",
+      "selection": "/assets/audio/generals/standard.zhugeliang/standard.guanxing-1.mp3"
+    },
+    "standard.ganning": {
+      "skills": {
+        "standard.qixi": [
+          "/assets/audio/generals/standard.ganning/standard.qixi-1.mp3",
+          "/assets/audio/generals/standard.ganning/standard.qixi-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.qixi": "standard.qixi"
+      },
+      "death": "/assets/audio/generals/standard.ganning/death.mp3",
+      "selection": "/assets/audio/generals/standard.ganning/standard.qixi-1.mp3"
+    },
+    "standard.lvbu": {
+      "skills": {
+        "standard.wushuang": [
+          "/assets/audio/generals/standard.lvbu/standard.wushuang-1.mp3",
+          "/assets/audio/generals/standard.lvbu/standard.wushuang-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.lvbu/death.mp3",
+      "selection": "/assets/audio/generals/standard.lvbu/standard.wushuang-1.mp3"
+    },
+    "standard.caocao": {
+      "skills": {
+        "standard.jianxiong": [
+          "/assets/audio/generals/standard.caocao/standard.jianxiong-1.mp3",
+          "/assets/audio/generals/standard.caocao/standard.jianxiong-2.mp3"
+        ],
+        "standard.hujia": [
+          "/assets/audio/generals/standard.caocao/standard.hujia-1.mp3",
+          "/assets/audio/generals/standard.caocao/standard.hujia-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.caocao/death.mp3",
+      "selection": "/assets/audio/generals/standard.caocao/standard.jianxiong-1.mp3"
+    },
+    "standard.liubei": {
+      "skills": {
+        "standard.rende": [
+          "/assets/audio/generals/standard.liubei/standard.rende-1.mp3",
+          "/assets/audio/generals/standard.liubei/standard.rende-2.mp3"
+        ],
+        "standard.jijiang": [
+          "/assets/audio/generals/standard.liubei/standard.jijiang-1.mp3",
+          "/assets/audio/generals/standard.liubei/standard.jijiang-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.liubei/death.mp3",
+      "selection": "/assets/audio/generals/standard.liubei/standard.rende-1.mp3"
+    },
+    "standard.daqiao": {
+      "skills": {
+        "standard.guose": [
+          "/assets/audio/generals/standard.daqiao/standard.guose-1.mp3",
+          "/assets/audio/generals/standard.daqiao/standard.guose-2.mp3"
+        ],
+        "standard.liuli": [
+          "/assets/audio/generals/standard.daqiao/standard.liuli-1.mp3",
+          "/assets/audio/generals/standard.daqiao/standard.liuli-2.mp3"
+        ]
+      },
+      "aliases": {
+        "standard.guose": "standard.guose"
+      },
+      "death": "/assets/audio/generals/standard.daqiao/death.mp3",
+      "selection": "/assets/audio/generals/standard.daqiao/selection.mp3"
+    },
+    "standard.luxun": {
+      "skills": {
+        "standard.lianying": [
+          "/assets/audio/generals/standard.luxun/standard.lianying-1.mp3",
+          "/assets/audio/generals/standard.luxun/standard.lianying-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.luxun/death.mp3",
+      "selection": "/assets/audio/generals/standard.luxun/standard.lianying-1.mp3"
+    },
+    "standard.sunshangxiang": {
+      "skills": {
+        "standard.xiaoji": [
+          "/assets/audio/generals/standard.sunshangxiang/standard.xiaoji-1.mp3",
+          "/assets/audio/generals/standard.sunshangxiang/standard.xiaoji-2.mp3"
+        ],
+        "standard.jieyin": [
+          "/assets/audio/generals/standard.sunshangxiang/standard.jieyin-1.mp3",
+          "/assets/audio/generals/standard.sunshangxiang/standard.jieyin-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/standard.sunshangxiang/death.mp3",
+      "selection": "/assets/audio/generals/standard.sunshangxiang/standard.xiaoji-1.mp3"
+    }
+  },
+  "systemAudio": {
+    "game_start": "/assets/audio/system/game_start.mp3",
+    "game_end": "/assets/audio/system/game_end.mp3",
+    "raw_addhp": "/assets/audio/system/raw_addhp.mp3",
+    "raw_equip": "/assets/audio/system/raw_equip.mp3",
+    "passbutton": "/assets/audio/system/passbutton.mp3",
+    "raw_hit_new": "/assets/audio/system/raw_hit_new.mp3",
+    "raw_hit_new2": "/assets/audio/system/raw_hit_new2.mp3",
+    "raw_hit_old": "/assets/audio/system/raw_hit_old.mp3",
+    "raw_hit_lei2": "/assets/audio/system/raw_hit_lei2.mp3",
+    "dead": "/assets/audio/system/dead.mp3"
+  },
+  "background": "/assets/background.png",
+  "cardBack": "/assets/cards/back.png",
+  "healthPips": {
+    "healthy": "/assets/ui/health-pips-v1/healthy.png",
+    "low": "/assets/ui/health-pips-v1/low.png",
+    "empty": "/assets/ui/health-pips-v1/empty.png"
+  },
+  "bgm": "/assets/bgm/三国策.mp3",
+  "outsideBgm": "/assets/bgm/战前筹帷.mp3"
+}

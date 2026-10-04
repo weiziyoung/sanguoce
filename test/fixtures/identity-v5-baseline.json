@@ -1,0 +1,44 @@
+[
+  {
+    "policyVersion": "v5",
+    "count": 5,
+    "seed": 1,
+    "choices": "a258fbdca18100fd18b19ced2460502aca723d71ea5e96bb9b8cffb783962958",
+    "gameplay": "cd4ab74e2384d9a9f164e0059ddbfaad63440d99d57e8f0fe4b8049872ce7527"
+  },
+  {
+    "policyVersion": "v5",
+    "count": 5,
+    "seed": 7,
+    "choices": "f44339c4fdb52b406f37fb661eedd9d37222c8ef2cbb5450356451e9f72a64e6",
+    "gameplay": "06916a5e73be72d1c1a7d2758f70693956304efbb217751ce5a1cb9cbb378aff"
+  },
+  {
+    "policyVersion": "v5",
+    "count": 5,
+    "seed": 19,
+    "choices": "159a593957a9c517a8dcb99110352a1554df879e8f75272d6d76f47b08811416",
+    "gameplay": "f608928212e045630a3effa1e453d62eb33a670c8c09f779a44e47d3290631e3"
+  },
+  {
+    "policyVersion": "v5",
+    "count": 8,
+    "seed": 1,
+    "choices": "de197b9fb82f089bb22b9c1d53fb635ddcb4ce5c60e2a0934f8cbe57659c177f",
+    "gameplay": "2604ed381bfdfe0dd70ad341d6229c189173c86f3c5b4cdeb1ca59162938f3d7"
+  },
+  {
+    "policyVersion": "v5",
+    "count": 8,
+    "seed": 7,
+    "choices": "19a9aace29f04e8982366047f5fc7f0e774651a492a0d114b109ab5649db58b5",
+    "gameplay": "ede2fa90e73ea64204d697597ad89d720f4268a2240c5b1c6e9eb19c8d54a296"
+  },
+  {
+    "policyVersion": "v5",
+    "count": 8,
+    "seed": 19,
+    "choices": "581ee68cdde4679db884feed31375742a37e77afa1d12f3277dc2fc2d4f53664",
+    "gameplay": "de2ab35d19d5a6e012303f0a31cb643354b7b0fbd8d2b01452bfae99aeaaf715"
+  }
+]

@@ -1,0 +1,542 @@
+[
+  {
+    "suit": "spade",
+    "rank": 7,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 8,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 8,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 9,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 9,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "spade",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 2,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 3,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 4,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 5,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 6,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 7,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 8,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 8,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 9,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 9,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 11,
+    "name": "sha"
+  },
+  {
+    "suit": "club",
+    "rank": 11,
+    "name": "sha"
+  },
+  {
+    "suit": "heart",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "heart",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "heart",
+    "rank": 11,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 6,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 7,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 8,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 9,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 10,
+    "name": "sha"
+  },
+  {
+    "suit": "diamond",
+    "rank": 13,
+    "name": "sha"
+  },
+  {
+    "suit": "heart",
+    "rank": 2,
+    "name": "shan"
+  },
+  {
+    "suit": "heart",
+    "rank": 2,
+    "name": "shan"
+  },
+  {
+    "suit": "heart",
+    "rank": 13,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 2,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 2,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 3,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 4,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 5,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 6,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 7,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 8,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 9,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 10,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 11,
+    "name": "shan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 11,
+    "name": "shan"
+  },
+  {
+    "suit": "heart",
+    "rank": 3,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 4,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 6,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 7,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 8,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 9,
+    "name": "tao"
+  },
+  {
+    "suit": "heart",
+    "rank": 12,
+    "name": "tao"
+  },
+  {
+    "suit": "diamond",
+    "rank": 12,
+    "name": "tao"
+  },
+  {
+    "suit": "spade",
+    "rank": 2,
+    "name": "bagua"
+  },
+  {
+    "suit": "club",
+    "rank": 2,
+    "name": "bagua"
+  },
+  {
+    "suit": "spade",
+    "rank": 5,
+    "name": "jueying"
+  },
+  {
+    "suit": "club",
+    "rank": 5,
+    "name": "dilu"
+  },
+  {
+    "suit": "heart",
+    "rank": 13,
+    "name": "zhuahuang"
+  },
+  {
+    "suit": "heart",
+    "rank": 5,
+    "name": "chitu"
+  },
+  {
+    "suit": "spade",
+    "rank": 13,
+    "name": "dawan"
+  },
+  {
+    "suit": "diamond",
+    "rank": 13,
+    "name": "zixin"
+  },
+  {
+    "suit": "club",
+    "rank": 1,
+    "name": "zhuge"
+  },
+  {
+    "suit": "diamond",
+    "rank": 1,
+    "name": "zhuge"
+  },
+  {
+    "suit": "spade",
+    "rank": 2,
+    "name": "cixiong"
+  },
+  {
+    "suit": "spade",
+    "rank": 6,
+    "name": "qinggang"
+  },
+  {
+    "suit": "spade",
+    "rank": 5,
+    "name": "qinglong"
+  },
+  {
+    "suit": "spade",
+    "rank": 12,
+    "name": "zhangba"
+  },
+  {
+    "suit": "diamond",
+    "rank": 5,
+    "name": "guanshi"
+  },
+  {
+    "suit": "diamond",
+    "rank": 12,
+    "name": "fangtian"
+  },
+  {
+    "suit": "heart",
+    "rank": 5,
+    "name": "qilin"
+  },
+  {
+    "suit": "heart",
+    "rank": 3,
+    "name": "wugu"
+  },
+  {
+    "suit": "heart",
+    "rank": 4,
+    "name": "wugu"
+  },
+  {
+    "suit": "heart",
+    "rank": 1,
+    "name": "taoyuan"
+  },
+  {
+    "suit": "spade",
+    "rank": 7,
+    "name": "nanman"
+  },
+  {
+    "suit": "spade",
+    "rank": 13,
+    "name": "nanman"
+  },
+  {
+    "suit": "club",
+    "rank": 7,
+    "name": "nanman"
+  },
+  {
+    "suit": "heart",
+    "rank": 1,
+    "name": "wanjian"
+  },
+  {
+    "suit": "spade",
+    "rank": 1,
+    "name": "juedou"
+  },
+  {
+    "suit": "club",
+    "rank": 1,
+    "name": "juedou"
+  },
+  {
+    "suit": "diamond",
+    "rank": 1,
+    "name": "juedou"
+  },
+  {
+    "suit": "heart",
+    "rank": 7,
+    "name": "wuzhong"
+  },
+  {
+    "suit": "heart",
+    "rank": 8,
+    "name": "wuzhong"
+  },
+  {
+    "suit": "heart",
+    "rank": 9,
+    "name": "wuzhong"
+  },
+  {
+    "suit": "heart",
+    "rank": 11,
+    "name": "wuzhong"
+  },
+  {
+    "suit": "spade",
+    "rank": 3,
+    "name": "shunshou"
+  },
+  {
+    "suit": "spade",
+    "rank": 4,
+    "name": "shunshou"
+  },
+  {
+    "suit": "spade",
+    "rank": 11,
+    "name": "shunshou"
+  },
+  {
+    "suit": "diamond",
+    "rank": 3,
+    "name": "shunshou"
+  },
+  {
+    "suit": "diamond",
+    "rank": 4,
+    "name": "shunshou"
+  },
+  {
+    "suit": "spade",
+    "rank": 3,
+    "name": "guohe"
+  },
+  {
+    "suit": "spade",
+    "rank": 4,
+    "name": "guohe"
+  },
+  {
+    "suit": "spade",
+    "rank": 12,
+    "name": "guohe"
+  },
+  {
+    "suit": "club",
+    "rank": 3,
+    "name": "guohe"
+  },
+  {
+    "suit": "club",
+    "rank": 4,
+    "name": "guohe"
+  },
+  {
+    "suit": "heart",
+    "rank": 12,
+    "name": "guohe"
+  },
+  {
+    "suit": "club",
+    "rank": 12,
+    "name": "jiedao"
+  },
+  {
+    "suit": "club",
+    "rank": 13,
+    "name": "jiedao"
+  },
+  {
+    "suit": "spade",
+    "rank": 11,
+    "name": "wuxie"
+  },
+  {
+    "suit": "club",
+    "rank": 12,
+    "name": "wuxie"
+  },
+  {
+    "suit": "club",
+    "rank": 13,
+    "name": "wuxie"
+  },
+  {
+    "suit": "spade",
+    "rank": 6,
+    "name": "lebu"
+  },
+  {
+    "suit": "club",
+    "rank": 6,
+    "name": "lebu"
+  },
+  {
+    "suit": "heart",
+    "rank": 6,
+    "name": "lebu"
+  },
+  {
+    "suit": "spade",
+    "rank": 1,
+    "name": "shandian"
+  },
+  {
+    "suit": "spade",
+    "rank": 2,
+    "name": "hanbing"
+  },
+  {
+    "suit": "club",
+    "rank": 2,
+    "name": "renwang"
+  },
+  {
+    "suit": "heart",
+    "rank": 12,
+    "name": "shandian"
+  },
+  {
+    "suit": "diamond",
+    "rank": 12,
+    "name": "wuxie"
+  }
+]

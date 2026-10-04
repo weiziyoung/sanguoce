@@ -1,0 +1,36 @@
+{
+  "name": "sanguoce",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "play": "node cli.ts",
+    "play:jev": "node --env-file-if-exists=.env.local cli.ts --ai jev",
+    "play:laya": "node cli.ts --ai laya",
+    "demo": "node cli.ts --demo",
+    "report": "node trace-report.ts",
+    "benchmark:ai": "node scripts/benchmark-ai.ts",
+    "smoke:jev": "node --env-file-if-exists=.env.local scripts/jev-smoke.ts",
+    "smoke:laya": "node scripts/laya-smoke.ts",
+    "serve:laya": "HF_HOME=.cache/laya/huggingface LAYA_HOST=127.0.0.1 LAYA_PRELOAD=0 .venv-laya/bin/laya-serve",
+    "assets:web": "node scripts/build-web-assets.ts --refresh",
+    "predev": "node scripts/build-web-assets.ts",
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "node scripts/build-web-assets.ts",
+    "build": "vite build",
+    "serve:web": "vite preview --host 127.0.0.1",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "25.2.3",
+    "phaser": "^4.2.1",
+    "typescript": "5.9.3",
+    "vite": "^8.3.1"
+  },
+  "description": "三国策：TypeScript 策略卡牌游戏，包含 CLI 与 Web 客户端",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  }
+}

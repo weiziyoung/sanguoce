@@ -1,0 +1,32 @@
+node_modules/
+traces/
+*.tsbuildinfo
+.DS_Store
+dist/
+.env*
+!.env.example
+.venv-laya/
+.cache/
+
+# Local development notes, plans, prompts and experiment outputs.
+*.md
+!/README.md
+!/THIRD_PARTY_NOTICES.md
+/docs/
+/internal/
+/plans/
+/datasets/
+/examples/
+/.agents/
+/.codex/
+/open-source-export/
+
+# Retain legacy research locally; the public runtime uses its own AI profiles.
+/noname-ai-data.ts
+/src/policies/versions/v[0-4]/
+/scripts/benchmark-rule-versions.ts
+
+# Private regression data tied to the retired strategy.
+/test/internal/
+/test/fixtures/standard-baseline.json
+/test/fixtures/identity-before-frames.json

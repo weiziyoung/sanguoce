@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>三国策 · sanguoce</title>
+  <link rel="icon" type="image/png" href="/favicon-v2.png" />
+  <style>
+    html,body{margin:0;width:100%;height:100%;background:#071014;color:#f8e7bf}
+    body{display:grid;place-items:center}
+    #app{width:min(100vw,177.777778vh);aspect-ratio:16/9;position:relative;overflow:hidden;background:#101b1c}
+    #loading{position:absolute;inset:0;z-index:50;overflow:hidden;text-align:center;background:#30363a url('/boot-scene-v2.png') center/cover no-repeat;transition:opacity .35s ease}
+    #loading.hidden{display:none}
+    .file-view #loading{background-image:url('./public/boot-scene-v2.png')}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .boot-loading{position:absolute;bottom:9.1%;left:50%;transform:translateX(-50%);width:16.5%}
+    .boot-loading-caption{display:block;margin-bottom:10px;color:#e8e2d1;font:clamp(11px,.8vw,14px) 'Songti SC',serif;letter-spacing:.18em;text-shadow:0 1px 5px #182025}
+    .boot-track{height:2px;background:#e8e2d174}
+    #loading-fill{width:0;height:100%;background:#f3eee2;transition:width .25s ease}
+    .boot-message{display:none;position:absolute;bottom:13%;left:50%;transform:translateX(-50%);width:70%;padding:.5em 1em;color:#eee9db;font:clamp(12px,1vw,17px) 'Songti SC',serif;line-height:1.5;text-shadow:0 2px 5px #000}
+    .file-view .boot-loading{display:none}
+    .file-view .boot-message,#loading.failed .boot-message{display:block}
+  </style>
+  <script>if(location.protocol==='file:'){document.documentElement.classList.add('file-view');addEventListener('DOMContentLoaded',()=>{const screen=document.getElementById('loading');const folder=location.pathname.includes('/dist/')?'./':'./public/';screen.style.backgroundImage="url('"+folder+"boot-scene-v2.png')";document.getElementById('loading-help').textContent='请运行 npm run dev，再打开终端显示的网址';});}</script>
+</head>
+<body>
+  <main id="app">
+    <div id="loading" role="status" aria-live="polite">
+      <h1 class="sr-only">三国策</h1>
+      <div class="boot-loading">
+        <span class="boot-loading-caption" aria-hidden="true">正在加载游戏资源</span>
+        <span id="loading-status" class="sr-only">正在加载</span><strong id="loading-percent" class="sr-only">0%</strong>
+        <div id="loading-track" class="boot-track" role="progressbar" aria-label="游戏资源加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="loading-fill"></div></div>
+      </div>
+      <p id="loading-help" class="boot-message"></p>
+    </div>
+    <button id="outside-mute" class="small-control outside-mute" aria-label="静音切换">声音</button>
+    <button id="outside-settings" class="small-control outside-settings" aria-haspopup="dialog">设置</button>
+    <section id="mode-select" class="screen-overlay mode-screen hidden" aria-labelledby="mode-title">
+      <div class="screen-panel mode-panel">
+        <h1 id="mode-title" class="sr-only">三国策 · 选择玩法</h1>
+        <div class="mode-options">
+          <button id="mode-duel" class="mode-option"><strong>对决</strong><small>一对一</small></button>
+          <button id="mode-identity" class="mode-option"><strong>身份</strong><small>五人局</small></button>
+        </div>
+        <p id="mode-seed" class="sr-only"></p>
+      </div>
+    </section>
+    <div id="game-canvas" aria-label="三国策略卡牌牌桌，拖动手牌至武将或桌面出牌"></div>
+    <audio id="bgm" preload="auto" loop aria-hidden="true"></audio>
+    <audio id="battle-bgm" preload="auto" loop aria-hidden="true"></audio>
+    <div id="hud" class="hidden">
+      <header class="topbar">
+        <div class="brand"><span id="brand-mode">对决</span></div>
+        <div class="topright"><span id="seed"></span><button id="fullscreen" class="small-control">全屏</button><button id="mute" class="small-control">声音</button><button id="settings" class="small-control" aria-haspopup="dialog">设置</button><button id="restart" class="small-control">重开</button></div>
+      </header>
+      <div class="turnbox" aria-label="当前回合与牌堆"><strong id="turn"></strong><span id="phase"></span><small id="pile"></small></div>
+      <aside class="battle-log"><div class="panel-title">战斗记录 <span>◇</span></div><div id="log"></div></aside>
+      <div id="prompt" class="prompt" role="status" aria-live="polite"></div>
+      <div id="context-actions" class="context-actions"></div>
+      <div id="skill-actions" class="skill-actions" aria-label="武将技能"></div>
+      <nav id="action-bar" class="action-bar" aria-label="牌桌操作">
+        <button id="play-action" class="major">出 牌</button>
+        <button id="cancel-action">撤销选择</button>
+        <button id="end-action">结束出牌</button>
+      </nav>
+      <div id="hand-count"></div>
+      <div id="drag-hint"></div>
+      <div id="inspector" class="hidden"></div>
+      <div id="error" role="alert"></div>
+    </div>
+    <section id="settlement" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settlement-result" tabindex="-1">
+      <div class="screen-panel settlement-panel">
+        <p class="eyebrow">对 局 结 算</p>
+        <h1 id="settlement-result"></h1>
+        <p id="settlement-winner" class="settlement-winner"></p>
+        <p id="settlement-detail" class="screen-intro"></p>
+        <div id="settlement-players" class="settlement-players"></div>
+        <div class="settlement-report-wrap"><table id="settlement-report" class="settlement-report" aria-label="每名武将的对局战绩"></table></div>
+        <p id="settlement-upload" class="settlement-upload" role="status"></p>
+        <div class="settlement-actions">
+          <button id="settlement-download" class="hidden">下载轨迹</button>
+          <button id="settlement-again">再来一局</button>
+          <button id="settlement-modes">选择模式</button>
+        </div>
+      </div>
+    </section>
+    <dialog id="settings-dialog" aria-labelledby="settings-title" aria-describedby="settings-description">
+      <header class="settings-heading">
+        <div><p class="settings-eyebrow">三 国 策</p><h2 id="settings-title">游戏设置</h2></div>
+        <button id="settings-close" class="settings-close" aria-label="关闭设置" autofocus>完成</button>
+      </header>
+      <p id="settings-description" class="settings-description">调整到你习惯的节奏。设置期间对局暂停，关闭后继续。</p>
+      <fieldset class="settings-group">
+        <legend>声音</legend>
+        <label class="settings-toggle"><span>全部静音<small>保留当前音量，下次开启时恢复</small></span><input id="setting-muted" type="checkbox" /></label>
+        <div class="settings-volume">
+          <label for="setting-musicVolume">背景音乐</label><output id="setting-musicVolume-value" for="setting-musicVolume">22%</output>
+          <input id="setting-musicVolume" type="range" min="0" max="100" step="1" value="22" />
+        </div>
+        <div class="settings-volume">
+          <label for="setting-effectsVolume">音效与语音</label><output id="setting-effectsVolume-value" for="setting-effectsVolume">65%</output>
+          <input id="setting-effectsVolume" type="range" min="0" max="100" step="1" value="65" />
+        </div>
+        <button id="settings-test-sound" class="settings-secondary" data-sound-preview>试听音效</button>
+        <p id="settings-preview-status" class="settings-preview-status" role="status">播放一段卡牌语音，使用当前音效音量。</p>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend>对局与界面</legend>
+        <label class="settings-toggle" for="setting-gameSpeed"><span>对局速度<small>调整动画和电脑行动间隔，语音保持原速</small></span>
+          <select id="setting-gameSpeed"><option value="0.75">舒缓 · 0.75×</option><option value="1" selected>标准 · 1×</option><option value="1.5">轻快 · 1.5×</option><option value="2">快速 · 2×</option></select>
+        </label>
+        <label class="settings-toggle"><span>战斗记录<small>显示牌桌左侧的对局记录</small></span><input id="setting-showBattleLog" type="checkbox" checked /></label>
+        <label class="settings-toggle"><span>操作提示<small>显示底部操作说明，行动和响应提示始终保留</small></span><input id="setting-showHints" type="checkbox" checked /></label>
+      </fieldset>
+      <footer class="settings-footer"><p id="settings-save-status" role="status"></p><button id="settings-reset" class="settings-secondary">恢复默认</button></footer>
+    </dialog>
+  </main>
+  <script type="module" src="/src/web/main.ts"></script>
+</body>
+</html>
