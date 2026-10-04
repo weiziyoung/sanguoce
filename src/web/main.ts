@@ -10,6 +10,7 @@ import { GameAudio } from './audio.ts';
 import { BootScreen } from './boot-screen.ts';
 import { browserSettings } from './settings.ts';
 import { SettingsPanel } from './settings-panel.ts';
+import { resourceUrl, resolveAssetManifest } from './deployment.ts';
 import './style.css';
 
 async function imageReady(url: string): Promise<void> {
@@ -23,9 +24,9 @@ async function main(boot: BootScreen) {
   const value = Number(query.get('seed'));
   const seed = query.has('seed') && Number.isInteger(value) && value >= 0 ? value : crypto.getRandomValues(new Uint32Array(1))[0];
   boot.set(0.08, '正在读取资源清单…');
-  const response = await fetch('/assets/manifest.json');
+  const response = await fetch(resourceUrl('/assets/manifest.json'));
   if (!response.ok) throw new Error('资源加载失败，请运行 npm run assets:web 后刷新');
-  const manifest = await response.json() as AssetManifest;
+  const manifest = resolveAssetManifest(await response.json() as AssetManifest);
   const audio = new GameAudio(manifest.bgm, manifest.outsideBgm, manifest.systemAudio.passbutton);
   const settings = browserSettings();
   new SettingsPanel(settings, audio, manifest.cardAudio.wuzhong?.male ?? manifest.cardAudio.sha?.male
@@ -34,7 +35,7 @@ async function main(boot: BootScreen) {
   const resources = [
     () => audio.prepareMusic(),
     () => document.fonts.load('24px Wenq', '三国杀'),
-    () => imageReady('/boot-scene-v2.png'),
+    () => imageReady(resourceUrl('/boot-scene-v2.png')),
     ...(manifest.background ? [() => imageReady(manifest.background!)] : []),
     ...(manifest.cardBack ? [() => imageReady(manifest.cardBack!)] : []),
   ];
@@ -63,6 +64,7 @@ async function main(boot: BootScreen) {
     };
     new Phaser.Game({ type: Phaser.AUTO, parent: 'game-canvas', ...BOARD,
       backgroundColor: '#111b1a', render: { antialias: true, mipmapFilter: 'LINEAR_MIPMAP_LINEAR' },
+      loader: { crossOrigin: 'anonymous' },
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       scene: [new SelectionScene(session, assets, audio,
         progress => boot.set((fromModeSelection ? 0 : 0.75) + progress * (fromModeSelection ? 0.95 : 0.2), '正在加载武将与牌桌…'),

@@ -1,0 +1,10 @@
+*
+!server.ts
+!src/
+!src/web/
+!src/web/production-server.ts
+!src/web/web-game-upload.ts
+!deploy/
+!deploy/Dockerfile
+!dist/
+!dist/**

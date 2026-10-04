@@ -19,6 +19,7 @@
     "prebuild": "node scripts/build-web-assets.ts",
     "build": "vite build",
     "serve:web": "vite preview --host 127.0.0.1",
+    "start": "node server.ts",
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },

@@ -1,0 +1,27 @@
+services:
+  sanguoce:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: sanguoce
+    restart: unless-stopped
+    read_only: true
+    mem_limit: 256m
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      SANGUOCE_ORIGIN: ${SANGUOCE_ORIGIN}
+    volumes:
+      - ${SANGUOCE_DATA_DIR:-../traces}:/app/traces
+    tmpfs:
+      - /tmp:size=16m
+    expose:
+      - "8080"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: ${SANGUOCE_PROXY_NETWORK}

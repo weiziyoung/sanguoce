@@ -3,6 +3,7 @@ import { roleLabel } from '../../chinese-view.ts';
 import { standardContent } from '../content/standard/content.ts';
 import type { WebGameDocument } from '../app/web-game-record.ts';
 import { battleReport, type BattleStat } from './battle-report.ts';
+import { appUrl } from './deployment.ts';
 
 const REASONS: Record<string, string> = {
   'last-survivor': '最后存活的武将获胜',
@@ -115,7 +116,7 @@ async function uploadGame(game: WebGameDocument): Promise<void> {
   const status = document.getElementById('settlement-upload')!;
   status.textContent = '正在保存本局决策轨迹…';
   try {
-    const response = await fetch('/api/web-games', { method: 'POST',
+    const response = await fetch(appUrl('/api/web-games'), { method: 'POST',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(game) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const saved = await response.json() as { id: string };

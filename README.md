@@ -48,6 +48,16 @@ npm run serve:web
 
 构建产物位于 `dist/`。开发服务器和预览服务器提供同源 `/api/web-games`，对局结束后自动将轨迹保存到 `traces/web/`。部署到纯静态服务器时，轨迹保存接口需另外提供；保存失败时结算页可下载 JSON。
 
+部署到子路径并使用 OSS/CDN：
+
+```sh
+SANGUOCE_BASE_PATH=/sanguoce/ SANGUOCE_ASSET_BASE_URL=https://your-cdn.example/sanguoce/releases/v1/ npm run build
+```
+
+将 `dist/` 静态文件上传到该资源前缀，允许游戏网站来源的跨域 GET/HEAD 请求。入口页面及 `/sanguoce/api/web-games` 仍由游戏网站提供；资源清单中的图片和语音会自动使用 CDN 前缀。每次发布使用新前缀，避免缓存混用旧版本。
+
+`npm start` 启动独立生产服务，提供页面、健康检查和轨迹保存。使用 `deploy/Dockerfile` 与 `deploy/docker-compose.yml` 时，将游戏容器加入反向代理所在的 Docker 网络，准备可写的 `traces/` 目录，再让代理去掉 `/sanguoce` 前缀后转发至游戏端口 8080。环境变量示例见 `.env.example`；轨迹目录应放在静态目录外，不能公开访问。
+
 CLI 轨迹与中文报告：
 
 ```sh
