@@ -3,6 +3,7 @@ traces/
 *.tsbuildinfo
 .DS_Store
 dist/
+dist-preview/
 .env*
 !.env.example
 .venv-laya/

@@ -42,11 +42,10 @@ npm run play -- --mode identity --seed 7
 ```sh
 npm run typecheck
 npm test
-npm run build
 npm run serve:web
 ```
 
-构建产物位于 `dist/`。开发服务器和预览服务器提供同源 `/api/web-games`，对局结束后自动将轨迹保存到 `traces/web/`。部署到纯静态服务器时，轨迹保存接口需另外提供；保存失败时结算页可下载 JSON。
+本地预览会自动构建到 `dist-preview/`，开发与预览均从本机加载资源，不使用生产 OSS 配置。`npm run build` 生成用于部署的 `dist/`，两个构建目录互不覆盖。开发服务器和预览服务器提供同源 `/api/web-games`，对局结束后自动将轨迹保存到 `traces/web/`。部署到纯静态服务器时，轨迹保存接口需另外提供；保存失败时结算页可下载 JSON。
 
 部署到子路径并使用 OSS/CDN：
 
