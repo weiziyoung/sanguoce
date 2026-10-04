@@ -31,6 +31,7 @@ button:disabled { cursor: default; }
 .small-control { padding: .4cqw .7cqw; font-size: 1cqw; background: #132220bb; border: 1px solid #8c754b; }
 .outside-mute { position: absolute; z-index: 40; top: 2%; right: 2%; pointer-events: auto; color: #e1dbcd; border-color: #e3ddd088; background: #15202599; }
 .outside-settings { position: absolute; z-index: 40; top: 2%; right: 7%; pointer-events: auto; color: #e1dbcd; border-color: #e3ddd088; background: #15202599; }
+.music-unlock { position: absolute; z-index: 40; top: 2%; left: 50%; transform: translateX(-50%); margin: 0; color: #e1dbcd; font-size: 1cqw; text-shadow: 0 1px 4px #000; pointer-events: none; }
 .hide-battle-log .battle-log, .hide-operation-hints #drag-hint { display: none; }
 #settings-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: clamp(18px, 3vw, 30px); overflow-y: auto; color: #ede5d5; background: linear-gradient(145deg, #243531, #101e1d); border: 1px solid #a59470; border-radius: 12px; box-shadow: 0 24px 90px #0009; font-size: 16px; }
 #settings-dialog::backdrop { background: #050e12bd; backdrop-filter: blur(5px); }

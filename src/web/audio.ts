@@ -1,4 +1,5 @@
 import type { GamePreferences } from './settings.ts';
+import { DownloadedMusic, type MusicPreloader } from './music-preload.ts';
 
 export type AudioPlaybackResult = 'ended' | 'stopped' | 'failed' | 'skipped';
 const PREVIEW_KEY = 'settings-preview';
@@ -10,6 +11,7 @@ export class GameAudio {
   private preparation?: Promise<void>;
   private autoplayBlocked = false;
   muted = false;
+  onMusicBlocked?: (blocked: boolean) => void;
   private started = false;
   private finished = false;
   private track: 'outside' | 'game' | null = null;
@@ -20,8 +22,11 @@ export class GameAudio {
   private gameBgm?: string;
   private outsideBgm?: string;
   private buttonSound?: string;
+  private readonly musicPreloader: MusicPreloader;
 
-  constructor(gameBgm?: string, outsideBgm?: string, buttonSound?: string) {
+  constructor(gameBgm?: string, outsideBgm?: string, buttonSound?: string,
+    musicPreloader: MusicPreloader = new DownloadedMusic()) {
+    this.musicPreloader = musicPreloader;
     this.gameBgm = gameBgm;
     this.outsideBgm = outsideBgm;
     this.buttonSound = buttonSound;
@@ -44,36 +49,49 @@ export class GameAudio {
     const unlock = () => { if (this.autoplayBlocked) this.resumeMusic(); };
     document.addEventListener('pointerdown', unlock, true);
     document.addEventListener('keydown', unlock, true);
-    window.addEventListener('pagehide', () => this.stop());
+    window.addEventListener('pagehide', event => {
+      this.stop();
+      if (!(event as PageTransitionEvent).persisted) this.musicPreloader.dispose();
+    });
   }
 
   get music(): HTMLAudioElement { return this.track === 'game' ? this.gameMusic : this.outsideMusic; }
 
-  /** Keep both tracks buffered before showing the first screen, without playing them. */
-  prepareMusic(): Promise<void> {
-    return this.preparation ??= Promise.all([
-      this.prepareTrack(this.outsideMusic, this.outsideBgm),
-      this.prepareTrack(this.gameMusic, this.gameBgm),
+  /** Only finish after both recordings are fully downloaded and locally playable. */
+  prepareMusic(progress?: (fraction: number) => void): Promise<void> {
+    if (this.preparation) return this.preparation.then(() => { progress?.(1); });
+    const fractions = [0, 0];
+    const update = (index: number, fraction: number) => {
+      fractions[index] = fraction;
+      progress?.((fractions[0] + fractions[1]) / 2);
+    };
+    return this.preparation = Promise.all([
+      this.prepareTrack(this.outsideMusic, this.outsideBgm, fraction => update(0, fraction)),
+      this.prepareTrack(this.gameMusic, this.gameBgm, fraction => update(1, fraction)),
     ]).then(() => {});
   }
 
-  private prepareTrack(music: HTMLAudioElement, url?: string): Promise<void> {
-    if (!url) return Promise.resolve();
-    return new Promise(resolve => {
-      const done = () => {
+  private async prepareTrack(music: HTMLAudioElement, url: string | undefined,
+    progress: (fraction: number) => void): Promise<void> {
+    if (!url) { progress(1); return; }
+    const localUrl = await this.musicPreloader.prepare(url, fraction => progress(fraction * 0.98));
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
         clearTimeout(timeout);
-        music.removeEventListener('canplaythrough', done);
-        music.removeEventListener('error', done);
-        resolve();
+        music.removeEventListener('canplay', ready);
+        music.removeEventListener('error', failed);
       };
-      // Missing media or a slow connection must not keep the game behind the loader forever.
-      const timeout = setTimeout(done, 8000);
-      music.addEventListener('canplaythrough', done);
-      music.addEventListener('error', done);
-      music.src = url;
+      const ready = () => { cleanup(); resolve(); };
+      const failed = () => { cleanup(); reject(new Error('背景音乐无法播放，请刷新重试')); };
+      const timeout = setTimeout(failed, 15_000);
+      music.addEventListener('canplay', ready);
+      music.addEventListener('error', failed);
+      music.src = localUrl;
       music.load();
-      if (music.readyState >= 4 || music.error) done();
+      if (music.error) failed();
+      else if (music.readyState >= 3) ready();
     });
+    progress(1);
   }
 
   /** Call synchronously from the mode button's click to unlock browser audio. */
@@ -98,6 +116,7 @@ export class GameAudio {
     this.muted = !this.muted;
     if (this.muted) { this.music.pause(); this.stopEffect(); }
     else this.resumeMusic();
+    this.notifyMusicBlocked();
     return this.muted;
   }
 
@@ -109,6 +128,7 @@ export class GameAudio {
     for (const effect of this.activeEffects.values()) effect.audio.volume = this.effectsVolume * effect.gain;
     if (this.muted) { this.music.pause(); this.stopEffect(); }
     else if (wasMuted) this.resumeMusic();
+    this.notifyMusicBlocked();
   }
 
   playEffect(url?: string, options: { allowOverlap?: boolean } = {}): Promise<void> {
@@ -166,6 +186,8 @@ export class GameAudio {
     this.finished = false;
     this.music.pause();
     this.stopEffect();
+    this.autoplayBlocked = false;
+    this.notifyMusicBlocked();
   }
 
   private switchTrack(track: 'outside' | 'game'): void {
@@ -185,11 +207,20 @@ export class GameAudio {
       const music = this.music;
       const generation = this.musicGeneration;
       void music.play().then(() => {
-        if (generation === this.musicGeneration && music === this.music) this.autoplayBlocked = false;
+        if (generation === this.musicGeneration && music === this.music) {
+          this.autoplayBlocked = false;
+          this.notifyMusicBlocked();
+        }
       }).catch(error => {
-        if (generation === this.musicGeneration && music === this.music)
+        if (generation === this.musicGeneration && music === this.music) {
           this.autoplayBlocked = error?.name === 'NotAllowedError';
+          this.notifyMusicBlocked();
+        }
       });
     }
+  }
+
+  private notifyMusicBlocked(): void {
+    this.onMusicBlocked?.(this.autoplayBlocked && this.started && !this.muted && this.music.volume > 0);
   }
 }

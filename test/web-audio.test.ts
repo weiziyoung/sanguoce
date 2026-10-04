@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameAudio } from '../src/web/audio.ts';
+import type { MusicPreloader } from '../src/web/music-preload.ts';
 
 class ControlledClip {
   static clips: ControlledClip[] = [];
@@ -42,7 +43,7 @@ class ControlledClip {
     this.listeners.get(name)!.add(callback);
   }
   removeEventListener(name: string, callback: () => void): void { this.listeners.get(name)?.delete(callback); }
-  ready(): void { this.readyState = 4; for (const callback of this.listeners.get('canplaythrough') ?? []) callback(); }
+  ready(): void { this.readyState = 4; for (const callback of this.listeners.get('canplay') ?? []) callback(); }
   loadError(): void { this.error = new Error('加载失败'); for (const callback of this.listeners.get('error') ?? []) callback(); }
   removeAttribute(name: string): void { if (name === 'src') this.src = ''; }
 }
@@ -291,7 +292,9 @@ test('游戏外、游戏内与结算使用同一音乐通道切换，静音状�
 });
 
 async function withMusic(run: (audio: GameAudio, outside: ControlledClip, battle: ControlledClip,
-  listeners: Map<string, () => void>) => Promise<void>): Promise<void> {
+  listeners: Map<string, () => void>) => Promise<void>, preloader: MusicPreloader = {
+    async prepare(url, progress) { progress(1); return `blob:${url}`; }, dispose() {},
+  }): Promise<void> {
   const prior = { document: globalThis.document, window: globalThis.window, Audio: globalThis.Audio };
   const outside = new ControlledClip();
   const battle = new ControlledClip();
@@ -300,7 +303,7 @@ async function withMusic(run: (audio: GameAudio, outside: ControlledClip, battle
     getElementById: (id: string) => id === 'battle-bgm' ? battle : outside,
     addEventListener: (name: string, callback: () => void) => listeners.set(name, callback),
   }, window: { addEventListener() {} }, Audio: ControlledClip });
-  const audio = new GameAudio('/battle.mp3', '/outside.mp3');
+  const audio = new GameAudio('/battle.mp3', '/outside.mp3', undefined, preloader);
   try { await run(audio, outside, battle, listeners); }
   finally { audio.stop(); Object.assign(globalThis, prior); }
 }
@@ -309,8 +312,9 @@ test('启动准备同时加载两首背景音乐，等待可播放，切换复�
   await withMusic(async (audio, outside, battle) => {
     let prepared = false;
     const ready = audio.prepareMusic().then(() => { prepared = true; });
-    assert.equal(outside.src, '/outside.mp3');
-    assert.equal(battle.src, '/battle.mp3');
+    await Promise.resolve();
+    assert.equal(outside.src, 'blob:/outside.mp3');
+    assert.equal(battle.src, 'blob:/battle.mp3');
     assert.equal(outside.preload, 'auto');
     assert.equal(outside.playCount + battle.playCount, 0);
     outside.ready();
@@ -335,41 +339,66 @@ test('启动准备同时加载两首背景音乐，等待可播放，切换复�
   });
 });
 
-test('背景音乐加载失败时不阻塞启动，清理等待监听', async () => {
+test('背景音乐无法播放时启动报告错误，清理等待监听', async () => {
   await withMusic(async (audio, outside, battle) => {
     const ready = audio.prepareMusic();
+    const rejected = assert.rejects(ready, /背景音乐无法播放/);
+    await Promise.resolve();
     outside.loadError();
     battle.ready();
-    await ready;
+    await rejected;
     for (const track of [outside, battle]) {
-      assert.equal(track.listeners.get('canplaythrough')?.size, 0);
+      assert.equal(track.listeners.get('canplay')?.size, 0);
       assert.equal(track.listeners.get('error')?.size, 0);
     }
   });
 });
 
-test('背景音乐加载超过八秒仍允许进入页面', async t => {
+test('背景音乐下载超过八秒仍等待完整下载和可播放，不虚报进度完成', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
-  await withMusic(async audio => {
-    const ready = audio.prepareMusic();
+  const downloads = new Map<string, { resolve(url: string): void; progress(fraction: number): void }>();
+  const preloader: MusicPreloader = {
+    prepare(url, progress) { return new Promise(resolve => { downloads.set(url, { resolve, progress }); }); },
+    dispose() {},
+  };
+  await withMusic(async (audio, outside, battle) => {
+    let complete = false;
+    let progress = 0;
+    const ready = audio.prepareMusic(value => { progress = value; }).then(() => { complete = true; });
+    downloads.get('/outside.mp3')!.progress(0.5);
+    downloads.get('/battle.mp3')!.progress(0.25);
     t.mock.timers.tick(8000);
+    await Promise.resolve();
+    assert.equal(complete, false);
+    assert.ok(progress > 0 && progress < 1);
+    assert.equal(outside.src, '', '完整下载之前不让播放器重新发起远程请求');
+    for (const [url, download] of downloads) { download.progress(1); download.resolve(`blob:${url}`); }
+    await Promise.resolve();
+    assert.equal(complete, false, '下载完成后还须等待播放器准备好');
+    outside.ready();
+    battle.ready();
     await ready;
-  });
+    assert.equal(progress, 1);
+  }, preloader);
 });
 
 for (const event of ['pointerdown', 'keydown']) {
   test(`自动播放被拦截时，首次 ${event} 恢复音乐；静音和停止后不自动续播`, async () => {
     await withMusic(async (audio, outside, battle, listeners) => {
+      let blocked = false;
+      audio.onMusicBlocked = value => { blocked = value; };
       outside.rejectAutoplay = true;
       audio.startOutside();
       await new Promise<void>(resolve => setImmediate(resolve));
       assert.equal(outside.paused, true);
+      assert.equal(blocked, true, '自动播放被浏览器拦截时显示点击提示');
       outside.rejectAutoplay = false;
       listeners.get(event)!();
       assert.equal(outside.paused, false);
       assert.equal(outside.playCount, 2);
       assert.equal(battle.playCount, 0);
       await new Promise<void>(resolve => setImmediate(resolve));
+      assert.equal(blocked, false);
       listeners.get(event)!();
       assert.equal(outside.playCount, 2, '解锁后不在每次点击重复调用播放');
       audio.toggleMute();

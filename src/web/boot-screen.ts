@@ -2,6 +2,7 @@
 export class BootScreen {
   private readonly root = document.getElementById('loading')!;
   private readonly label = document.getElementById('loading-status')!;
+  private readonly caption = document.querySelector('.boot-loading-caption');
   private readonly value = document.getElementById('loading-percent')!;
   private readonly track = document.getElementById('loading-track')!;
   private readonly fill = document.getElementById('loading-fill')!;
@@ -17,6 +18,7 @@ export class BootScreen {
   set(progress: number, label: string): void {
     const percent = Math.round(Math.max(0, Math.min(1, progress)) * 100);
     this.label.textContent = label;
+    if (this.caption) this.caption.textContent = label;
     this.value.textContent = `${percent}%`;
     this.track.setAttribute('aria-valuenow', String(percent));
     this.fill.style.width = `${percent}%`;

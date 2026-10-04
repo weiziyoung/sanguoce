@@ -28,21 +28,29 @@ async function main(boot: BootScreen) {
   if (!response.ok) throw new Error('资源加载失败，请运行 npm run assets:web 后刷新');
   const manifest = resolveAssetManifest(await response.json() as AssetManifest);
   const audio = new GameAudio(manifest.bgm, manifest.outsideBgm, manifest.systemAudio.passbutton);
+  const musicHint = document.getElementById('music-unlock')!;
+  audio.onMusicBlocked = blocked => musicHint.classList.toggle('hidden', !blocked);
   const settings = browserSettings();
   new SettingsPanel(settings, audio, manifest.cardAudio.wuzhong?.male ?? manifest.cardAudio.sha?.male
     ?? manifest.cardAudio.sha?.female ?? manifest.systemAudio.game_start);
   boot.set(0.2, '正在加载音乐、字体与画面…');
-  const resources = [
-    () => audio.prepareMusic(),
+  const resources: ((progress: (fraction: number) => void) => Promise<unknown>)[] = [
+    progress => audio.prepareMusic(progress),
     () => document.fonts.load('24px Wenq', '三国杀'),
     () => imageReady(resourceUrl('/boot-scene-v2.png')),
     ...(manifest.background ? [() => imageReady(manifest.background!)] : []),
     ...(manifest.cardBack ? [() => imageReady(manifest.cardBack!)] : []),
   ];
-  let loaded = 0;
-  await Promise.all(resources.map(async load => {
-    await load();
-    boot.set(0.2 + ++loaded / resources.length * 0.55, '正在加载游戏素材…');
+  const progress = resources.map(() => 0);
+  const update = (index: number, fraction: number) => {
+    progress[index] = fraction;
+    const musicPending = progress[0] < 1 && progress.slice(1).every(value => value === 1);
+    boot.set(0.2 + progress.reduce((sum, value) => sum + value, 0) / resources.length * 0.55,
+      musicPending ? '正在加载背景音乐…' : '正在加载音乐、字体与画面…');
+  };
+  await Promise.all(resources.map(async (load, index) => {
+    await load(fraction => update(index, fraction));
+    update(index, 1);
   }));
   if (!document.fonts.check('24px Wenq', '三国杀')) throw new Error('字体加载失败，请刷新重试');
   document.documentElement.classList.add('font-ready');
