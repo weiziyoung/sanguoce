@@ -40,6 +40,11 @@
     <section id="mode-select" class="screen-overlay mode-screen hidden" aria-labelledby="mode-title">
       <div class="screen-panel mode-panel">
         <h1 id="mode-title" class="sr-only">三国策 · 选择玩法</h1>
+        <fieldset class="card-set-options">
+          <legend class="sr-only">选择牌包</legend>
+          <label><input id="cards-standard" name="cards" type="radio" value="standard" checked />标准 <small>108 张</small></label>
+          <label><input id="cards-junzheng" name="cards" type="radio" value="junzheng" />标准＋军争 <small>160 张</small></label>
+        </fieldset>
         <div class="mode-options">
           <button id="mode-duel" class="mode-option"><strong>对决</strong><small>一对一</small></button>
           <button id="mode-identity" class="mode-option"><strong>身份</strong><small>五人局</small></button>
@@ -69,6 +74,7 @@
       <div id="drag-hint"></div>
       <div id="inspector" class="hidden"></div>
       <div id="error" role="alert"></div>
+      <div id="ai-recovery" class="ai-recovery hidden"><button id="ai-retry">重试 AI 决策</button><button id="ai-configure">修改 AI 设置</button></div>
     </div>
     <section id="settlement" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settlement-result" tabindex="-1">
       <div class="screen-panel settlement-panel">
@@ -92,6 +98,28 @@
         <button id="settings-close" class="settings-close" aria-label="关闭设置" autofocus>完成</button>
       </header>
       <p id="settings-description" class="settings-description">调整到你习惯的节奏。设置期间对局暂停，关闭后继续。</p>
+      <fieldset class="settings-group">
+        <legend>电脑 AI</legend>
+        <label class="settings-toggle" for="setting-aiProvider"><span>决策方式<small>应用于所有电脑，从下一次决策生效</small></span>
+          <select id="setting-aiProvider"><option value="rule" selected>规则策略</option><option value="jev">Jev 接口</option><option value="chat">Chat 接口</option></select>
+        </label>
+        <div id="ai-fields-jev" class="ai-fields hidden">
+          <label for="setting-jevEndpoint">API 请求地址<input id="setting-jevEndpoint" type="url" spellcheck="false" placeholder="https://api.typesafe.ai/v1/systemone" /></label>
+          <label for="setting-jevModel">模型名<input id="setting-jevModel" type="text" spellcheck="false" placeholder="jev-latest" /></label>
+          <label for="setting-jevApiKey">API Key<input id="setting-jevApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Jev 服务密钥；自建免认证接口可留空" /></label>
+          <p class="settings-preview-status">支持 Jev / systemone 协议，可填写其他兼容服务的完整请求地址。</p>
+        </div>
+        <div id="ai-fields-chat" class="ai-fields hidden">
+          <label for="setting-chatEndpoint">API 请求地址<input id="setting-chatEndpoint" type="url" spellcheck="false" placeholder="https://你的服务/v1/chat/completions" /></label>
+          <label for="setting-chatModel">模型名<input id="setting-chatModel" type="text" spellcheck="false" placeholder="填写服务提供的模型名称" /></label>
+          <label for="setting-chatApiKey">API Key<input id="setting-chatApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="免认证接口可留空" /></label>
+          <p class="settings-preview-status">支持 OpenAI 兼容的 Chat Completions 协议。模型思考可能需要较长时间，对局会等待返回。</p>
+        </div>
+        <p id="settings-credentials-status" class="settings-preview-status"></p>
+        <button id="settings-test-ai" class="settings-secondary" disabled>测试连接</button>
+        <p class="settings-preview-status">测试会发送一次示例决策请求。自定义地址需允许浏览器跨域访问。</p>
+        <p id="settings-ai-status" class="settings-preview-status" role="status"></p>
+      </fieldset>
       <fieldset class="settings-group">
         <legend>声音</legend>
         <label class="settings-toggle"><span>全部静音<small>保留当前音量，下次开启时恢复</small></span><input id="setting-muted" type="checkbox" /></label>

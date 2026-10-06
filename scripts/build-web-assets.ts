@@ -1,6 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { STANDARD_CARD_SPECS } from '../src/content/standard/card-specs.ts';
+import { CARD_SPECS } from '../catalog.ts';
+const ART_SPECS = [...CARD_SPECS, { id: 'huosha', label: '火杀' }, { id: 'leisha', label: '雷杀' }];
+const AUDIO_SPECS = [...ART_SPECS, { id: 'tiesuoRecast', label: '重铸' }];
 import { standardContent } from '../src/content/standard/content.ts';
 import { standardGeneralDefinitions } from '../src/content/standard/generals.ts';
 import { SYSTEM_SOUND_FILES } from '../src/web/sound-cues.ts';
@@ -45,12 +47,18 @@ for (const [key, filename] of Object.entries(SYSTEM_SOUND_FILES)) {
 }
 add(join(source, '字体/wenq.ttf'), 'fonts/wenq.ttf');
 const cardDirs = ['标准篇卡牌/基本牌', '标准篇卡牌/武器', '标准篇卡牌/防具',
-  '标准篇卡牌/马', '标准篇卡牌/锦囊', '三国杀卡牌全高清图/EX'];
-for (const card of STANDARD_CARD_SPECS) {
+  '三国杀卡牌全高清图/军争', '标准篇卡牌/马', '标准篇卡牌/锦囊', '三国杀卡牌全高清图/EX'];
+for (const card of ART_SPECS) {
+  // Keep the user-supplied full Hualiu face outside the regenerated asset folder.
+  if (card.id === 'hualiu') {
+    const result = add(resolve(import.meta.dirname, '../public/ui/card-art/hualiu.png'), 'cards/hualiu.png');
+    if (result) { manifest.cards[card.id] = result; continue; }
+  }
   for (const dir of cardDirs) {
     const result = add(join(source, dir, `${card.label}.png`), `cards/${card.id}.png`);
     if (result) { manifest.cards[card.id] = result; break; }
   }
+  if (!manifest.cards[card.id]) throw new Error(`缺少卡牌图片：${card.label}`);
 }
 for (const general of standardGeneralDefinitions) {
   const image = add(join(source, '三国杀卡牌全高清图/标准25', `${general.label}.png`),
@@ -100,7 +108,7 @@ function voicePriority(path: string): number {
   if (path.includes('/音效/')) return 2;
   return 1;
 }
-for (const card of STANDARD_CARD_SPECS) {
+for (const card of AUDIO_SPECS) {
   const candidates = allCardAudio.filter(path => {
     const filename = path.slice(path.lastIndexOf('/') + 1);
     return path.split('/').at(-2) === card.label && (filename === '男.mp3' || filename === '女.mp3') ||
@@ -111,6 +119,7 @@ for (const card of STANDARD_CARD_SPECS) {
     const file = cardAudioSource(card.label, sex, candidates);
     if (file) voices[sex] = add(file, `audio/cards/${card.id}-${sex}.mp3`);
   }
+  if (!voices.male || !voices.female) throw new Error(`缺少卡牌语音：${card.label}`);
   if (voices.male || voices.female) manifest.cardAudio[card.id] = voices;
 }
 mkdirSync(output, { recursive: true });

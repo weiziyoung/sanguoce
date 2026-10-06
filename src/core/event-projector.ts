@@ -12,6 +12,7 @@ export function projectEvent(event: RuleEvent, viewer: number): VisibleEvent | n
         card: !hidden || viewer === from || viewer === to ? card : null,
         ...(selection ? { selection } : {}), ...(cause ? { cause } : {}) } };
     }
+    case 'chainChanged': case 'wineUsed': case 'cardRecast': case 'cardRevealed': case 'drawSkipped':
     case 'drawn': case 'judged': case 'judgementReplaced': case 'discarded': case 'equipped': case 'recovered': case 'hpLost':
     case 'damaged': case 'dying': case 'died': case 'reshuffled': case 'turnStarted':
     case 'duelResponded': case 'duelEnded': case 'rescued': case 'attackDeclared':

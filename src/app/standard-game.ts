@@ -1,3 +1,4 @@
+import { contentForCards } from './game-content.ts';
 import { NAMES, type Card, type CardPack } from "../../catalog.ts";
 import { type Decision, type GameConfig, type Observation, type RuleSet, type TransitionSink } from "../../contracts.ts";
 import { resolutionStack } from "../domain/resolution-stack.ts";
@@ -13,13 +14,12 @@ import { createStandardResolution } from './standard-resolution.ts';
 import { standardModes } from './standard-modes.ts';
 import { ModeRegistry } from '../rules/mode-registry.ts';
 import { TriggerRegistry } from "../rules/trigger-registry.ts";
-import { standardTriggers } from "./standard-triggers.ts";
 import { standardContent } from '../content/standard/content.ts';
 import { ContentRegistry } from '../rules/content-registry.ts';
 import { ContentRuntime } from '../rules/content-runtime.ts';
 import { random } from '../rules/operations/random.ts';
 
-export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry = standardTriggers, content: ContentRegistry = standardContent): GameState {
+export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry | undefined = undefined, content: ContentRegistry = contentForCards(config.cards)): GameState {
   const runtime = new ContentRuntime(content, triggers);
   const {
     seed = 1, players = [
@@ -66,11 +66,11 @@ export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameS
   for (const p of s.players) draw(s, p.id, 4);
   startTurn(s);
   trace?.({ type: "setup" }, copy(s));
-  createStandardResolution(modes, triggers, runtime).scheduler.advance(s, trace);
+  createStandardResolution(modes, runtime.triggers, runtime).scheduler.advance(s, trace);
   return s;
 }
 
-export function preparePlayScenario(s: GameState, actor: number): GameState {
+export function preparePlayScenario(s: GameState, actor: number, runtime: ContentRuntime = new ContentRuntime(standardContent)): GameState {
   const next = copy(s);
   next.active = actor;
   next.outcome = { status: 'ongoing' };
@@ -78,7 +78,7 @@ export function preparePlayScenario(s: GameState, actor: number): GameState {
   resolutionStack.enqueue(next, { kind: 'phaseDiscard' }, { kind: 'phaseEnd' });
   next.phase = "play";
   next.shaUsed = 0;
-  setPrompt(next, actor, "play", "出牌阶段：选择行动", playOptions(next));
+  setPrompt(next, actor, "play", "出牌阶段：选择行动", playOptions(next, runtime));
   return next;
 }
 
@@ -99,6 +99,7 @@ export class StandardRuleset implements RuleSet<GameState> {
   }
   isFinished(state: GameState): boolean { return state.outcome.status !== 'ongoing'; }
   create(config: GameConfig = {}, trace?: TransitionSink<GameState>) {
+    if (config.cards && this.#content !== contentForCards(config.cards)) throw new Error('卡包配置与规则装配不一致');
     return createGame({ ...config, deck: config.deck ?? this.pack.cards }, trace, this.#modes, this.#triggers, this.#content);
   }
   decision(state: GameState): Decision | null { return decision(state); }

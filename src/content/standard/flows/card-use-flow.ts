@@ -1,3 +1,5 @@
+import { beginAttackUse } from '../../../rules/flows/attack-use-flow.ts';
+import { discardOwned, draw } from '../../../rules/operations/cards.ts';
 import { emitEvent } from '../../../domain/event-journal.ts';
 import { resolutionStack } from "../../../domain/resolution-stack.ts";
 import { name, person, push, seatOrder } from "../../../domain/state-access.ts";
@@ -48,14 +50,15 @@ export function handleResolveCardUseTask(s: GameState, task: TaskOf<'resolveCard
     if (source === s.active && s.phase === 'play' && s.shaPlayedOrRespondedInPlay !== undefined) {
       s.shaPlayedOrRespondedInPlay = true;
     }
-    push(s, ...targets.map((target: number) =>
-      ({ kind: "shaStart" as const, source, target, sha: cid, ignoreDistance: false })));
+    beginAttackUse(s, source, cid, targets, runtime, { ignoreDistance: false });
+  } else if (definition.useEffect) {
+    definition.useEffect(s, source, cid, runtime);
   } else if (definition.effect === 'recover') {
     vitals.recover(s, source);
   } else {
     const applied = definition.play.scope === 'all' ? seatOrder(s, source)
       : definition.play.scope === 'others' ? seatOrder(s, source).filter(id => id !== source)
-        : definition.play.scope === 'self' ? [source] : [targets[0]];
+        : definition.play.scope === 'self' ? [source] : definition.play.targeting === 'multiple' ? targets : [targets[0]];
     beginTrick(s, source, cname, applied, cid, targets[1], runtime);
   }
 }
@@ -78,7 +81,12 @@ export function beginCardUse(s: GameState, source: number, action: Exclude<Actio
 export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = getStandardRuntime()): void {
   const { source, action } = resolutionStack.require(s, 'cardUse').data;
   if (!person(s, source).alive) return;
-  if (action.type === 'virtualSha') {
+  if (action.type === 'recast') {
+    if (!runtime.content.card(name(s, action.cid)).play.recast) throw new Error('此牌不能重铸');
+    discardOwned(s, source, action.cid);
+    emitEvent(s, 'cardRecast', { player: source, card: action.cid });
+    draw(s, source, 1);
+  } else if (action.type === 'virtualSha') {
     const used = spendSha(s, source, action.ids, 'convertToSha', runtime, action.transformation);
     if (source === s.active) s.shaUsed++;
     if (!action.transformation || action.transformation === 'standard.zhangba') {
@@ -87,7 +95,7 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
       emitEvent(s, 'transformationUsed', { ability: action.transformation,
         label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation, owner: source });
     }
-    push(s, { kind: 'shaStart', source, target: action.targets[0], sha: used });
+    beginAttackUse(s, source, used, action.targets, runtime);
   } else if (action.type === 'proxySha') {
     const skill = runtime.content.requireSkill(action.ability);
     const proxy = skill.proxyResponse;

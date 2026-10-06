@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { Observation } from '../../contracts.ts';
-import type { Card } from '../../catalog.ts';
+import { cardAssetKey, type Card } from '../../catalog.ts';
 import type { SystemSoundName } from './sound-cues.ts';
 import { HEALTH_PIP_STATES, healthPipTexture, healthPipSourceTexture, type HealthPipState } from './health-pips.ts';
 
@@ -53,7 +53,10 @@ export class TableAssets {
     const files = new Map<string, string>();
     for (const player of players) if (player.general && this.manifest.generals[player.general])
       files.set(player.general, this.manifest.generals[player.general]);
-    for (const card of cards) if (this.manifest.cards[card.name]) files.set(`card:${card.name}`, this.manifest.cards[card.name]);
+    for (const card of cards) {
+      const key = cardAssetKey(card);
+      if (this.manifest.cards[key]) files.set(`card:${key}`, this.manifest.cards[key]);
+    }
     for (const event of observation.events) if (event.kind === 'transformationUsed' && event.data.produces) {
       const name = event.data.produces;
       if (this.manifest.cards[name]) files.set(`card:${name}`, this.manifest.cards[name]);

@@ -1,7 +1,8 @@
 FROM node:24-alpine
 WORKDIR /app
 COPY server.ts ./
-COPY src/web/production-server.ts src/web/web-game-upload.ts ./src/web/
+COPY src/web/production-server.ts src/web/web-game-upload.ts src/web/jev-proxy.ts ./src/web/
+COPY src/policies/model-endpoint.ts ./src/policies/
 COPY dist/ ./dist/
 ENV NODE_ENV=production PORT=8080 SANGUOCE_TRACE_DIR=/app/traces
 USER node

@@ -1,3 +1,4 @@
+import { beginAttackUse } from '../../../rules/flows/attack-use-flow.ts';
 import { leaf, setPrompt } from '../../../core/decision-manager.ts';
 import { emitEvent } from '../../../domain/event-journal.ts';
 import { resolutionStack } from '../../../domain/resolution-stack.ts';
@@ -56,8 +57,7 @@ export class ProxyResponseFlow {
       emitEvent(state, 'skillActivated', { ability: frame.data.ability,
         label: this.runtime.content.requireSkill(frame.data.ability).label ?? frame.data.ability,
         owner: frame.data.requester, targets: [frame.data.target] });
-      resolutionStack.enqueueParent(state, { kind: 'shaStart', source: frame.data.requester,
-        target: frame.data.target, sha: effective });
+      beginAttackUse(state, frame.data.requester, effective, [frame.data.target], this.runtime);
     }
   }
   private exhausted(state: GameState): void {

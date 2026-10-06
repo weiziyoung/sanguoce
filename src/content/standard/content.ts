@@ -8,7 +8,7 @@ const standardSkills: readonly SkillDefinition[] = [
   ...standardTriggerDefinitions.map(trigger => ({ id: trigger.id, label: trigger.label, trigger })),
   ...standardGeneralSkills,
   { id: 'standard.bagua', label: NAMES.bagua },
-  { id: 'standard.qinggang', label: NAMES.qinggang },
+  { id: 'standard.qinggang', label: NAMES.qinggang, modifier: { ignoresArmor: () => true } },
   { id: 'standard.plusHorse', label: '防御坐骑', modifier: {
     distance: (_s, owner, _from, to, current) => owner === to ? current + 1 : current,
   } },

@@ -10,6 +10,6 @@ export class GuanYuGeneral implements StandardGeneralModule {
     costs: (state, owner) => [
       ...state.players[owner].hand,
       ...Object.values(state.players[owner].equip).filter((id): id is number => id !== null),
-    ].filter(id => cardColor(state.cards[id]) === 'red' && state.cards[id].name !== 'sha').map(id => [id]),
+    ].filter(id => cardColor(state.cards[id]) === 'red' && (state.cards[id].name !== 'sha' || (state.cards[id].nature ?? 'normal') !== 'normal')).map(id => [id]),
   } }] satisfies StandardGeneralModule['skills'];
 }

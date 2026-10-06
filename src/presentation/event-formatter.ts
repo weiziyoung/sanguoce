@@ -12,6 +12,11 @@ export function formatEvent(event: RuleEvent | VisibleEvent, labels: EventLabels
   const card = (id: number) => cardText(labels.cards[id]);
   const name = (id: string) => NAMES[id] ?? Object.values(labels.cards).find(card => card.name === id)?.label ?? id;
   switch (event.kind) {
+    case 'chainChanged': return `${player(event.data.player)}${event.data.chained ? '进入连环状态' : '解除连环状态'}`;
+    case 'wineUsed': return `${player(event.data.player)}饮酒，下一张杀的伤害+${event.data.bonus}`;
+    case 'cardRecast': return `${player(event.data.player)}重铸${card(event.data.card)}`;
+    case 'cardRevealed': return `${player(event.data.player)}展示${card(event.data.card)}`;
+    case 'drawSkipped': return `${player(event.data.player)}跳过摸牌阶段`;
     case 'drawn': return `${player(event.data.player)}摸了${event.data.count}张牌`;
     case 'judged': return `${player(event.data.player)}的【${event.data.reasonLabel ?? name(event.data.reason)}】判定：${card(event.data.card)}`;
     case 'judgementReplaced': return `${player(event.data.owner)}发动【${event.data.label}】，以${card(event.data.newCard)}替换${player(event.data.player)}的【${event.data.reasonLabel ?? name(event.data.reason)}】判定牌${card(event.data.oldCard)}`;
@@ -20,7 +25,7 @@ export function formatEvent(event: RuleEvent | VisibleEvent, labels: EventLabels
     case 'equipped': return `${player(event.data.player)}${event.data.replaced ? '替换了' : '装备'}${card(event.data.card)}`;
     case 'recovered': return `${player(event.data.player)}回复${event.data.amount}点体力`;
     case 'hpLost': return `${player(event.data.player)}失去${event.data.amount}点体力`;
-    case 'damaged': return `${player(event.data.target)}受到${event.data.amount}点${event.data.source === null ? '无来源' : player(event.data.source) + '造成的'}伤害（${event.data.hp}/${event.data.maxHp}）`;
+    case 'damaged': return `${player(event.data.target)}受到${event.data.amount}点${event.data.source === null ? '无来源' : player(event.data.source) + '造成的'}${event.data.nature === 'fire' ? '火焰' : event.data.nature === 'thunder' ? '雷电' : ''}伤害（${event.data.hp}/${event.data.maxHp}）`;
     case 'dying': return `${player(event.data.target)}进入濒死状态`;
     case 'died': return `${player(event.data.target)}阵亡`;
     case 'reshuffled': return '弃牌堆洗回牌堆';

@@ -20,6 +20,8 @@ export interface GameConfig {
   players?: PlayerConfig[];
   initialHp?: number;
   first?: number;
+  /** Standard remains available for reproducible legacy games. */
+  cards?: 'standard' | 'junzheng';
   deck?: readonly Omit<Card, "id">[];
 }
 export interface Choice {
@@ -47,6 +49,7 @@ export interface VisiblePlayer {
   maxHp: number;
   alive: boolean;
   handCount: number;
+  chained?: boolean; drunk?: number;
   /** Omitted when the viewer is not entitled to know the role. */
   role?: string;
   equip: Record<string, Card | null>;
@@ -68,6 +71,7 @@ export interface Observation {
   discardTop: Card | null;
   table: Card[];
   shaUsed: number;
+  jiuUsed?: number;
   nullify: { source: PlayerId; target: PlayerId; cname: string; parity: number; cardLabel?: string } | null;
   log: string[];
   outcome: GameOutcome;

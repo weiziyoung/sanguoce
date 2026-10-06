@@ -1,4 +1,4 @@
-import type { CardLike, CardName } from '../../catalog.ts';
+import type { CardLike, CardName, DamageNature } from '../../catalog.ts';
 import type { ActionMap, DyingState, ResponseContext, InternalPrompt, NullificationState, Task } from './state.ts';
 
 /** Every frame and continuation is plain data, safe to clone and serialize. */
@@ -7,6 +7,8 @@ export interface FrameData {
   triggerWindow: { eventId: number; candidates: { definition: string; owner: number }[];
     cursor: number; cancelled: boolean; redirected?: boolean; then: Task[] };
   trigger: { eventId: number; definition: string; owner: number };
+  attackUse: { source: number; sha: number | CardLike; targets: number[]; nature: DamageNature; damageBonus: number;
+    ignoreDistance?: boolean; forcedBy?: number; preparations: string[]; cursor: number };
   cardUse: { source: number; action: Exclude<ActionMap['play'], { type: 'endPlay' }> };
   skill: { owner: number; ability: string; ids: number[]; targets: number[] };
   distribution: { owner: number; ability: string; cards: number[] };
@@ -19,7 +21,7 @@ export interface FrameData {
   trick: { source: number; cname: CardName; cid: number; targets: number[]; pool: number[] };
   nullification: NullificationState;
   damage: { target: number; source: number | null; amount: number; card: number | CardLike | null;
-    redirectedBy?: number; forcedBy?: number };
+    redirectedBy?: number; forcedBy?: number; nature?: DamageNature; ignoreArmor?: boolean; propagated?: boolean };
   dying: DyingState;
 }
 export type FrameKind = keyof FrameData;

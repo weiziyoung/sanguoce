@@ -17,8 +17,7 @@ export class MaChaoGeneral implements StandardGeneralModule {
       execute: (state, event, owner, runtime) => {
         if (!runtime) throw new Error('铁骑缺少内容运行时');
         new JudgementFlow(runtime).begin(state, owner, 'standard.tieji', {
-          kind: 'applyAttackJudgement', ability: 'standard.tieji', source: owner,
-          target: event.data.target, sha: event.data.sha,
+          ...event.data, kind: 'applyAttackJudgement', ability: 'standard.tieji',
         }, '铁骑');
       },
     }, attackJudgement: {

@@ -12,6 +12,12 @@ export interface CardAiProfile {
  * duplicates. These are tuning parameters, not part of the game rules.
  */
 export const CARD_AI_PROFILE: Readonly<Partial<Record<CardName, CardAiProfile>>> = {
+  jiu: { order: 8, value: [6, 3, 1] },
+  huogong: { order: 4, value: 4 },
+  tiesuo: { order: 2, value: 4 },
+  bingliang: { order: 2, value: 6 },
+  guding: { equipValue: 5 }, zhuque: { equipValue: 5 },
+  tengjia: { equipValue: 5 }, baiyin: { equipValue: 6 }, hualiu: { equipValue: 3 },
   sha: { order: 4, value: [6, 3, 1.5] },
   shan: { value: [8, 4, 2] },
   tao: { order: 12, value: 8 },

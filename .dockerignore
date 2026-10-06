@@ -4,6 +4,9 @@
 !src/web/
 !src/web/production-server.ts
 !src/web/web-game-upload.ts
+!src/web/jev-proxy.ts
+!src/policies/
+!src/policies/model-endpoint.ts
 !deploy/
 !deploy/Dockerfile
 !dist/

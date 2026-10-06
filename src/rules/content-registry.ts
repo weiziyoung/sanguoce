@@ -1,16 +1,16 @@
-import type { CardLike, CardName, DeckEntry } from '../../catalog.ts';
+import type { CardLike, CardName, DeckEntry, DamageNature } from '../../catalog.ts';
 import type { AttackContext, EquipSlot, GameState, ReadonlyGameState } from '../domain/state.ts';
 import type { CardTransformation } from './card-transform-resolver.ts';
 import type { AnyTriggerDefinition } from './trigger-registry.ts';
 import type { ContentRuntime } from './content-runtime.ts';
 
 export type CardKind = 'basic' | 'trick' | 'delay' | 'equip';
-export type PlayTargeting = 'unplayable' | 'none' | 'single' | 'attack' | 'borrowed';
-export type PlayAvailability = 'wounded' | 'uniqueSelfJudge';
-export type TargetRule = 'stealable' | 'distance1Stealable' | 'uniqueTargetJudge' | 'armed';
+export type PlayTargeting = 'unplayable' | 'none' | 'single' | 'attack' | 'borrowed' | 'multiple';
+export type PlayAvailability = 'wounded' | 'uniqueSelfJudge' | 'drink';
+export type TargetRule = 'stealable' | 'distance1Stealable' | 'uniqueTargetJudge' | 'armed' | 'hasHand' | 'distance1UniqueJudge';
 export type CardEffect = 'none' | 'attack' | 'recover' | 'equip' | 'delay' | 'drawTwo' |
   'recoverOne' | 'requireSha' | 'requireShan' | 'duel' | 'gainZone' |
-  'discardZone' | 'borrowed' | 'harvest';
+  'discardZone' | 'borrowed' | 'harvest' | 'custom';
 export interface CardDefinition {
   readonly id: CardName;
   readonly label: string;
@@ -20,8 +20,13 @@ export interface CardDefinition {
   /** Granted while this card is equipped. */
   readonly abilities?: readonly string[];
   readonly play: { readonly targeting: PlayTargeting; readonly availability?: PlayAvailability;
-    readonly targetRule?: TargetRule; readonly scope?: 'selected' | 'self' | 'all' | 'others' };
+    readonly targetRule?: TargetRule; readonly allowSelf?: boolean; readonly maxTargets?: number; readonly recast?: boolean;
+    readonly scope?: 'selected' | 'self' | 'all' | 'others' };
   readonly effect: CardEffect;
+  readonly useEffect?: (state: GameState, source: number, cid: number, runtime: ContentRuntime) => void;
+  readonly trickEffect?: (state: GameState, context: import('../domain/state.ts').TrickContext, runtime: ContentRuntime) => void;
+  readonly delayedEffect?: (state: GameState, owner: number, cid: number, result: number | null, runtime: ContentRuntime) => void;
+  readonly leaveEquipment?: (state: GameState, owner: number, cid: number) => void;
 }
 export interface SkillDefinition {
   readonly id: string;
@@ -60,6 +65,10 @@ export interface SkillDefinition {
     execute(state: GameState, owner: number, source: number | null, finalId: number | null, choice: string): void;
   };
   readonly modifier?: SkillModifier;
+  readonly prepareAttack?: {
+    available(state: ReadonlyGameState, source: number, nature: DamageNature): boolean;
+    nature: DamageNature;
+  };
 }
 export interface ActiveSkillDefinition {
   readonly limit?: 'oncePerTurn';
@@ -88,6 +97,10 @@ export interface SkillModifier {
   trickDistanceLimit?(state: ReadonlyGameState, owner: number, card: CardName, current: number): number;
   rescueRecovery?(state: ReadonlyGameState, owner: number, rescuer: number, victim: number, current: number): number;
   skipDiscard?(state: ReadonlyGameState, owner: number): boolean;
+  ignoresArmor?(state: ReadonlyGameState, owner: number): boolean;
+  attackEffective?(state: ReadonlyGameState, owner: number, attack: AttackContext): boolean;
+  trickEffective?(state: ReadonlyGameState, owner: number, card: CardName): boolean;
+  damageReceived?(state: ReadonlyGameState, owner: number, context: import('../domain/resolution.ts').FrameData['damage'], current: number): number;
   damageAmount?(state: ReadonlyGameState, owner: number, target: number, card: number | CardLike | null, current: number): number;
 }
 export interface GeneralDefinition {
@@ -130,6 +143,9 @@ export class ContentRegistry {
         if (card.kind === 'equip' && card.effect !== 'equip') throw new Error(`装备效果定义不匹配：${card.id}`);
         if (card.kind === 'delay' && card.effect !== 'delay') throw new Error(`延时牌效果定义不匹配：${card.id}`);
         if (card.play.targeting === 'unplayable' && card.effect !== 'none') throw new Error(`不可主动使用的牌仍声明效果：${card.id}`);
+        if (card.play.targeting === 'multiple' && (!Number.isInteger(card.play.maxTargets) || (card.play.maxTargets ?? 0) < 1 || (card.play.maxTargets ?? 0) > 8)) throw new Error(`多目标上限无效：${card.id}`);
+        if (card.play.recast && card.play.targeting !== 'multiple') throw new Error(`重铸目标协议无效：${card.id}`);
+        if (card.effect === 'custom' && !card.useEffect && !card.trickEffect) throw new Error(`自定义牌缺少效果处理器：${card.id}`);
         this.#cards.set(card.id, Object.freeze({ ...card, play: Object.freeze({ ...card.play }),
           abilities: Object.freeze([...(card.abilities ?? [])]) }));
       }
@@ -184,7 +200,10 @@ export class ContentRegistry {
       for (const transformation of skill.transformations ?? []) if (transformation.grantedBy) this.requireSkill(transformation.grantedBy);
     }
     for (const entry of deck) {
-      this.card(entry.name);
+      const definition = this.card(entry.name);
+      if (entry.nature !== undefined && (!['normal', 'fire', 'thunder'].includes(entry.nature) || definition.effect !== 'attack')) {
+        throw new Error(`卡牌伤害属性无效：${entry.name}`);
+      }
       if (!Number.isInteger(entry.rank) || entry.rank < 1 || entry.rank > 13 ||
         !['spade', 'club', 'heart', 'diamond'].includes(entry.suit)) throw new Error(`牌堆实体无效：${entry.name}`);
     }

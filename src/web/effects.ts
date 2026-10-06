@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { NAMES, type CardName } from '../../catalog.ts';
+import { cardLabel, type CardName } from '../../catalog.ts';
 import type { Observation } from '../../contracts.ts';
 import type { VisibleEvent } from '../domain/events.ts';
 import type { TableAssets } from './assets.ts';
@@ -99,12 +99,12 @@ export class TableEffects {
     return player === obs.self.id && index >= 0 ? handCardPosition(index, obs.self.hand.length) :
       handPosition(player, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
   }
-  private async showResponse(card: ResponseCard, obs: Observation): Promise<void> {
+  private async showResponse(card: ResponseCard, obs: Observation, verb = '打出'): Promise<void> {
     const seats = [obs.self, ...obs.others].map(player => player.id);
     const from = handPosition(card.player, seats, obs.self.id);
     const sprite = cardView(this.scene, card.card, from.x, from.y, 116, 166).container
       .setDepth(1100).setScale(0.72);
-    this.caption(sprite, `${obs.mode.id === 'identity' ? `座${card.player + 1}` : card.player === obs.self.id ? '你' : '对手'}\n打出${card.card.label ?? NAMES[card.card.name] ?? card.card.name}`, 108);
+    this.caption(sprite, `${obs.mode.id === 'identity' ? `座${card.player + 1}` : card.player === obs.self.id ? '你' : '对手'}\n${verb}${cardLabel(card.card)}`, 108);
     await new Promise<void>(resolve => this.scene.tweens.add({ targets: sprite,
       x: 790, y: 486, scale: 1, duration: 360, ease: 'Cubic.Out', onComplete: () => resolve() }));
     await new Promise<void>(resolve => this.scene.time.delayedCall(560, resolve));
@@ -356,6 +356,9 @@ export class TableEffects {
         await new Promise<void>(resolve => this.scene.time.delayedCall(680, resolve));
         await this.tween(sprite, { y: 462, alpha: 0, duration: 220 });
       }
+    } else if (event.kind === 'cardRevealed') {
+      const card = obs.eventCards?.[event.data.card];
+      if (card) await this.showResponse({ player: event.data.player, card }, obs, '展示');
     } else if (event.kind === 'harvestTaken') {
       await this.showHarvestChoice(event, obs, origin);
     } else if (event.kind === 'duelResponded') {

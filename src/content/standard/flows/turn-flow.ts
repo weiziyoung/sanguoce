@@ -12,6 +12,8 @@ import { getStandardRuntime } from '../runtime.ts';
 export function startTurn(s: GameState): void {
   s.turn++;
   s.shaUsed = 0;
+  if (s.jiuUsed !== undefined) s.jiuUsed = 0;
+  for (const player of s.players) delete player.drunk;
   delete s.shaPlayedOrRespondedInPlay;
   if (s.turnMarks) s.turnMarks = [];
   if (s.skillProgress) s.skillProgress = [];
@@ -27,6 +29,7 @@ export function handlePhaseStartTask(s: GameState, task: TaskOf<"phaseStart">,
   if (!person(s, s.active).alive) return;
   s.phase = "start";
   s.skipPlay = false;
+  if (s.skipDraw !== undefined) s.skipDraw = false;
   push(s, ...runtime.abilities.list(s, s.active).filter(skill => skill.startPhase)
     .map(skill => ({ kind: 'phaseStartOffer' as const, ability: skill.id, owner: s.active })));
 
@@ -45,6 +48,7 @@ export function handlePhaseDrawTask(s: GameState, task: TaskOf<"phaseDraw">,
   runtime: ContentRuntime = getStandardRuntime()): void {
   if (!person(s, s.active).alive) return;
   s.phase = "draw";
+  if (s.skipDraw) { emitEvent(s, 'drawSkipped', { player: s.active }); return; }
   const skills = runtime.abilities.list(s, s.active);
   const automatic = skills.find(skill => skill.drawPhase?.optional === false);
   if (automatic) {

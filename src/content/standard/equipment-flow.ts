@@ -1,3 +1,4 @@
+import { beginAttackUse } from '../../rules/flows/attack-use-flow.ts';
 import { cancelTriggerWindow } from '../../rules/trigger-resolver.ts';
 import { emitEvent } from '../../domain/event-journal.ts';
 import { cardText } from "../../../catalog.ts";
@@ -64,21 +65,31 @@ export function handleShaStartTask(s: GameState, task: TaskOf<'shaStart'>): void
   push(s, { kind: 'openTriggers', signal: { kind: 'attackTargeted', data: task }, then: [{ ...task, kind: 'shaRespond' }] });
 }
 
-export function handleShaRespondTask(s: GameState, task: TaskOf<'shaRespond'>): void {
-  promptResponse(s, { mode: 'sha', actor: task.target, source: task.source, sha: task.sha, baguaTried: false });
+export function handleShaRespondTask(s: GameState, task: TaskOf<'shaRespond'>, runtime: ContentRuntime = getStandardRuntime()): void {
+  if (!runtime.queries.attackEffective(s, task)) {
+    emitEvent(s, 'trickCancelled', { cname: 'sha', target: task.target });
+    return;
+  }
+  promptResponse(s, { mode: 'sha', actor: task.target, source: task.source, sha: task.sha, baguaTried: false,
+    ...(task.nature ? { nature: task.nature } : {}), ...(task.damageBonus ? { damageBonus: task.damageBonus } : {}),
+    ...(task.ignoreArmor ? { ignoreArmor: task.ignoreArmor } : {}),
+    ...(task.redirectedBy === undefined ? {} : { redirectedBy: task.redirectedBy }),
+    ...(task.forcedBy === undefined ? {} : { forcedBy: task.forcedBy }) });
 }
 
 export function handleShaMissTask(s: GameState, task: TaskOf<'shaMiss'>): void {
   push(s, { kind: 'openTriggers', signal: { kind: 'attackMissed', data: task }, then: [] });
 }
 
-export function handleShaHitTask(s: GameState, task: TaskOf<'shaHit'>): void {
+export function handleShaHitTask(s: GameState, task: TaskOf<'shaHit'>, runtime: ContentRuntime = getStandardRuntime()): void {
+  if (!runtime.queries.attackEffective(s, task)) return;
   push(s, { kind: 'openTriggers', signal: { kind: 'beforeAttackDamage', data: task }, then: [{ ...task, kind: 'attackDamage' }] });
 }
 
 export function handleAttackDamageTask(s: GameState, task: TaskOf<'attackDamage'>): void {
-  damage(s, task.target, task.source, 1, null, task.sha,
-    { ...(task.redirectedBy === undefined ? {} : { redirectedBy: task.redirectedBy }),
+  damage(s, task.target, task.source, 1 + (task.damageBonus ?? 0), null, task.sha,
+    { ...(task.nature ? { nature: task.nature } : {}), ...(task.ignoreArmor ? { ignoreArmor: task.ignoreArmor } : {}),
+      ...(task.redirectedBy === undefined ? {} : { redirectedBy: task.redirectedBy }),
       ...(task.forcedBy === undefined ? {} : { forcedBy: task.forcedBy }) });
 }
 
@@ -118,7 +129,7 @@ export function handleQinglongChoice(s: GameState, prompt: PromptOf<"qinglong">,
   if (data.type === "qinglong") {
     const used = spendSha(s, actor, data.ids, 'respond', runtime, data.transformation);
     emitEvent(s, 'abilityActivated', { ability: 'qinglong', owner: actor, effect: 'followUp' });
-    push(s, { kind: "shaStart", source: actor, target: prompt.context.target, sha: used, ignoreDistance: true });
+    beginAttackUse(s, actor, used, [prompt.context.target], runtime, { ignoreDistance: true });
   }
 }
 

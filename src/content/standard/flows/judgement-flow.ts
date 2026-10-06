@@ -32,9 +32,11 @@ export function cancelJudge(s: GameState, owner: number, cid: number): void {
   else discardOwned(s, owner, cid);
 }
 
-export function applyDelayedJudgement(s: GameState, owner: number, cid: number, finalId: number | null): void {
+export function applyDelayedJudgement(s: GameState, owner: number, cid: number, finalId: number | null, runtime: ContentRuntime = getStandardRuntime()): void {
   if (!person(s, owner).judge.includes(cid)) return;
   const cname = name(s, cid);
+  const definition = runtime.content.card(cname);
+  if (definition.delayedEffect) { definition.delayedEffect(s, owner, cid, finalId, runtime); return; }
   const result = finalId === null ? null : s.cards[finalId];
   if (cname === "lebu") {
     discardOwned(s, owner, cid);
@@ -45,7 +47,7 @@ export function applyDelayedJudgement(s: GameState, owner: number, cid: number, 
   } else if (cname === "shandian") {
     if (result && result.suit === "spade" && result.rank >= 2 && result.rank <= 9) {
       discardOwned(s, owner, cid);
-      damage(s, owner, null, 3, null, cid);
+      damage(s, owner, null, 3, null, cid, { nature: 'thunder' });
     } else {
       moveLightning(s, owner, cid);
     }
@@ -74,8 +76,8 @@ export function handleCancelJudgeTask(s: GameState, task: TaskOf<"cancelJudge">)
   cancelJudge(s, task.owner, task.cid);
 }
 
-export function handleApplyDelayedJudgementTask(s: GameState, task: TaskOf<'applyDelayedJudgement'>): void {
+export function handleApplyDelayedJudgementTask(s: GameState, task: TaskOf<'applyDelayedJudgement'>, runtime: ContentRuntime = getStandardRuntime()): void {
   const frame = resolutionStack.require(s, 'judgement');
   if (frame.data.owner !== task.owner || frame.data.reason !== name(s, task.cid)) throw new Error('判定结果与延时牌不匹配');
-  applyDelayedJudgement(s, task.owner, task.cid, frame.data.finalId);
+  applyDelayedJudgement(s, task.owner, task.cid, frame.data.finalId, runtime);
 }

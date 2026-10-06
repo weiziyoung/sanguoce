@@ -17,6 +17,8 @@ export function observe(s: GameState, playerId: number): Observation {
     ...(p.group ? { group: p.group } : {}),
     hp: p.hp, maxHp: p.maxHp, alive: p.alive,
     handCount: p.hand.length,
+    ...(p.chained === undefined ? {} : { chained: p.chained }),
+    ...(p.drunk ? { drunk: p.drunk } : {}),
     ...(s.mode.knownTo[p.id]?.includes(playerId) && s.mode.roles[p.id]
       ? { role: s.mode.roles[p.id] } : {}),
     equip: Object.fromEntries(Object.entries(p.equip).map(([slot, id]) => [slot, id ? copy(card(s, id as number)) : null])),
@@ -32,7 +34,7 @@ export function observe(s: GameState, playerId: number): Observation {
       events.unshift(event);
       const publicCardIds = (() => {
         switch (event.kind) {
-          case 'cardUsed': case 'discarded': case 'equipped': case 'judged':
+          case 'cardRevealed': case 'cardRecast': case 'cardUsed': case 'discarded': case 'equipped': case 'judged':
           case 'delayPlaced': case 'harvestTaken': case 'harvestLeftover': case 'duelResponded':
           case 'nullificationUsed': return [event.data.card];
           case 'harvestRevealed': return event.data.cards;
@@ -54,6 +56,7 @@ export function observe(s: GameState, playerId: number): Observation {
     self: { ...visible(own), hand: own.hand.map(id => copy(card(s, id))) },
     others: others.map(visible), deckCount: s.deck.length,
     discardCount: s.discard.length, discardTop: s.discard.length ? copy(card(s, s.discard.at(-1)!)) : null,
+    ...(s.jiuUsed === undefined ? {} : { jiuUsed: s.jiuUsed }),
     table: s.table.map(id => copy(card(s, id))), shaUsed: s.shaUsed,
     nullify: nullify ? {
       source: nullify.source, target: nullify.target,

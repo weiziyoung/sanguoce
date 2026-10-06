@@ -21,10 +21,14 @@ export function contextActionChoices(model: TableInteraction | null): ActionChoi
   const contextual = all.filter(choice => !choice.cardIds.length && !choice.targetIds.length &&
     !choice.zone && !['endPlay', 'pass', 'cancel', 'confirm'].includes(choice.actionType ?? '') &&
     (model.decision.kind !== 'play' || model.focus));
-  const ambiguous = intent && exact.length > 1 ? exact : [];
+  const recasts = intent ? exact.filter(choice => choice.actionType === 'recast') : [];
+  const ambiguous = intent && exact.length > 1 ? exact : recasts;
   return [...new Map([...contextual, ...ambiguous].map(choice => [choice.id, choice])).values()];
 }
-export interface SkillTile { label: string; detail: string; active: boolean; selected: boolean; choose(): void; }
+export interface SkillTile {
+  id: string; label: string; detail: string; seal: string; help: string;
+  passive: boolean; active: boolean; selected: boolean; choose(): void;
+}
 export class TableHud {
   constructor() { node('hud').classList.remove('hidden'); }
   render(obs: Observation, model: TableInteraction | null, busy: boolean, skills: SkillTile[],
@@ -45,7 +49,9 @@ export class TableHud {
     const guanshiSelecting = model?.decision.kind === 'guanshi';
     let prompt = busy || !model ? '对手正在行动…' : model.decision.title;
     if (ready && model) {
-      if (tuxiSelecting) prompt = `突袭：点选一至两名有手牌的其他角色（已选 ${model.targets.length}/2）`;
+      if (model.decision.kind === 'fireAttackReveal') prompt = '火攻：点选一张手牌并确认展示';
+      else if (model.decision.kind === 'fireAttackPay') prompt = '火攻：选择同花色手牌弃置，或放弃';
+      else if (tuxiSelecting) prompt = `突袭：点选一至两名有手牌的其他角色（已选 ${model.targets.length}/2）`;
       else if (tuxiIntent) prompt = '摸牌阶段：发动突袭，或正常摸两张牌';
       else if (ganglieDiscarding) prompt = `刚烈：选择两张手牌（已选 ${model.cards.length}/2）`;
       else if (qilinSelecting) prompt = '麒麟弓：点击下方坐骑牌弃置，或选择不发动';
@@ -76,7 +82,7 @@ export class TableHud {
     play.onclick = () => { if (model?.decision.kind === 'discard') submitBatch(batch); else if (primary) submit(primary); };
     const end = node('end-action') as HTMLButtonElement;
     end.classList.toggle('hidden', Boolean(ganglieIntent || tuxiIntent));
-    end.textContent = finish ? '结束出牌' : qilinSelecting || guanshiSelecting ? '不发动' : pass?.actionType === 'cancel' ? '取消发动' : '不响应';
+    end.textContent = model?.decision.kind === 'fireAttackPay' ? '放弃火攻' : finish ? '结束出牌' : qilinSelecting || guanshiSelecting ? '不发动' : pass?.actionType === 'cancel' ? '取消发动' : '不响应';
     end.disabled = !ready || !(finish ?? pass); end.onclick = () => { const c = finish ?? pass; if (c) submit(c); };
     const cancel = node('cancel-action') as HTMLButtonElement;
     cancel.textContent = ganglieDiscarding || tuxiSelecting ? '返回选择' : '撤销选择';
@@ -87,9 +93,17 @@ export class TableHud {
     node('context-actions').replaceChildren(...actions);
     node('skill-actions').replaceChildren(...skills.map(skill => {
       const b = button('', skill.choose, !ready || !skill.active);
+      b.className = 'skill-plaque'; b.dataset.skill = skill.id;
+      b.title = `${skill.label} · ${skill.seal}\n${skill.detail}${skill.help ? `\n${skill.help}` : ''}`;
+      b.setAttribute('aria-label', `${skill.label}，${skill.seal}，${skill.detail}`);
+      b.setAttribute('aria-pressed', String(skill.selected));
+      const seal = document.createElement('span'); seal.className = 'skill-seal'; seal.textContent = skill.seal;
       const title = document.createElement('strong'); title.textContent = skill.label;
-      const detail = document.createElement('span'); detail.textContent = skill.detail;
-      b.append(title, detail); b.classList.toggle('selected', skill.selected); return b;
+      const detail = document.createElement('span'); detail.className = 'skill-detail'; detail.textContent = skill.detail;
+      b.append(seal, title, detail);
+      b.classList.toggle('passive', skill.passive);
+      b.classList.toggle('available', ready && skill.active);
+      b.classList.toggle('selected', skill.selected); return b;
     }));
     node('hand-count').textContent = `手牌 ${obs.self.handCount}`;
     node('drag-hint').textContent = obs.outcome.status !== 'ongoing' ? obs.outcome.reason :
@@ -100,6 +114,16 @@ export class TableHud {
       ganglieDiscarding ? '点选两张手牌，确认弃置 · 点击已选牌取消' :
       model?.decision.kind === 'discard' ? `点选 ${String((model.decision.context as { required?: number }).required ?? 1)} 张手牌后一次弃置　·　点击已选牌取消` :
       '拖牌至目标 / 中央出牌　·　点击可多选　·　右键 / Esc 撤销';
+  }
+  flashSkill(id: string): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const tile = [...node('skill-actions').querySelectorAll<HTMLButtonElement>('[data-skill]')]
+      .find(button => button.dataset.skill === id);
+    tile?.animate([
+      { filter: 'brightness(1)', boxShadow: 'inset 0 0 0 1px #b7995c40' },
+      { filter: 'brightness(1.55)', boxShadow: 'inset 0 0 18px #eac88680, 0 0 12px #dfad5350', offset: 0.25 },
+      { filter: 'brightness(1)', boxShadow: 'inset 0 0 0 1px #b7995c40' },
+    ], { duration: 620, easing: 'ease-out' });
   }
   preview(url?: string, label = '', details: readonly { title: string; body: string }[] = []) {
     const box = node('inspector'); box.classList.toggle('hidden', !url);

@@ -31,7 +31,18 @@
     "jiedao": "/assets/cards/jiedao.png",
     "wuxie": "/assets/cards/wuxie.png",
     "lebu": "/assets/cards/lebu.png",
-    "shandian": "/assets/cards/shandian.png"
+    "shandian": "/assets/cards/shandian.png",
+    "jiu": "/assets/cards/jiu.png",
+    "huogong": "/assets/cards/huogong.png",
+    "tiesuo": "/assets/cards/tiesuo.png",
+    "bingliang": "/assets/cards/bingliang.png",
+    "hualiu": "/assets/cards/hualiu.png",
+    "guding": "/assets/cards/guding.png",
+    "zhuque": "/assets/cards/zhuque.png",
+    "tengjia": "/assets/cards/tengjia.png",
+    "baiyin": "/assets/cards/baiyin.png",
+    "huosha": "/assets/cards/huosha.png",
+    "leisha": "/assets/cards/leisha.png"
   },
   "generals": {
     "standard.guanyu": "/assets/generals/standard.guanyu.png",
@@ -188,6 +199,54 @@
     "shandian": {
       "male": "/assets/audio/cards/shandian-male.mp3",
       "female": "/assets/audio/cards/shandian-female.mp3"
+    },
+    "jiu": {
+      "male": "/assets/audio/cards/jiu-male.mp3",
+      "female": "/assets/audio/cards/jiu-female.mp3"
+    },
+    "huogong": {
+      "male": "/assets/audio/cards/huogong-male.mp3",
+      "female": "/assets/audio/cards/huogong-female.mp3"
+    },
+    "tiesuo": {
+      "male": "/assets/audio/cards/tiesuo-male.mp3",
+      "female": "/assets/audio/cards/tiesuo-female.mp3"
+    },
+    "bingliang": {
+      "male": "/assets/audio/cards/bingliang-male.mp3",
+      "female": "/assets/audio/cards/bingliang-female.mp3"
+    },
+    "hualiu": {
+      "male": "/assets/audio/cards/hualiu-male.mp3",
+      "female": "/assets/audio/cards/hualiu-female.mp3"
+    },
+    "guding": {
+      "male": "/assets/audio/cards/guding-male.mp3",
+      "female": "/assets/audio/cards/guding-female.mp3"
+    },
+    "zhuque": {
+      "male": "/assets/audio/cards/zhuque-male.mp3",
+      "female": "/assets/audio/cards/zhuque-female.mp3"
+    },
+    "tengjia": {
+      "male": "/assets/audio/cards/tengjia-male.mp3",
+      "female": "/assets/audio/cards/tengjia-female.mp3"
+    },
+    "baiyin": {
+      "male": "/assets/audio/cards/baiyin-male.mp3",
+      "female": "/assets/audio/cards/baiyin-female.mp3"
+    },
+    "huosha": {
+      "male": "/assets/audio/cards/huosha-male.mp3",
+      "female": "/assets/audio/cards/huosha-female.mp3"
+    },
+    "leisha": {
+      "male": "/assets/audio/cards/leisha-male.mp3",
+      "female": "/assets/audio/cards/leisha-female.mp3"
+    },
+    "tiesuoRecast": {
+      "male": "/assets/audio/cards/tiesuoRecast-male.mp3",
+      "female": "/assets/audio/cards/tiesuoRecast-female.mp3"
     }
   },
   "generalAudio": {

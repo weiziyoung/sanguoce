@@ -42,6 +42,8 @@ export const guanxingEvaluation: SkillEvaluator = (ctx, decision, choice, action
 };
 
 export const zhugeliangEvaluation: GeneralEvaluator = (ctx, decision, _choice, action, score) => {
+  if (score <= -100) return score;
+  if (action.type === 'recast') return score;
   const card = ctx.card(action.cid);
   if (decision.kind === 'wugu' && card) return spendValue(ctx, card);
   const spent = costsOf(action).filter(id => ctx.self.hand.some(item => item.id === id)).length;

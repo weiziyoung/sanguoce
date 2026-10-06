@@ -203,7 +203,8 @@ export class SkillFlow {
     if (!skill.attackJudgement || !this.runtime.abilities.has(state, task.source, task.ability)) return;
     if (skill.attackJudgement.bypassResponse(state, task.source, frame.data.finalId)) {
       const window = resolutionStack.nearest(state, 'triggerWindow');
-      window.data.then = [{ kind: 'shaHit', source: task.source, target: task.target, sha: task.sha }];
+      const { ability: _ability, kind: _kind, ...attack } = task;
+      window.data.then = [{ ...attack, kind: 'shaHit' }];
     }
   }
   applySkillJudgement(state: GameState, task: TaskOf<'applySkillJudgement'>): void {

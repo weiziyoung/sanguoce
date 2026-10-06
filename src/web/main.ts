@@ -1,7 +1,5 @@
 import Phaser from 'phaser';
-import { BrowserDuel } from '../app/browser-duel.ts';
-import { BrowserIdentity } from '../app/browser-identity.ts';
-import type { BrowserSession } from '../app/browser-session.ts';
+import type { CardSet } from '../app/game-content.ts';
 import { TableAssets, type AssetManifest } from './assets.ts';
 import { SelectionScene } from './selection-scene.ts';
 import { TableScene } from './table-scene.ts';
@@ -11,6 +9,7 @@ import { BootScreen } from './boot-screen.ts';
 import { browserSettings } from './settings.ts';
 import { SettingsPanel } from './settings-panel.ts';
 import { resourceUrl, resolveAssetManifest } from './deployment.ts';
+import { bindModeSelection, cardsFromQuery, createBrowserSession, gameUrl, type WebMode } from './game-setup.ts';
 import './style.css';
 
 async function imageReady(url: string): Promise<void> {
@@ -59,16 +58,16 @@ async function main(boot: BootScreen) {
   document.getElementById('seed')!.textContent = `种子 ${seed}`;
   const modes = document.getElementById('mode-select')!;
   document.getElementById('mode-seed')!.textContent = `本局随机种子 ${seed}`;
-  const start = (mode: 'duel' | 'identity', fromModeSelection = false) => {
+  const start = (mode: WebMode, cards: CardSet, fromModeSelection = false) => {
     if (fromModeSelection) boot.show('正在打开点将册…');
     else boot.set(0.75, '正在打开点将册…');
     audio.startOutside();
     modes.classList.add('hidden');
-    const session: BrowserSession = mode === 'identity' ? new BrowserIdentity(seed) : new BrowserDuel(seed);
+    const session = createBrowserSession(mode, seed, cards);
     document.getElementById('app')!.classList.toggle('identity', mode === 'identity');
-    document.getElementById('brand-mode')!.textContent = mode === 'identity' ? '五人身份' : '对决';
+    document.getElementById('brand-mode')!.textContent = `${mode === 'identity' ? '五人身份' : '对决'} · ${cards === 'junzheng' ? '标准＋军争' : '标准'}`;
     document.getElementById('restart')!.onclick = () => {
-      window.setTimeout(() => { location.href = `${location.pathname}?mode=${mode}`; }, audio.muted ? 0 : 260);
+      window.setTimeout(() => { location.href = gameUrl(location.pathname, cards, mode); }, audio.muted ? 0 : 260);
     };
     new Phaser.Game({ type: Phaser.AUTO, parent: 'game-canvas', ...BOARD,
       backgroundColor: '#111b1a', render: { antialias: true, mipmapFilter: 'LINEAR_MIPMAP_LINEAR' },
@@ -78,8 +77,7 @@ async function main(boot: BootScreen) {
         progress => boot.set((fromModeSelection ? 0 : 0.75) + progress * (fromModeSelection ? 0.95 : 0.2), '正在加载武将与牌桌…'),
         () => { void boot.complete(); }, settings), new TableScene(session, assets, audio, settings)] });
   };
-  document.getElementById('mode-duel')!.onclick = () => start('duel', true);
-  document.getElementById('mode-identity')!.onclick = () => start('identity', true);
+  bindModeSelection(document, query, (mode, cards) => start(mode, cards, true));
   const fullscreen = document.getElementById('fullscreen')!;
   fullscreen.onclick = () => {
     const request = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
@@ -87,7 +85,7 @@ async function main(boot: BootScreen) {
   };
   document.addEventListener('fullscreenchange', () => { fullscreen.textContent = document.fullscreenElement ? '退出全屏' : '全屏'; });
   const requested = query.get('mode');
-  if (requested === 'duel' || requested === 'identity') start(requested);
+  if (requested === 'duel' || requested === 'identity') start(requested, cardsFromQuery(query));
   else {
     await boot.complete();
     modes.classList.remove('hidden');

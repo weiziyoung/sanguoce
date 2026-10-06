@@ -1,11 +1,13 @@
+import { contentForCards, type CardSet } from './game-content.ts';
 import { GameEngine } from '../core/game-engine.ts';
 import { StandardRuleset } from './standard-game.ts';
 import { IdentityPregame } from './identity-pregame.ts';
 import { StrategicPolicy } from '../policies/strategic-policy.ts';
 import type { GameState } from '../domain/state.ts';
-import type { Decision, Observation } from '../../contracts.ts';
+import type { Decision, DecisionPolicy, Observation } from '../../contracts.ts';
 import type { BrowserSession } from './browser-session.ts';
 import { WebGameRecord } from './web-game-record.ts';
+import { browserComputerStep } from './browser-computer-step.ts';
 
 /** Five-player Web adapter using the same setup, rule engine and policy as the CLI. */
 export class BrowserIdentity implements BrowserSession {
@@ -15,13 +17,16 @@ export class BrowserIdentity implements BrowserSession {
   readonly lordSeat: number;
   readonly role: string;
   readonly pregame: IdentityPregame;
-  readonly policy = new StrategicPolicy();
+  readonly policy: StrategicPolicy;
+  readonly cards: CardSet;
   game: GameEngine<GameState> | null = null;
   record: WebGameRecord | null = null;
 
-  constructor(seed: number) {
+  constructor(seed: number, cards: CardSet = 'standard') {
     if (!Number.isInteger(seed)) throw new Error('随机种子必须为整数');
     this.seed = seed;
+    this.cards = cards;
+    this.policy = new StrategicPolicy(undefined, contentForCards(cards).deck);
     this.pregame = new IdentityPregame(seed);
     this.humanSeat = this.pregame.humanSeat;
     this.role = this.pregame.role;
@@ -35,14 +40,14 @@ export class BrowserIdentity implements BrowserSession {
     const player = this.candidates.find(general => general.id === generalId);
     if (!player) throw new Error('武将不在本局候选中');
     const generals = this.pregame.generals(player);
-    const config = { mode: 'identity', seed: this.seed,
+    const config = { cards: this.cards, mode: 'identity', seed: this.seed,
       players: generals.map((general, seat) => ({
         label: seat === this.humanSeat ? '你' : `电脑${seat + 1}`,
         sex: general.sex, general: general.id,
       })),
     };
     this.record = new WebGameRecord(config, this.humanSeat);
-    this.game = new GameEngine(new StandardRuleset(), config, this.record);
+    this.game = new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(this.cards)), config, this.record);
   }
 
   get decision(): Decision | null { return this.requireGame().getDecision(); }
@@ -58,13 +63,8 @@ export class BrowserIdentity implements BrowserSession {
     this.record!.select(decision, optionId, observation);
   }
 
-  computerStep(): void {
-    const game = this.requireGame();
-    const decision = game.getDecision();
-    if (!decision || decision.actor === this.humanSeat) throw new Error('当前不是电脑决策');
-    const optionId = this.policy.choose(game.getObservation(decision.actor), decision);
-    game.choose({ decisionId: decision.id!, optionId });
-    this.record!.select(decision, optionId);
+  computerStep(policy: DecisionPolicy = this.policy, beforeCommit?: () => Promise<void>): void | Promise<void> {
+    return browserComputerStep(this.requireGame(), this.record!, this.humanSeat, policy, beforeCommit);
   }
 
   private requireGame(): GameEngine<GameState> {

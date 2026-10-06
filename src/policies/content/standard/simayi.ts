@@ -2,6 +2,7 @@ import { cardColor, type Card } from '../../../../catalog.ts';
 import type { SkillEvaluator } from '../../evaluation-registry.ts';
 
 const favorable = (reason: string, card: Card): boolean | undefined => {
+  if (reason === 'bingliang') return card.suit === 'club';
   if (reason === 'lebu') return card.suit === 'heart';
   if (reason === 'shandian') return !(card.suit === 'spade' && card.rank >= 2 && card.rank <= 9);
   if (reason === 'bagua' || reason === 'standard.tieji') return cardColor(card) === 'red';

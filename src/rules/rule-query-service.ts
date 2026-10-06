@@ -1,5 +1,5 @@
 import { seatService } from "../domain/seat-service.ts";
-import type { ReadonlyGameState } from '../domain/state.ts';
+import type { AttackContext, ReadonlyGameState } from '../domain/state.ts';
 import type { AbilityResolver } from './ability-resolver.ts';
 import type { CardLike, CardName } from '../../catalog.ts';
 
@@ -67,16 +67,32 @@ export class RuleQueryService {
     return value;
   }
   damageAmount(s: ReadonlyGameState, source: number | null, target: number,
-    card: number | CardLike | null, initial: number): number {
-    if (source === null) return initial;
+    card: number | CardLike | null, initial: number, context?: import('../domain/resolution.ts').FrameData['damage']): number {
     let value = initial;
-    for (const skill of this.#abilities?.list(s, source) ?? []) {
-      value = skill.modifier?.damageAmount?.(s, source, target, card, value) ?? value;
+    for (const skill of source === null || context?.propagated ? [] : this.#abilities?.list(s, source) ?? []) {
+      value = skill.modifier?.damageAmount?.(s, source!, target, card, value) ?? value;
+    }
+    if (context) for (const instance of this.#abilities?.instances(s, target) ?? []) {
+      if (context.ignoreArmor && instance.source.kind === 'equipment' && instance.source.slot === 'armor') continue;
+      value = instance.definition.modifier?.damageReceived?.(s, target, context, value) ?? value;
     }
     return value;
   }
-  canTarget(s: ReadonlyGameState, source: number, target: number, card: CardName): boolean {
-    if (source === target || !s.players[source]?.alive || !s.players[target]?.alive) return false;
+  ignoresArmor(s: ReadonlyGameState, source: number): boolean {
+    return (this.#abilities?.list(s, source) ?? []).some(skill => skill.modifier?.ignoresArmor?.(s, source));
+  }
+  attackEffective(s: ReadonlyGameState, attack: AttackContext): boolean {
+    const ignores = attack.ignoreArmor || this.ignoresArmor(s, attack.source);
+    return (this.#abilities?.instances(s, attack.target) ?? []).every(instance =>
+      ignores && instance.source.kind === 'equipment' && instance.source.slot === 'armor' ||
+      instance.definition.modifier?.attackEffective?.(s, attack.target, attack) !== false);
+  }
+  trickEffective(s: ReadonlyGameState, target: number, card: CardName): boolean {
+    return (this.#abilities?.list(s, target) ?? []).every(skill => skill.modifier?.trickEffective?.(s, target, card) !== false);
+  }
+  canTarget(s: ReadonlyGameState, source: number, target: number, card: CardName, allowSelf = false): boolean {
+    if (source === target && !allowSelf) return false;
+    if (!s.players[source]?.alive || !s.players[target]?.alive) return false;
     return (this.#abilities?.list(s, target) ?? []).every(skill =>
       skill.modifier?.targetEnabled?.(s, target, source, target, card) !== false);
   }
@@ -89,7 +105,7 @@ export class RuleQueryService {
     return value;
   }
   canSha(s: ReadonlyGameState, from: number, to: number, ignoreDistance = false): boolean {
-    return this.canTarget(s, from, to, 'sha') &&
+    return from !== to && this.canTarget(s, from, to, 'sha') &&
       (ignoreDistance || this.distance(s, from, to) <= this.attackRange(s, from));
   }
 }

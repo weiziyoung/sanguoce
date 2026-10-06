@@ -13,7 +13,7 @@ export const standardTriggerDefinitions: readonly AnyTriggerDefinition[] = [
   { id: 'standard.renwang', label: NAMES.renwang, grantedBy: 'standard.renwang', event: 'attackTargeted', priority: 10,
     owners: (_s, e) => [e.data.target],
     eligible: (s, e, _owner, abilities) =>
-      !abilities?.has(s, e.data.source, 'standard.qinggang') &&
+      !e.data.ignoreArmor && !abilities?.has(s, e.data.source, 'standard.qinggang') &&
       cardColor(typeof e.data.sha === 'number' ? s.cards[e.data.sha] : e.data.sha) === 'black',
     execute: s => { cancelTriggerWindow(s); emitEvent(s, 'abilityActivated', { ability: 'renwang', owner: null, effect: 'blockBlackSha' }); },
   },

@@ -1,12 +1,14 @@
 import type { Decision, DecisionPolicy, Observation } from '../../contracts.ts';
 import { ChineseView } from '../../chinese-view.ts';
 import { forcedActionId } from '../domain/forced-choice.ts';
+import { JEV_ENDPOINT, modelEndpoint } from './model-endpoint.ts';
 
-const JEV_ENDPOINT = 'https://api.typesafe.ai/v1/systemone';
 const RETRYABLE_STATUS = new Set([429, 529]);
 
 export interface JevPolicyOptions {
   apiKey?: string;
+  endpoint?: string;
+  model?: string;
   fetcher?: typeof fetch;
   timeoutMs?: number;
 }
@@ -14,13 +16,18 @@ export interface JevPolicyOptions {
 /** Calls Jev with the acting player's public view and returns one legal leaf action ID. */
 export class JevPolicy implements DecisionPolicy {
   private readonly apiKey: string;
+  private readonly endpoint: string;
+  private readonly model: string;
   private readonly fetcher: typeof fetch;
   private readonly timeoutMs: number;
   private readonly view = new ChineseView();
 
   constructor(options: JevPolicyOptions = {}) {
-    this.apiKey = (options.apiKey ?? process.env.JEV_API_KEY ?? '').trim();
-    if (!this.apiKey) throw new Error('缺少 JEV_API_KEY；请设置环境变量或使用本地 .env.local');
+    this.endpoint = modelEndpoint(options.endpoint ?? JEV_ENDPOINT);
+    this.apiKey = (options.apiKey ?? (typeof process !== 'undefined' ? process.env.JEV_API_KEY : '') ?? '').trim();
+    if (!this.apiKey && this.endpoint === JEV_ENDPOINT) throw new Error('缺少 JEV_API_KEY；请设置环境变量或填写 API Key');
+    this.model = options.model?.trim() ?? 'jev-latest';
+    if (!this.model) throw new Error('请填写 Jev 模型名');
     this.fetcher = options.fetcher ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 30_000;
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) throw new Error('Jev 超时时间必须为正数');
@@ -30,12 +37,12 @@ export class JevPolicy implements DecisionPolicy {
     const forced = forcedActionId(decision);
     if (forced !== null) return forced;
     const choices = this.view.choiceSet(observation, decision);
-    const body = JSON.stringify(choices.request());
+    const body = JSON.stringify({ ...choices.request(), model: this.model });
     for (let attempt = 0; attempt < 3; attempt++) {
-      const response = await this.fetcher(JEV_ENDPOINT, {
+      const response = await this.fetcher(this.endpoint, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
           'Content-Type': 'application/json',
         },
         body,

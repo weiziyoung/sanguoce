@@ -10,6 +10,7 @@ const legacyEquipmentLabels = new Set([
  * keep the original fixtures and all action, state and other log comparisons unchanged. */
 export function baselineLog(state: GameState): string[] {
   return state.events.map(event => formatEvent(
+    event.kind === 'damaged' ? { ...event, data: { ...event.data, nature: undefined } } :
     event.kind === 'skillActivated' && legacyEquipmentLabels.has(event.data.ability) ?
       { ...event, data: { ...event.data, label: event.data.ability } } : event,
     state,

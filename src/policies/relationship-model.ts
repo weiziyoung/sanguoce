@@ -1,7 +1,7 @@
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import { nullificationProtectsTarget } from '../domain/action-intent.ts';
 
-const harmfulCards = new Set(['juedou', 'guohe', 'shunshou', 'jiedao']);
+const harmfulCards = new Set(['juedou', 'guohe', 'shunshou', 'jiedao', 'huogong']);
 const helpfulSkills = new Set(['standard.qingnang', 'standard.jieyin']);
 const hostileSkills = new Map([['standard.liuli', 0.3], ['standard.fanjian', 0.45],
   ['standard.tuxi', 0.25]]);

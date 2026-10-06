@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { NAMES, type Card } from '../../catalog.ts';
+import { cardLabel, cardAssetKey, type Card } from '../../catalog.ts';
 import { BOARD } from './layout.ts';
 
 export const COLORS = { ink: 0x111b1a, gold: 0xb2945e, light: 0xf2d299, selected: 0x9ed9c7,
@@ -43,7 +43,8 @@ export function cardView(scene: Phaser.Scene, card: Card, x: number, y: number, 
   container.add([shadow, border]);
   // Adding the equipment-icon frame changes Phaser's default frame; full cards
   // must explicitly keep the original artwork, including its title and rules.
-  if (scene.textures.exists(`card:${card.name}`)) container.add(scene.add.image(0, 0, `card:${card.name}`, '__BASE').setDisplaySize(width, height));
+  const key = cardAssetKey(card);
+  if (scene.textures.exists(`card:${key}`)) container.add(scene.add.image(0, 0, `card:${key}`, '__BASE').setDisplaySize(width, height));
   else container.add(scene.add.rectangle(0, 0, width, height, 0xe5d5ad));
   const rank = ({ 1: 'A', 11: 'J', 12: 'Q', 13: 'K' } as Record<number, string>)[card.rank] ?? String(card.rank);
   const suit = { spade: '♠', heart: '♥', club: '♣', diamond: '♦' }[card.suit];
@@ -53,7 +54,7 @@ export function cardView(scene: Phaser.Scene, card: Card, x: number, y: number, 
   container.add(scene.add.text(-width / 2 + 16, -height / 2 + 39, suit,
     { fontFamily: 'serif', fontSize: '21px', color: red ? '#a02d27' : '#1b2523' }).setOrigin(0.5));
   container.add(scene.add.rectangle(0, height / 2 - 16, width - 7, 25, 0x15211f, 0.96));
-  container.add(text(scene, 0, height / 2 - 15, card.label ?? NAMES[card.name] ?? card.name,
+  container.add(text(scene, 0, height / 2 - 15, cardLabel(card),
     width < 90 ? 13 : 20));
   return { container, border };
 }

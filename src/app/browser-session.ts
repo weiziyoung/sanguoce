@@ -1,4 +1,4 @@
-import type { Decision, Observation } from '../../contracts.ts';
+import type { Decision, DecisionPolicy, Observation } from '../../contracts.ts';
 import type { GeneralCandidate } from './duel-general-selector.ts';
 import type { WebGameDocument } from './web-game-record.ts';
 
@@ -16,5 +16,5 @@ export interface BrowserSession {
   gameDocument(): WebGameDocument;
   start(generalId: string): void;
   choose(optionId: string, decisionId: string): void;
-  computerStep(): void;
+  computerStep(policy?: DecisionPolicy, beforeCommit?: () => Promise<void>): void | Promise<void>;
 }

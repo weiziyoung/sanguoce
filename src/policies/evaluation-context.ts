@@ -1,4 +1,4 @@
-import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry } from '../../catalog.ts';
+import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import { CARD_AI_PROFILE } from '../../card-ai-profile.ts';
 import { RelationshipModel } from './relationship-model.ts';
@@ -33,7 +33,17 @@ export class EvaluationContext {
     if (!card) return 0;
     if (card.name === 'tao') return this.self.hp <= 2 ? 10 : 8;
     if (card.name === 'shan') return this.self.hp <= 2 ? 9 : 7;
-    if (cardTypeOf(card) === 'equip') return CARD_AI_PROFILE[card.name]?.equipValue ?? 3;
+    if (cardTypeOf(card) === 'equip') {
+      const base = CARD_AI_PROFILE[card.name]?.equipValue ?? 3;
+      const own = this.self.hand.some(item => item.id === id) ||
+        Object.values(this.self.equip).some(item => item?.id === id);
+      if (card.name === 'tengjia' && own) {
+        const enemies = this.observation.others.filter(player => player.alive && this.relation(player.id) < -0.3);
+        const fans = enemies.filter(player => player.equip.weapon?.name === 'zhuque' && player.handCount > 0).length;
+        return base - 5 * fans / Math.max(1, enemies.length) - (this.self.chained ? 2 : 0);
+      }
+      return base;
+    }
     const value = CARD_AI_PROFILE[card.name]?.value;
     if (Array.isArray(value)) {
       const duplicates = this.self.hand.filter(item => item.name === card.name && item.id < card.id).length;
@@ -47,7 +57,8 @@ export class EvaluationContext {
   relation(id: number): number { return this.relationships.relation(id); }
 
   /** Physical and transformed Sha share the engine's all-black cost rule. */
-  shaEffect(id: number, costs: readonly number[]): number {
+  shaEffect(id: number, costs: readonly number[], nature?: DamageNature,
+    plan: { extraWine?: number; linked?: readonly number[] } = {}): number {
     const weapon = this.self.equip.weapon;
     const ignoresArmor = weapon?.name === 'qinggang' && !costs.includes(weapon.id);
     const black = costs.length > 0 && costs.every(cid => {
@@ -55,7 +66,51 @@ export class EvaluationContext {
       return card !== undefined && cardColor(card) === 'black';
     });
     if (this.player(id)?.equip.armor?.name === 'renwang' && black && !ignoresArmor) return 0;
+    const attribute = nature ?? (costs.length === 1 ? this.card(costs[0])?.nature : undefined) ?? 'normal';
+    const armor = this.player(id)?.equip.armor?.name;
+    const fan = weapon?.name === 'zhuque' && !costs.includes(weapon.id) && attribute === 'normal';
+    if (armor === 'tengjia' && attribute === 'normal' && !ignoresArmor && !fan) return 0;
+    const bonus = (this.self.drunk ?? 0) + (plan.extraWine ?? 0) +
+      (weapon?.name === 'guding' && !costs.includes(weapon.id) && this.player(id)?.handCount === 0 ? 1 : 0);
+    if (attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
+      const success = Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
+      const direct = this.elementalUtility(id, 1 + bonus, attribute, ignoresArmor, plan.linked);
+      return (fan ? Math.max(direct, this.elementalUtility(id, 1 + bonus, 'fire', false, plan.linked)) : direct) * success;
+    }
     return this.targetEffect('sha', id);
+  }
+
+  chainUtility(id: number, linked?: readonly number[]): number {
+    const player = this.player(id);
+    if (!player?.alive) return 0;
+    const relation = this.relation(id);
+    if (player.chained) return relation * 3;
+    if (relation >= 0) return -relation * 1.8;
+    const others = [this.self, ...this.observation.others].filter(other => other.alive && other.id !== id);
+    const partners = others.filter(other => linked ? linked.includes(other.id) : other.chained);
+    const safePartners = partners.reduce((sum, other) => sum - this.relation(other.id), 0);
+    if (safePartners > 0) return -relation * 1.8 * Math.min(1, safePartners);
+    // A lone enemy cannot propagate damage without also linking our own side.
+    return !partners.length && others.some(other => this.relation(other.id) < -0.3) ? -relation * 0.4 : 0;
+  }
+  /** Includes the publicly linked recipients; armor modifies each recipient once. */
+  elementalUtility(id: number, amount: number, nature: DamageNature, ignoresArmor = false,
+    linked?: readonly number[]): number {
+    const target = this.player(id);
+    if (!target?.alive) return 0;
+    if (nature === 'normal' && target.equip.armor?.name === 'tengjia' && !ignoresArmor) return 0;
+    const adjusted = (player: VisiblePlayer, base: number, ignore: boolean) => ignore ? base :
+      player.equip.armor?.name === 'baiyin' ? Math.min(1, base) :
+        player.equip.armor?.name === 'tengjia' && nature === 'fire' ? base + 1 : base;
+    const first = adjusted(target, amount, ignoresArmor);
+    const utility = (player: VisiblePlayer, value: number) => -this.relation(player.id) *
+      (3.5 * value + (player.hp <= value ? 3 : 0));
+    let result = utility(target, first);
+    if (nature !== 'normal' && (linked ? linked.includes(id) : target.chained)) for (const player of [this.self, ...this.observation.others]) {
+      if (player.id !== id && player.alive && (linked ? linked.includes(player.id) : player.chained))
+        result += utility(player, adjusted(player, first, false));
+    }
+    return result;
   }
 
   /** Utility of a direct one-target effect, before action order and card costs. */
@@ -71,8 +126,12 @@ export class EvaluationContext {
     if (name === 'tao' || name === 'taoyuan') return missing > 0 ? relation * (player.hp <= 1 ? 8 : 4) : 0;
     if (name === 'wuzhong') return relation * 5;
     if (name === 'guohe' || name === 'shunshou') return enemy * (player.handCount + Object.values(player.equip).filter(Boolean).length + player.judge.length > 0 ? 3 : 0);
+    if (name === 'huogong') return this.elementalUtility(id, 1, 'fire');
+    if (name === 'tiesuo') return this.chainUtility(id);
+    if (name === 'bingliang') return enemy * 3;
     if (name === 'lebu') return enemy * (2 + Math.min(2, player.handCount * 0.4));
     if (name === 'shandian') return enemy * 2;
+    if ((name === 'nanman' || name === 'wanjian') && player.equip.armor?.name === 'tengjia') return 0;
     if (name === 'nanman') return enemy * 3 * (1 - response('sha'));
     if (name === 'wanjian') return enemy * 3 * (1 - response('shan'));
     return 0;

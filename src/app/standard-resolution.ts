@@ -1,3 +1,6 @@
+import { prepareAttack, launchAttack, chooseAttackPreparation } from '../rules/flows/attack-use-flow.ts';
+import { handleDamagePropagationTask } from '../rules/flows/damage-flow.ts';
+import { chooseFireReveal, offerFirePayment, chooseFirePayment } from '../content/junzheng/effects.ts';
 import { type TransitionSink } from "../../contracts.ts";
 import { handleAttackDamageTask, handleCixiongChoice, handleCixiongCostChoice, handleGuanshiChoice, handleHanbingChoice, handleHanbingPickChoice, handleHanbingPickTask, handleQilinChoice, handleQinglongChoice, handleShaHitTask, handleShaMissTask, handleShaRespondTask, handleShaStartTask } from "../content/standard/equipment-flow.ts";
 import { handleCardUseStartTask, handleFinishCardTask, handlePlayChoice, handleResolveCardUseTask, handleResolveVirtualTrickTask } from "../content/standard/flows/card-use-flow.ts";
@@ -46,6 +49,11 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     triggerNext: s => resolver.next(s),
     triggerExecute: s => resolver.execute(s),
     attackDamage: handleAttackDamageTask,
+    attackPrepare: s => prepareAttack(s, runtime),
+    attackLaunch: s => launchAttack(s, runtime),
+    damagePropagate: handleDamagePropagationTask,
+    fireAttackPay: offerFirePayment,
+    equipmentLeft: (s, task) => runtime.content.card(s.cards[task.cid].name).leaveEquipment?.(s, task.owner, task.cid),
     cardUseStart: s => handleCardUseStartTask(s, runtime),
     resolveCardUse: (s, task) => handleResolveCardUseTask(s, task, runtime),
     resolveVirtualTrick: (s, task) => handleResolveVirtualTrickTask(s, task, runtime),
@@ -67,7 +75,7 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     judgementTriggers: s => judgements.after(s),
     distributionPoll: s => distributions.poll(s),
     deckReorderPoll: s => deckReorders.poll(s),
-    applyDelayedJudgement: handleApplyDelayedJudgementTask,
+    applyDelayedJudgement: (s, task) => handleApplyDelayedJudgementTask(s, task, runtime),
     applyBaguaJudgement: handleApplyBaguaJudgementTask,
     applyAttackJudgement: (s, task) => skills.applyAttackJudgement(s, task),
     applySkillJudgement: (s, task) => skills.applySkillJudgement(s, task),
@@ -93,15 +101,21 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     resolveTrick: (s, task) => handleResolveTrickTask(s, task, runtime),
     wuguCleanup: handleWuguCleanupTask,
     shaStart: handleShaStartTask,
-    shaRespond: handleShaRespondTask,
+    shaRespond: (s, task) => handleShaRespondTask(s, task, runtime),
     shaMiss: handleShaMissTask,
-    shaHit: handleShaHitTask,
+    shaHit: (s, task) => handleShaHitTask(s, task, runtime),
     hanbingPick: handleHanbingPickTask,
   }, (state, beforeEventCount) => {
-    if (!runtime.triggers.forEvent('cardsLost').length) return;
+    if (state.outcome.status !== 'ongoing' || !state.resolution.stack.length) return;
+    const hasLossTriggers = runtime.triggers.forEvent('cardsLost').length > 0;
     const movements = state.events.slice(beforeEventCount).filter(event => event.kind === 'cardsMoved').reverse();
     for (const event of movements) {
       if (event.kind !== 'cardsMoved') continue;
+      const departures: import('../domain/state.ts').Task[] = [];
+      for (const move of event.data.moves) if (move.from.kind === 'equip' &&
+        state.players[move.from.owner].alive && runtime.content.card(state.cards[move.card].name).leaveEquipment) {
+        departures.push({ kind: 'equipmentLeft', owner: move.from.owner, cid: move.card });
+      }
       const losses = new Map<number, { hand: number[]; equip: number[] }>();
       for (const move of event.data.moves) {
         if (move.from.kind !== 'hand' && move.from.kind !== 'equip') continue;
@@ -111,14 +125,18 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
         losses.set(owner, entry);
       }
       for (const [player, loss] of losses) {
-        if (!runtime.abilities.list(state, player).some(skill => skill.trigger?.event === 'cardsLost')) continue;
+        if (!hasLossTriggers || !runtime.abilities.list(state, player).some(skill => skill.trigger?.event === 'cardsLost')) continue;
         resolutionStack.enqueue(state, { kind: 'openTriggers', signal: {
           kind: 'cardsLost', data: { player, ...loss },
         }, then: [] });
       }
+      if (departures.length) resolutionStack.enqueue(state, ...departures);
     }
   });
   const choices = new ChoiceExecutor({
+    attackPrepare: (s, prompt, data) => chooseAttackPreparation(s, prompt, data, runtime),
+    fireAttackReveal: chooseFireReveal,
+    fireAttackPay: chooseFirePayment,
     play: (s, prompt, data) => handlePlayChoice(s, prompt, data, runtime),
     skillCost: (s, prompt, data) => skills.costChoice(s, prompt, data),
     skillTarget: (s, prompt, data) => skills.targetChoice(s, prompt, data),

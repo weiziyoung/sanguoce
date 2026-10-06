@@ -1,3 +1,4 @@
+import { militaryPlayScore, militaryChoiceScore } from './content/junzheng.ts';
 import { STANDARD_DECK, cardTypeOf, equipSlotOf, type CardName, type DeckEntry } from '../../catalog.ts';
 import type { Choice, Decision, DecisionPolicy, Observation } from '../../contracts.ts';
 import { EvaluationContext } from './evaluation-context.ts';
@@ -47,7 +48,14 @@ export class StrategicPolicy implements DecisionPolicy {
   }
   choose(observation: Observation, decision: Decision): string { return this.rank(observation, decision)[0].id; }
 
-  private play(context: EvaluationContext, action: ScoredAction): number {
+  private play(context: EvaluationContext, decision: Decision, action: ScoredAction, candidates: readonly Choice[]): number {
+    const military = militaryPlayScore(context, action, candidates, choice => {
+      const attack = actionOf(choice);
+      const base = this.evaluations.score(attack.ability ?? attack.transformation, context, decision, choice, attack) ??
+        this.play(context, decision, attack, candidates);
+      return this.evaluations.adjust(context, decision, choice, attack, base) > 0;
+    });
+    if (military !== undefined) return military;
     if (action.type === 'endPlay') return 0;
     if (action.type === 'beginSkill') return -2;
     // A failed proactive request leaves the same decision available and can loop forever.
@@ -67,7 +75,8 @@ export class StrategicPolicy implements DecisionPolicy {
     if (effective === 'shandian') return -1;
     if (physical && cardTypeOf(physical) === 'equip') {
       const old = context.self.equip[equipSlotOf(physical)];
-      const gain = context.value(physical.id) - (old ? context.value(old.id) : 0);
+      const gain = context.value(physical.id) - (old ? context.value(old.id) : 0) +
+        (old?.name === 'baiyin' && context.self.hp < context.self.maxHp ? 4 : 0);
       return gain > 0.5 ? context.order(effective) + gain : -3;
     }
     if (effective === 'taoyuan' || effective === 'nanman' || effective === 'wanjian') {
@@ -78,7 +87,7 @@ export class StrategicPolicy implements DecisionPolicy {
     if (effective === 'wugu') return context.observation.others.every(p => context.relation(p.id) >= 0) ? 2 : -0.5;
     const targets = action.targets ?? [];
     let effect = targets.reduce((sum, id) => sum + (effective === 'sha' ?
-      context.shaEffect(id, costs) : context.targetEffect(effective, id)), 0);
+      context.shaEffect(id, costs, action.type === 'virtualSha' ? 'normal' : undefined) : context.targetEffect(effective, id)), 0);
     if (effective === 'jiedao' && targets.length >= 2) {
       effect = -context.relation(targets[0]) * 1.5 + context.targetEffect('sha', targets[1]) * 0.5;
     }
@@ -88,8 +97,10 @@ export class StrategicPolicy implements DecisionPolicy {
 
   private score(context: EvaluationContext, decision: Decision, choice: Choice, action: ScoredAction): number {
     const target = action.targets?.[0] ?? action.target;
+    const military = militaryChoiceScore(context, decision, action);
+    if (military !== undefined) return military;
     switch (decision.kind) {
-      case 'play': return this.play(context, action);
+      case 'play': return this.play(context, decision, action, leaves(decision.options));
       case 'discard': return -context.value(action.cid);
       case 'respond': {
         if (action.type === 'pass') return 0;
@@ -121,7 +132,7 @@ export class StrategicPolicy implements DecisionPolicy {
         if (action.type !== 'zone') return 0;
         if ((action as { zone?: string }).zone === 'hand') return -relation * 2;
         const card = context.card(action.cid);
-        if (card?.name === 'lebu') return relation * 5;
+        if (card?.name === 'lebu' || card?.name === 'bingliang') return relation * 5;
         return -relation * (card ? context.value(card.id) : 2);
       }
       case 'wugu': return context.value(action.cid);

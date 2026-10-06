@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { saveWebGame } from './web-game-upload.ts';
+import { forwardJev } from './jev-proxy.ts';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -15,6 +16,7 @@ export interface ProductionServerOptions {
   directory: string;
   traceDirectory: string;
   origin?: string;
+  jevFetcher?: typeof fetch;
 }
 
 export function createProductionServer(options: ProductionServerOptions) {
@@ -32,12 +34,13 @@ export function createProductionServer(options: ProductionServerOptions) {
     let pathname: string;
     try { pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname); }
     catch { response.writeHead(400).end(); return; }
-    if (pathname === '/api/web-games') {
+    if (pathname === '/api/web-games' || pathname === '/api/ai/jev') {
       response.setHeader('Cache-Control', 'no-store');
       if (options.origin && request.headers.origin && request.headers.origin !== options.origin) {
         response.writeHead(403).end(); return;
       }
-      await saveWebGame(request, response, options.traceDirectory);
+      if (pathname === '/api/ai/jev') await forwardJev(request, response, options.jevFetcher);
+      else await saveWebGame(request, response, options.traceDirectory);
       return;
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {

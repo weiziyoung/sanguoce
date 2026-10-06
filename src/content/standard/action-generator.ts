@@ -10,12 +10,15 @@ import { SkillFlow } from '../../rules/flows/skill-flow.ts';
 
 function targetAllowed(s: GameState, actor: number, target: number, cardName: CardName,
   rule: TargetRule | undefined, runtime: ContentRuntime): boolean {
-  if (!runtime.queries.canTarget(s, actor, target, cardName)) return false;
+  if (!runtime.queries.canTarget(s, actor, target, cardName, runtime.content.card(cardName).play.allowSelf)) return false;
   switch (rule) {
     case 'distance1Stealable': return runtime.queries.distance(s, actor, target) <=
       runtime.queries.trickDistanceLimit(s, actor, cardName) && stealable(s, target).length > 0;
     case 'stealable': return stealable(s, target).length > 0;
     case 'uniqueTargetJudge': return !person(s, target).judge.some(id => name(s, id) === cardName);
+    case 'hasHand': return person(s, target).hand.length > 0;
+    case 'distance1UniqueJudge': return runtime.queries.distance(s, actor, target) <= runtime.queries.trickDistanceLimit(s, actor, cardName) &&
+      !person(s, target).judge.some(id => name(s, id) === cardName);
     case 'armed': return person(s, target).equip.weapon !== null;
     default: return true;
   }
@@ -29,6 +32,7 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
     const c = card(s, cid);
     const cname = c.name;
     const { play } = runtime.content.card(cname);
+    if (play.availability === 'drink' && (s.jiuUsed ?? 0) >= 1) continue;
     if (play.targeting === 'unplayable') continue;
     if (play.targeting === 'attack' && s.shaUsed >= runtime.queries.shaLimit(s, actor)) continue;
     if (play.availability === 'wounded' && p.hp >= p.maxHp) continue;
@@ -47,12 +51,21 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
       });
       continue;
     }
+    if (play.targeting === 'multiple') {
+      const possible = alive(s).filter(id => (play.allowSelf || id !== actor) &&
+        targetAllowed(s, actor, id, cname, play.targetRule, runtime));
+      const choices = subsets(possible, play.maxTargets ?? 1).map(ids => leaf(`${base}:${ids.join(':')}`,
+        `目标：${ids.map(id => person(s, id).label).join('、')}`, { type: 'play' as const, cid, targets: ids }));
+      if (play.recast) choices.push(leaf(`recast:${cid}`, '重铸：弃置此牌并摸一张牌', { type: 'recast', cid }));
+      if (choices.length) options.push({ id: base, label, children: choices });
+      continue;
+    }
     if (play.targeting === 'none') {
       options.push(leaf(base, label, { type: "play", cid, targets: [] }));
       continue;
     }
     const targets: InternalOption[] = [];
-    for (const other of alive(s).filter(id => id !== actor)) {
+    for (const other of alive(s).filter(id => play.allowSelf || id !== actor)) {
       if (!targetAllowed(s, actor, other, cname, play.targetRule, runtime)) continue;
       if (play.targeting === 'borrowed') {
         const second = alive(s).filter(id => id !== other && runtime.queries.canSha(s, other, id));

@@ -23,7 +23,7 @@ function bestPublicTarget(ctx: EvaluationContext, targetId: number | undefined):
     return Math.max(0, ...Object.values(target.equip).filter((card): card is Card => !!card)
       .map(card => equipmentPriority(card, target)));
   }
-  return target.judge.some(card => card.name === 'lebu' || card.name === 'shandian') ? 8 : 0;
+  return target.judge.some(card => card.name === 'lebu' || card.name === 'bingliang' || card.name === 'shandian') ? 8 : 0;
 }
 
 function qixiCost(ctx: EvaluationContext, id: number | undefined): number {

@@ -1,5 +1,6 @@
 import type { GameAudio } from './audio.ts';
 import type { GamePreferences, GameSettings } from './settings.ts';
+import { AiSettingsPanel } from './ai-settings-panel.ts';
 
 /** Native modal supplies focus containment and makes the underlying DOM inert. */
 export class SettingsPanel {
@@ -7,6 +8,7 @@ export class SettingsPanel {
   private settings: GameSettings;
   constructor(settings: GameSettings, audio: GameAudio, previewSound?: string) {
     this.settings = settings;
+    new AiSettingsPanel(settings);
     const input = (key: keyof GamePreferences) => document.getElementById(`setting-${key}`) as HTMLInputElement;
     for (const key of ['musicVolume', 'effectsVolume'] as const)
       input(key).addEventListener('input', () => settings.update({ [key]: Number(input(key).value) }));

@@ -1,13 +1,13 @@
 export { GameEngine, StandardRuleset } from "./engine.ts";
 export type { GameState } from "./engine.ts";
-export { StandardCardPack, STANDARD_DECK, cardText } from "./catalog.ts";
+export { StandardCardPack, STANDARD_DECK, JUNZHENG_DECK, EXPANDED_DECK, cardText, cardAssetKey, cardLabel } from "./catalog.ts";
 export { RuleBasePolicy, SimpleRulePolicy } from "./policy.ts";
 export { RuleBaseCardEvaluator } from "./rule-base-policy.ts";
 export { CARD_AI_PROFILE, type CardAiProfile } from "./card-ai-profile.ts";
 export { ChineseView, LocalizedChoiceSet } from "./chinese-view.ts";
 export { GameTrace } from "./trace.ts";
 export type { TraceFrame } from "./trace.ts";
-export type { Card, CardName, CardPack, DeckEntry } from "./catalog.ts";
+export type { Card, CardName, CardPack, DeckEntry, DamageNature } from "./catalog.ts";
 export type {
   Choice, Decision, DecisionPolicy, GameConfig, GameOutcome, Observation, PlayerConfig,
   PlayerId, RuleSet, Transition, TransitionSink, VisiblePlayer,
@@ -38,3 +38,6 @@ export type { JevPolicyOptions } from './src/policies/jev-policy.ts';
 export { LayaPolicy } from './src/policies/laya-policy.ts';
 export type { LayaPolicyOptions } from './src/policies/laya-policy.ts';
 export { EvaluationRegistry } from './src/policies/evaluation-registry.ts';
+
+export { junzhengPack } from './src/content/junzheng/content.ts';
+export { expandedContent, contentForCards, type CardSet } from './src/app/game-content.ts';

@@ -1,4 +1,4 @@
-import type { Card, CardLike, CardName } from '../../catalog.ts';
+import type { Card, CardLike, CardName, DamageNature } from '../../catalog.ts';
 import type { Choice, GameOutcome } from '../../contracts.ts';
 import type { DeathContext, ModeState } from './mode.ts';
 import type { RuleEvent, TriggerSignal } from './events.ts';
@@ -11,11 +11,13 @@ export interface PlayerState {
   general?: string;
   group?: 'wei' | 'shu' | 'wu' | 'qun';
   hp: number; maxHp: number; alive: boolean;
+  chained?: boolean; drunk?: number;
   hand: number[]; equip: Equipment; judge: number[];
 }
 export interface AttackContext {
   source: number; target: number; sha: number | CardLike; ignoreDistance?: boolean;
   redirectedBy?: number; forcedBy?: number;
+  nature?: DamageNature; damageBonus?: number; ignoreArmor?: boolean;
 }
 export interface TrickContext {
   trickFrameId: number;
@@ -26,13 +28,18 @@ export interface ZoneContext {
   handAndEquipOnly?: boolean; hanbingRemaining?: number;
 }
 export type ResponseContext =
-  | { mode: 'sha'; actor: number; source: number; sha: number | CardLike; baguaTried?: boolean;
+  | { mode: 'sha'; actor: number; source: number; sha: number | CardLike; nature?: DamageNature; damageBonus?: number; ignoreArmor?: boolean;
+      redirectedBy?: number; forcedBy?: number; baguaTried?: boolean;
       remaining?: number; proxyTried?: boolean }
   | { mode: 'juedou' | 'nanman' | 'wanjian'; actor: number; source: number;
       cardId?: number; cardName?: CardName; baguaTried?: boolean; remaining?: number; proxyTried?: boolean };
 export interface TaskData {
   openTriggers: { signal: TriggerSignal; then: Task[] }; triggerCollect: {}; triggerNext: {}; triggerExecute: {};
   cardUseStart: {}; responsePoll: {}; proxyResponsePoll: {}; proxyResponseSuccess: {};
+  attackPrepare: {}; attackLaunch: {};
+  equipmentLeft: { owner: number; cid: number };
+  fireAttackPay: { source: number; target: number; cid: number; suit: import('../../catalog.ts').Suit };
+  damagePropagate: { target: number; source: number | null; amount: number; card: number | CardLike | null; nature: DamageNature };
   damageApply: {}; dyingPoll: {}; nullifyPoll: {};
   skillExecute: {}; skillEffect: {}; skillDying: {}; skillSelectCost: {}; skillSelectTarget: {};
   distributionPoll: {};
@@ -63,13 +70,16 @@ export interface TaskData {
 export type TaskOf<K extends keyof TaskData> = { kind: K } & TaskData[K];
 export type Task = { [K in keyof TaskData]: TaskOf<K> }[keyof TaskData];
 export interface ActionMap {
-  play: { type: 'play'; cid: number; targets: number[] } |
+  play: { type: 'recast'; cid: number } | { type: 'play'; cid: number; targets: number[] } |
     { type: 'virtualSha'; ids: number[]; targets: number[]; transformation?: string } |
     { type: 'virtualTrick'; cname: CardName; ids: number[]; targets: number[]; transformation: string } |
     { type: 'virtualDelay'; cname: CardName; ids: number[]; targets: number[]; transformation: string } |
     { type: 'proxySha'; ability: string; targets: number[] } |
     { type: 'activeSkill'; ability: string; ids: number[]; targets: number[] } |
     { type: 'beginSkill'; ability: string } | { type: 'endPlay' };
+  attackPrepare: { type: 'yes' } | { type: 'no' };
+  fireAttackReveal: { type: 'reveal'; cid: number };
+  fireAttackPay: { type: 'discard'; cid: number } | { type: 'pass' };
   skillCost: { type: 'toggle'; cid: number } | { type: 'confirm' } | { type: 'cancel' };
   skillTarget: { type: 'select'; targets: number[] };
   skillFollowup: { type: 'choose'; choice: string };
@@ -101,6 +111,9 @@ export interface ActionMap {
   qilin: { type: 'qilin'; cid: number } | { type: 'pass' };
 }
 export interface PromptContextMap {
+  attackPrepare: { ability: string; source: number; targets: number[]; damageBonus: number };
+  fireAttackReveal: { source: number; target: number; cid: number };
+  fireAttackPay: { source: number; target: number; cid: number; suit: import('../../catalog.ts').Suit };
   play: {}; discard: { required: number }; nullify: {}; dying: { target?: number }; wugu: {};
   skillCost: { ability: string; selectedIds: number[] }; skillTarget: { ability: string; selectedIds: number[] };
   skillFollowup: { ability: string; owner: number };
@@ -144,6 +157,7 @@ export interface GameState {
   skillUses?: { owner: number; ability: string; turn: number; count: number }[];
   skillProgress?: { owner: number; ability: string; turn: number; count: number }[];
   virtualJudgeNames?: { card: number; name: CardName }[];
+  jiuUsed?: number; skipDraw?: boolean;
   mode: ModeState; outcome: GameOutcome; events: RuleEvent[]; skipPlay: boolean;
 }
 

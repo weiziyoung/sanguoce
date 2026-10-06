@@ -50,6 +50,8 @@ test('CLI 模式选择进入五人身份局，真实选将与公开身份进入�
     assert.match(run.stdout, /电脑2（甘宁）【未知】/);
     const trace = JSON.parse(readFileSync(path, 'utf8'));
     assert.equal(trace.config.mode, 'identity');
+    assert.equal(trace.config.cards, 'standard');
+    assert.equal(Object.keys(trace.frames[0].state.cards).length, 108);
     assert.equal(trace.config.players.length, 5);
     assert.equal(trace.config.players[2].general, 'standard.xuzhu');
     assert.equal(trace.frames[0].state.mode.roles[0], 'lord');
@@ -73,11 +75,14 @@ test('人类担任主公时可从五名武将中选择，主公额外体力由�
   assert.match(run.stdout, /你（甘宁）【主公】 5\/5血/);
 });
 
-test('五人 CLI 纯 AI 模式能运行至阵营胜负', () => {
-  const run = spawnSync(process.execPath, ['cli.ts', '--demo', '--mode', 'identity', '--seed', '7', '--no-color'], {
-    cwd: process.cwd(), encoding: 'utf8', timeout: 30_000,
+test('五人 CLI 显式选择军争，纯 AI 模式能运行至阵营胜负', () => {
+  // The military seed includes a long recovery-heavy game; retain its actual
+  // victory assertion and the CLI's 5000-decision bound, allowing CPU contention.
+  const run = spawnSync(process.execPath, ['cli.ts', '--demo', '--mode', 'identity', '--cards', 'junzheng', '--seed', '7', '--no-color'], {
+    cwd: process.cwd(), encoding: 'utf8', timeout: 60_000,
   });
   assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /标准＋军争牌包/);
   assert.match(run.stdout, /结果：.+获胜；共 \d+ 次决策/);
   assert.match(run.stdout, /【忠臣】/);
   assert.match(run.stdout, /【内奸】/);

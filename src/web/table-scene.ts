@@ -2,9 +2,9 @@ import Phaser from 'phaser';
 import { NAMES, type Card } from '../../catalog.ts';
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import type { BrowserSession } from '../app/browser-session.ts';
-import { standardContent } from '../content/standard/content.ts';
+import { expandedContent } from '../app/game-content.ts';
 import { STANDARD_SKILL_HELP } from '../content/standard/skill-help.ts';
-import { STANDARD_EQUIPMENT_HELP } from '../content/standard/equipment-help.ts';
+import { EQUIPMENT_HELP } from '../presentation/equipment-help.ts';
 import type { ActionChoice } from '../presentation/choice-view.ts';
 import { TableInteraction } from './interaction-model.ts';
 import { TableAssets } from './assets.ts';
@@ -22,10 +22,10 @@ import { PlayerVitalsPresenter, type PlayerVitalsState } from './player-vitals.t
 import { HEALTH_PIP_STATES, healthPips, healthPipTexture, healthPipSourceTexture, healthPipLayout } from './health-pips.ts';
 import { bindSceneSettings, type GameSettings } from './settings.ts';
 import { unavailableSkillDetail } from './skill-availability.ts';
+import { factionBanner, identityToken } from './portrait-badges.ts';
+import { AiController } from './ai-controller.ts';
 
 interface CardSprite { card: Card; view: Phaser.GameObjects.Container; border: Phaser.GameObjects.Rectangle; home: Point; order: number; }
-const GROUPS = { wei: '魏', shu: '蜀', wu: '吴', qun: '群' };
-const ROLE_MARKS: Record<string, string> = { lord: '主', loyalist: '忠', rebel: '反', renegade: '内' };
 const REORDER = { top: { x: 1175, y: 442, width: 180, height: 85 }, bottom: { x: 1175, y: 548, width: 180, height: 85 } };
 
 export class TableScene extends Phaser.Scene {
@@ -48,6 +48,9 @@ export class TableScene extends Phaser.Scene {
   private dragging = false;
   private dragAllowed = false;
   private roleNotes = new Map<number, '?' | 'loyalist' | 'rebel' | 'renegade'>();
+  private ai!: AiController;
+  private aiPaused = false;
+  private disposed = false;
   constructor(private session: BrowserSession, private assets: TableAssets, private audio: GameAudio,
     private settings: GameSettings) { super('table'); }
   preload() {
@@ -59,6 +62,17 @@ export class TableScene extends Phaser.Scene {
     }
   }
   create() {
+    this.disposed = false;
+    this.ai = new AiController(this.settings);
+    const retry = () => { if (!this.busy && !this.disposed) void this.run(); };
+    node('ai-retry').onclick = retry;
+    node('ai-configure').onclick = () => node('settings').click();
+    let settingsWereOpen = this.settings.open;
+    const unsubscribe = this.settings.subscribe(() => {
+      const closed = settingsWereOpen && !this.settings.open;
+      settingsWereOpen = this.settings.open;
+      if (closed && !this.busy && !this.session.finished && this.session.decision?.actor !== this.session.humanSeat) retry();
+    });
     this.assets.prepareHealthPips(this);
     this.roleNotes.clear();
     background(this);
@@ -73,7 +87,11 @@ export class TableScene extends Phaser.Scene {
     this.input.on('dragstart', (_p: Phaser.Input.Pointer, view: Phaser.GameObjects.Container) => this.dragStart(view));
     this.input.on('drag', (p: Phaser.Input.Pointer, view: Phaser.GameObjects.Container, x: number, y: number) => this.drag(p, view, x, y));
     this.input.on('dragend', (p: Phaser.Input.Pointer, view: Phaser.GameObjects.Container) => this.dragEnd(p, view));
-    this.events.once('shutdown', () => { this.effects.dispose(); this.hud.preview(); });
+    this.events.once('shutdown', () => {
+      this.disposed = true; this.ai.dispose(); unsubscribe();
+      node('ai-retry').onclick = null; node('ai-configure').onclick = null;
+      this.effects.dispose(); this.hud.preview();
+    });
     this.lastEvent = Math.max(0, ...this.session.observation.events.map(e => e.id));
     bindSceneSettings(this, this.settings);
     void this.run();
@@ -88,11 +106,11 @@ export class TableScene extends Phaser.Scene {
   private skills(): SkillTile[] {
     const general = this.session.observation.self.general;
     if (!general) return [];
-    const definitions = standardContent.general(general).abilities.map(id => standardContent.requireSkill(id));
+    const definitions = expandedContent.general(general).abilities.map(id => expandedContent.requireSkill(id));
     // Equipment conversions use the same legal-action projection as general skills.
     const abilityIds = [...new Set(this.model?.leaves.map(c => c.ability).filter((id): id is string => Boolean(id)))];
     for (const id of abilityIds) {
-      const definition = standardContent.skills().find(s => s.id === id || s.transformations?.some(t => t.id === id));
+      const definition = expandedContent.skills().find(s => s.id === id || s.transformations?.some(t => t.id === id));
       if (definition && !definitions.includes(definition)) definitions.push(definition);
     }
     return definitions.map(skill => {
@@ -101,8 +119,12 @@ export class TableScene extends Phaser.Scene {
       const resolving = context?.ability === skill.id;
       const selected = resolving || Boolean(this.model?.focus && matches.some(c => c.id === this.model?.focus?.id || this.model?.focus?.children.some(child => child.id === c.id)));
       const automatic = skill.drawPhase?.optional === false || skill.trigger?.optional === false;
-      return { label: skill.label ?? skill.id, active: matches.length > 0, selected,
-        detail: resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || skill.transformation || skill.transformations ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : '被动 / 时机触发',
+      const conversion = Boolean(skill.transformation || skill.transformations);
+      return { id: skill.id, label: skill.label ?? skill.id, active: matches.length > 0, selected,
+        seal: skill.lordSkill ? '主公' : skill.active ? '主动' : conversion ? '转化' : automatic ? '自动' : skill.modifier ? '常驻' : '触发',
+        passive: !skill.active && !conversion,
+        help: STANDARD_SKILL_HELP[skill.id] ?? EQUIPMENT_HELP[skill.id.replace(/^(standard|junzheng)\./, '')] ?? '',
+        detail: resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || conversion ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : skill.modifier ? '常驻生效' : '等待触发时机',
         choose: () => {
           if (!this.ready || !matches.length) return;
           if (selected) { this.clear(); return; }
@@ -112,9 +134,12 @@ export class TableScene extends Phaser.Scene {
         } };
     });
   }
-  private renderHud() { this.hud.render(this.session.observation, this.model, this.busy, this.skills(),
-    c => { void this.submit(c); }, choices => { void this.run(choices); }, () => this.clear(),
-    choice => { this.model?.scope(choice); this.updateSelection(); }); }
+  private renderHud() {
+    this.hud.render(this.session.observation, this.model, this.busy, this.skills(),
+      c => { void this.submit(c); }, choices => { void this.run(choices); }, () => this.clear(),
+      choice => { this.model?.scope(choice); this.updateSelection(); });
+    if (this.aiPaused && !this.busy) node('prompt').textContent = 'AI 决策暂停 · 请重试或修改设置';
+  }
   private async refresh() {
     const obs = this.session.observation;
     await this.assets.ensure(this, obs);
@@ -125,6 +150,7 @@ export class TableScene extends Phaser.Scene {
     if (events.length) for (const card of this.tablePreviewCards) card.view.setVisible(false);
     for (const event of events) {
       await this.settings.whenClosed();
+      if (event.kind === 'skillActivated' && event.data.owner === obs.self.id) this.hud.flashSkill(event.data.ability);
       const transfer = zoneCardEffect(event, obs);
       const discarded = discardTableCard(event, obs);
       let origin: Point | undefined;
@@ -167,6 +193,9 @@ export class TableScene extends Phaser.Scene {
   private async run(choice?: ActionChoice | ActionChoice[]) {
     if (choice && (!this.ready || !this.model)) return;
     const decisionId = this.model?.decision.id;
+    this.aiPaused = false;
+    node('error').textContent = '';
+    node('ai-recovery').classList.add('hidden');
     this.busy = true; this.highlights.clear(); this.arrow.clear(); this.hud.preview(); this.renderHud();
     try {
       if (Array.isArray(choice)) {
@@ -202,12 +231,17 @@ export class TableScene extends Phaser.Scene {
         const delay = fivePlayer ? decision.kind === 'play' || decision.kind === 'skillTarget' ? 850 : 530 : 360;
         await new Promise(resolve => this.time.delayedCall(delay, resolve));
         await this.settings.whenClosed();
-        this.session.computerStep(); await this.refresh();
+        await this.ai.step(this.session, label => { node('prompt').textContent = label; });
+        if (this.disposed) return;
+        await this.refresh();
       }
     } catch (error) {
+      if (this.disposed) return;
       console.error(error);
       node('error').textContent = error instanceof Error ? error.message : String(error);
-    } finally { this.pendingHandOrigin = null; this.busy = false; this.updateSelection(); }
+      this.aiPaused = !this.session.finished && this.session.decision?.actor !== this.session.humanSeat;
+      node('ai-recovery').classList.toggle('hidden', !this.aiPaused);
+    } finally { this.pendingHandOrigin = null; this.busy = false; if (!this.disposed) this.updateSelection(); }
   }
   private submit(choice: ActionChoice) { return this.run(choice); }
   private reflowHand(obs: Observation): void {
@@ -270,8 +304,7 @@ export class TableScene extends Phaser.Scene {
     const nameX = x - w / 2 + 19;
     const name = this.track(text(this, nameX, y - h / 2 + 43, player.label.split('').join('\n'),
       player.label.length > 2 ? 22 : 24).setOrigin(0.5, 0).setLineSpacing(0));
-    this.track(this.add.circle(x - w / 2 + 19, y - h / 2 + 13, 23, 0x233d31).setStrokeStyle(1, 0x879986));
-    this.track(text(this, x - w / 2 + 19, y - h / 2 + 13, player.group ? GROUPS[player.group] : '将', 25));
+    this.track(factionBanner(this, nameX, y - h / 2 + 13, player.group));
     this.track(this.add.rectangle(x + 16, y + h / 2 - 20, w - 47, 31, 0x091714, 0.94));
     const label = this.track(text(this, x + 16, y + h / 2 - 20, `${player.hp} / ${player.maxHp}`, 21));
     const pipLayout = healthPipLayout(name.y + name.height, y + h / 2, player.maxHp);
@@ -280,6 +313,8 @@ export class TableScene extends Phaser.Scene {
         .setDisplaySize(pipLayout[i].size, pipLayout[i].size)));
     const death = this.track(text(this, x, y, '阵 亡', 40, '#c78c7b').setDepth(75).setVisible(!player.alive));
     this.vitalsViews.set(player.id, { label, pips, death });
+    const status = [player.chained ? '连环' : '', player.drunk ? '酒＋1' : ''].filter(Boolean).join(' · ');
+    if (status) this.track(text(this, x + 15, y - h / 2 + 48, status, 18, '#f3d394').setDepth(76));
     if (!self) {
       const pocket = handPosition(player.id, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
       this.track(cardBack(this, pocket.x, pocket.y, 54, 76).setDepth(2));
@@ -294,18 +329,18 @@ export class TableScene extends Phaser.Scene {
       const markerX = x + w / 2 - 16, markerY = y - h / 2 + 17;
       const known = Boolean(player.role);
       const note = this.roleNotes.get(player.id) ?? '?';
-      const marker = this.track(this.add.circle(markerX, markerY, 23, 0x102b28, 0.98)
-        .setStrokeStyle(1, known ? 0x9dad91 : 0xa1b5a6).setDepth(70));
-      const glyph = this.track(text(this, markerX, markerY, known ? ROLE_MARKS[player.role!] :
-        note === '?' ? '?' : ROLE_MARKS[note], 23, '#f3d394').setDepth(71));
+      const token = identityToken(this, markerX, markerY, player.role, note);
+      const marker = this.track(token.view.setDepth(70));
       if (!known) {
         marker.setInteractive({ useHandCursor: true });
+        marker.on('pointerover', () => marker.setAlpha(0.85));
+        marker.on('pointerout', () => marker.setAlpha(1));
         marker.on('pointerup', (pointer: Phaser.Input.Pointer) => {
           if (!pointer.leftButtonReleased()) return;
           const options = ['?', 'loyalist', 'rebel', 'renegade'] as const;
           const next = options[(options.indexOf(this.roleNotes.get(player.id) ?? '?') + 1) % options.length];
           this.roleNotes.set(player.id, next);
-          glyph.setText(next === '?' ? '?' : ROLE_MARKS[next]);
+          token.update(next);
         });
       }
     }
@@ -313,10 +348,10 @@ export class TableScene extends Phaser.Scene {
     hit.on('pointerup', (p: Phaser.Input.Pointer) => { if (p.leftButtonReleased() && this.ready && this.model?.selectTarget(player.id)) this.updateSelection(); });
     hit.on('pointerover', () => {
       if (this.dragging || this.model?.nextTargets.includes(player.id)) return;
-      const abilities = player.general ? standardContent.general(player.general).abilities : [];
+      const abilities = player.general ? expandedContent.general(player.general).abilities : [];
       this.hud.preview(this.assets.manifest.generals[player.general ?? ''],
-        `${player.label} · ${player.general ? standardContent.general(player.general).label : '武将'}`,
-        abilities.map(id => ({ title: standardContent.requireSkill(id).label ?? id,
+        `${player.label} · ${player.general ? expandedContent.general(player.general).label : '武将'}`,
+        abilities.map(id => ({ title: expandedContent.requireSkill(id).label ?? id,
           body: STANDARD_SKILL_HELP[id] ?? '技能详情暂缺' })));
     });
     hit.on('pointerout', () => this.hud.preview());
@@ -369,7 +404,7 @@ export class TableScene extends Phaser.Scene {
     chip.on('pointerover', () => {
       label.setColor('#bcebd5');
       this.hud.preview(this.assets.manifest.cards[card.name], NAMES[card.name] ?? card.name,
-        [{ title: '装备效果', body: STANDARD_EQUIPMENT_HELP[card.name] ?? '装备效果详见牌面。' }]);
+        [{ title: '装备效果', body: EQUIPMENT_HELP[card.name] ?? '装备效果详见牌面。' }]);
     });
     chip.on('pointerout', () => { label.setColor('#f3e4bd'); this.hud.preview(); });
     chip.on('pointerup', (pointer: Phaser.Input.Pointer) => {

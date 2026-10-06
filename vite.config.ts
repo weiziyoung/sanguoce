@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import { saveWebGame } from './src/web/web-game-upload.ts';
+import { forwardJev } from './src/web/jev-proxy.ts';
 
 export default defineConfig(({ mode, command, isPreview }) => {
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env };
@@ -15,9 +16,11 @@ export default defineConfig(({ mode, command, isPreview }) => {
   plugins: [{
     name: 'web-game-upload',
     configureServer(server) {
+      server.middlewares.use(`${appBase}api/ai/jev`, (request, response) => { void forwardJev(request, response); });
       server.middlewares.use(`${appBase}api/web-games`, (request, response) => { void saveWebGame(request, response); });
     },
     configurePreviewServer(server) {
+      server.middlewares.use(`${appBase}api/ai/jev`, (request, response) => { void forwardJev(request, response); });
       server.middlewares.use(`${appBase}api/web-games`, (request, response) => { void saveWebGame(request, response); });
     },
   }],

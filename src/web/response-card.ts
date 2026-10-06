@@ -21,7 +21,7 @@ export function responseCard(event: VisibleEvent, obs: Observation): ResponseCar
   if (last?.kind !== 'discarded' || last.data.reason !== 'respond') return null;
   const physical = obs.eventCards?.[last.data.card];
   return physical ? { player: event.data.owner,
-    card: { ...physical, name: event.data.produces ?? 'sha', label: undefined } } : null;
+    card: { ...physical, name: event.data.produces ?? 'sha', nature: undefined, label: undefined } } : null;
 }
 
 function fromCard(player: number, id: number, obs: Observation): ResponseCard | null {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { contentForCards, type CardSet } from './src/app/game-content.ts';
 import readline from "node:readline/promises";
 import { randomInt } from "node:crypto";
 import { stdin, stdout } from "node:process";
@@ -19,6 +20,10 @@ import type { Choice, Decision, GameConfig } from "./contracts.ts";
 import { forcedActionId } from "./src/domain/forced-choice.ts";
 
 const args = process.argv.slice(2);
+const cardsPosition = args.indexOf('--cards');
+const requestedCards = cardsPosition >= 0 ? args[cardsPosition + 1] : 'standard';
+if (!['standard', 'junzheng'].includes(requestedCards ?? '')) { console.error('请在 --cards 后指定 standard 或 junzheng'); process.exit(2); }
+const cards = requestedCards as CardSet;
 const demo = args.includes("--demo");
 const modePosition = args.indexOf('--mode');
 const requestedMode = modePosition >= 0 ? args[modePosition + 1] : undefined;
@@ -49,8 +54,8 @@ const input = rl?.[Symbol.asyncIterator]();
 const view = new ChineseView();
 const terminal = new TerminalView(view);
 const policy = requestedAi === 'jev' ? new JevPolicy() :
-  requestedAi === 'laya' ? new LayaPolicy() : new StrategicPolicy();
-const aiLabel = requestedAi === 'jev' ? 'Jev' : requestedAi === 'laya' ? 'Laya' : '技能策略 v1';
+  requestedAi === 'laya' ? new LayaPolicy() : new StrategicPolicy(undefined, contentForCards(cards).deck);
+const aiLabel = requestedAi === 'jev' ? 'Jev' : requestedAi === 'laya' ? 'Laya' : `规则策略 ${policy instanceof StrategicPolicy ? policy.version : ""}`;
 let steps = 0;
 let trace: GameTrace<GameState> | null = null;
 let humanSeat = 0;
@@ -188,12 +193,13 @@ try {
       }
     }
     if (chosen && config) {
+      config.cards = cards;
       trace = dumpPath ? new GameTrace<GameState>(config, {
         我方: demo ? aiLabel : "人工决策",
         对手: aiLabel,
       }) : null;
       const game = GameEngine.standard(config, trace);
-      if (demo) stdout.write(`${GAME_NAME} ${mode === 'identity' ? '标准五人身份局' : '1v1'} · 标准对照牌包 · 随机种子 ${seed}\n${summary}\n`);
+      if (demo) stdout.write(`${GAME_NAME} ${mode === 'identity' ? '标准五人身份局' : '1v1'} · ${cards === 'junzheng' ? '标准＋军争牌包' : '标准牌包'} · 随机种子 ${seed}\n${summary}\n`);
       else openingSummary = summary;
       while (!game.finished && steps < 5000) {
         const current = game.getDecision();

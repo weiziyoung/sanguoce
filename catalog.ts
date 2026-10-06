@@ -1,15 +1,20 @@
 import standardDeck from './standard-deck.json' with { type: 'json' };
+import junzhengDeck from './junzheng-deck.json' with { type: 'json' };
+import { JUNZHENG_CARD_SPECS } from './src/content/junzheng/card-specs.ts';
 import { STANDARD_CARD_SPECS } from './src/content/standard/card-specs.ts';
 
 export type StandardCardName = (typeof STANDARD_CARD_SPECS)[number]['id'];
 export type CardName = string;
-export const NAMES = Object.freeze(Object.fromEntries(STANDARD_CARD_SPECS.map(card => [card.id, card.label])) as Record<CardName, string>);
+export type DamageNature = 'normal' | 'fire' | 'thunder';
+export const CARD_SPECS = [...STANDARD_CARD_SPECS, ...JUNZHENG_CARD_SPECS] as const;
+export const NAMES = Object.freeze(Object.fromEntries(CARD_SPECS.map(card => [card.id, card.label])) as Record<CardName, string>);
 export type Suit = "spade" | "club" | "heart" | "diamond";
 export interface Card {
   id: number;
   name: CardName;
   suit: Suit;
   rank: number;
+  nature?: DamageNature;
   /** Present when a registered pack adds a name outside the standard catalog. */
   label?: string;
   kind?: 'basic' | 'trick' | 'delay' | 'equip';
@@ -20,6 +25,7 @@ export interface VirtualCard {
   suit: Suit | null;
   color?: "red" | "black" | "none";
   virtual: true;
+  nature?: DamageNature;
 }
 export type CardLike = Card | VirtualCard;
 export type DeckEntry = Omit<Card, "id">;
@@ -30,24 +36,41 @@ export interface CardPack {
 export const STANDARD_DECK = standardDeck as DeckEntry[];
 if (STANDARD_DECK.length !== 108) throw new Error("标准牌堆必须有108张牌");
 
+export const JUNZHENG_DECK = junzhengDeck as DeckEntry[];
+if (JUNZHENG_DECK.length !== 52) throw new Error('军争牌堆必须有52张牌');
+export const EXPANDED_DECK: readonly DeckEntry[] = Object.freeze([...STANDARD_DECK, ...JUNZHENG_DECK]);
+
+/** Presentation key; all elemental attacks retain name=sha. */
+export function cardAssetKey(card: CardLike): string {
+  return card.name === 'sha' && card.nature && card.nature !== 'normal' ?
+    card.nature === 'fire' ? 'huosha' : 'leisha' : card.name;
+}
+export function cardLabel(card: CardLike): string {
+  if (card.name === 'sha' && card.nature === 'fire') return '火杀';
+  if (card.name === 'sha' && card.nature === 'thunder') return '雷杀';
+  const label = ('label' in card ? card.label : undefined) ?? NAMES[card.name];
+  if (!label) throw new Error(`卡牌中文映射缺失：${card.name}`);
+  return label;
+}
+
 export class StandardCardPack implements CardPack {
   readonly cards: readonly DeckEntry[] = STANDARD_DECK;
   displayName(name: CardName): string { return NAMES[name]; }
 }
 
-const byName = Object.fromEntries(STANDARD_CARD_SPECS.map(card => [card.id, card])) as Partial<Record<CardName, (typeof STANDARD_CARD_SPECS)[number]>>;
+const byName = Object.fromEntries(CARD_SPECS.map(card => [card.id, card])) as Partial<Record<CardName, (typeof CARD_SPECS)[number]>>;
 export const WEAPON_RANGE: Partial<Record<CardName, number>> = Object.freeze(Object.fromEntries(
-  STANDARD_CARD_SPECS.filter(card => 'range' in card).map(card => [card.id, 'range' in card ? card.range : 0])));
-export const ARMORS: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => 'slot' in card && card.slot === 'armor').map(card => card.id));
-export const PLUS_HORSES: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => 'slot' in card && card.slot === 'plusHorse').map(card => card.id));
-export const MINUS_HORSES: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => 'slot' in card && card.slot === 'minusHorse').map(card => card.id));
-export const DELAYS: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => card.kind === 'delay').map(card => card.id));
-export const BASICS: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => card.kind === 'basic').map(card => card.id));
-export const TRICKS: ReadonlySet<CardName> = new Set(STANDARD_CARD_SPECS.filter(card => card.kind === 'trick').map(card => card.id));
+  CARD_SPECS.filter(card => 'range' in card).map(card => [card.id, 'range' in card ? card.range : 0])));
+export const ARMORS: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => 'slot' in card && card.slot === 'armor').map(card => card.id));
+export const PLUS_HORSES: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => 'slot' in card && card.slot === 'plusHorse').map(card => card.id));
+export const MINUS_HORSES: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => 'slot' in card && card.slot === 'minusHorse').map(card => card.id));
+export const DELAYS: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => card.kind === 'delay').map(card => card.id));
+export const BASICS: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => card.kind === 'basic').map(card => card.id));
+export const TRICKS: ReadonlySet<CardName> = new Set(CARD_SPECS.filter(card => card.kind === 'trick').map(card => card.id));
 
 export function cardType(name: CardName): "basic" | "trick" | "delay" | "equip" {
   const definition = byName[name];
-  if (!definition) throw new Error(`未知标准牌：${name}`);
+  if (!definition) throw new Error(`未知卡牌：${name}`);
   return definition.kind;
 }
 export function equipSlot(name: CardName): "weapon" | "armor" | "plusHorse" | "minusHorse" {
@@ -69,7 +92,7 @@ export function cardColor(card: CardLike): "red" | "black" | "none" {
 export function cardText(card: Card): string {
   const suit = { spade: "♠", club: "♣", heart: "♥", diamond: "♦" }[card.suit];
   const rank = ({ 1: "A", 11: "J", 12: "Q", 13: "K" } as Record<number, string>)[card.rank] ?? card.rank;
-  const name = card.label ?? NAMES[card.name];
+  const name = cardLabel(card);
   if (!name || !suit) throw new Error("卡牌中文映射缺失");
   return `【${name}】${suit}${rank}`;
 }

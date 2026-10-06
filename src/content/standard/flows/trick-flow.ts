@@ -1,3 +1,4 @@
+import { beginAttackUse } from '../../../rules/flows/attack-use-flow.ts';
 import { emitEvent } from '../../../domain/event-journal.ts';
 import { resolutionStack } from "../../../domain/resolution-stack.ts";
 import { cardText, type CardName } from "../../../../catalog.ts";
@@ -53,7 +54,10 @@ export function chooseZoneOptions(s: GameState, target: number, mode: ZoneContex
 export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentRuntime = getStandardRuntime()): void {
   const { cname, source, target, cid } = task;
   if (!person(s, target).alive) return;
-  const effect = runtime.content.card(cname).effect;
+  const definition = runtime.content.card(cname);
+  if (!runtime.queries.trickEffective(s, target, cname)) return;
+  if (definition.trickEffect) { definition.trickEffect(s, task, runtime); return; }
+  const effect = definition.effect;
   if (effect === 'drawTwo') draw(s, target, 2);
   else if (effect === 'recoverOne') {
     const p = person(s, target);
@@ -92,7 +96,8 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
 
 export function handleTrickTargetTask(s: GameState, task: TaskOf<"trickTarget">,
   runtime: ContentRuntime = getStandardRuntime()): void {
-  if (runtime.queries.canTarget(s, task.source, task.target, task.cname) || task.source === task.target) {
+  if ((runtime.queries.canTarget(s, task.source, task.target, task.cname) || task.source === task.target) &&
+    runtime.queries.trickEffective(s, task.target, task.cname)) {
     const effect: Task = { ...task, kind: "resolveTrick" };
     beginNullify(s, effect, null, task.source, task.target, task.cname);
   }
@@ -141,8 +146,7 @@ export function handleJiedaoChoice(s: GameState, prompt: PromptOf<"jiedao">, dat
   if (data.type === "jiedaoSha") {
     const used = spendSha(s, actor, data.ids, 'respond', runtime, data.transformation);
     emitEvent(s, 'borrowedAttack', { player: actor });
-    push(s, { kind: "shaStart", source: actor, target: prompt.context.target, sha: used,
-      ignoreDistance: false, forcedBy: prompt.context.source });
+    beginAttackUse(s, actor, used, [prompt.context.target], runtime, { ignoreDistance: false, forcedBy: prompt.context.source });
   } else {
     const weapon = person(s, actor).equip.weapon;
     if (weapon) takeOwned(s, actor, prompt.context.source, weapon);

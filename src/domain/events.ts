@@ -1,4 +1,4 @@
-import type { CardLike, CardName } from '../../catalog.ts';
+import type { CardLike, CardName, DamageNature } from '../../catalog.ts';
 import type { AttackContext } from './state.ts';
 import type { CardZone } from './zones.ts';
 
@@ -7,7 +7,7 @@ export interface TriggerSignals {
   attackMissed: AttackContext;
   beforeAttackDamage: AttackContext;
   cardUsed: { source: number; card: number; targets: number[]; effectiveName?: CardName };
-  damageTaken: { target: number; source: number | null; amount: number; card: number | CardLike | null };
+  damageTaken: { target: number; source: number | null; amount: number; card: number | CardLike | null; nature?: DamageNature };
   judgementApplied: { player: number; reason: CardName; card: number };
   cardsLost: { player: number; hand: number[]; equip: number[] };
 }
@@ -20,6 +20,11 @@ export interface EventData extends TriggerSignals {
   hpChanged: { player: number; before: number; after: number };
   hpLost: { player: number; amount: number };
   triggerInvoked: { definition: string; owner: number; eventId: number };
+  chainChanged: { player: number; chained: boolean };
+  wineUsed: { player: number; bonus: number };
+  cardRecast: { player: number; card: number };
+  cardRevealed: { player: number; card: number; cause: CardName };
+  drawSkipped: { player: number };
   drawn: { player: number; count: number };
   judged: { player: number; reason: CardName; reasonLabel?: string; card: number };
   judgementReplaced: { player: number; owner: number; reason: CardName; reasonLabel?: string;
@@ -34,7 +39,7 @@ export interface EventData extends TriggerSignals {
   equipped: { player: number; card: number; replaced: boolean };
   recovered: { player: number; source?: number; amount: number };
   damaged: { target: number; source: number | null; amount: number; hp: number; maxHp: number;
-    card: number | CardLike | null; redirectedBy?: number; forcedBy?: number };
+    card: number | CardLike | null; nature?: DamageNature; propagated?: boolean; redirectedBy?: number; forcedBy?: number };
   dying: { target: number };
   died: { target: number; source?: number | null };
   reshuffled: {};

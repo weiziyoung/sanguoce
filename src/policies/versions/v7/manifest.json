@@ -1,0 +1,151 @@
+{
+  "version": "v7",
+  "createdAt": "2026-10-05T03:01:42.221Z",
+  "scope": "Rule AI source; engine and card catalog remain shared.",
+  "files": [
+    {
+      "source": "src/policies/strategic-policy.ts",
+      "file": "strategic-policy.ts",
+      "sourceSha256": "18a16b4b442b8646dc0c3c6b70bf96767012978595db5f54c6a33f1e011c8710",
+      "sha256": "08bbcc1f4db6512102e7d08de326f9d8fc81d25b4ac134c270f63256a5da596a"
+    },
+    {
+      "source": "src/policies/response-plan.ts",
+      "file": "response-plan.ts",
+      "sourceSha256": "ce88f21c71c2ac23f781dc583853536aa0b8865fd774543369a9fe53c44774ec",
+      "sha256": "c0d80fcecca6c87c82cfa4180c5ae2d7b9ecfc5230a4e85a258dc5cc0ff0e721"
+    },
+    {
+      "source": "src/policies/evaluation-registry.ts",
+      "file": "evaluation-registry.ts",
+      "sourceSha256": "fc1f173f85b9857e8880bdd7f3d58517f3a4a9b0681959d403e2c3fe628da11f",
+      "sha256": "8f3034c9fce3314ed824aab78fcee406a4f85d5869f7a2f124979b2d1fa01333"
+    },
+    {
+      "source": "src/policies/evaluation-context.ts",
+      "file": "evaluation-context.ts",
+      "sourceSha256": "286d39bc3307e19e0d610b80ae8fa17b9c6fd88ef96914858ae28eafb7c52358",
+      "sha256": "82cf449d860ebb0ff5a1bb1b97a036b24a6063f0add1317828748841c12ce7f4"
+    },
+    {
+      "source": "src/policies/relationship-model.ts",
+      "file": "relationship-model.ts",
+      "sourceSha256": "2295cafdf57864f2560e811b52b1c22c850a6c93741ed0cadfe79a8861f8e27e",
+      "sha256": "c8d8438a2dd2656f3be93888969f935c2b7861b498bc231500a9e13f52965348"
+    },
+    {
+      "source": "src/domain/action-intent.ts",
+      "file": "action-intent.ts",
+      "sourceSha256": "68f40445ae4f52150a09c4cce78fec44a727af320a1a6da4d35636b9e784a59b",
+      "sha256": "6e5862292cec26b88ea202694e553d5abc73532c3aa735986c0efed6f21b44ee"
+    },
+    {
+      "source": "card-ai-profile.ts",
+      "file": "card-ai-profile.ts",
+      "sourceSha256": "3102705537db707554b478c64d8c48a36dffe4275872824a300d45745670abdf",
+      "sha256": "3eae3ccc46fff01d6e904890af60810a1cc01b76528f8db0c151e6b4b7f3ed86"
+    },
+    {
+      "source": "src/policies/rule-policy-version.ts",
+      "file": "rule-policy-version.ts",
+      "sourceSha256": "0be3f395d7262a06fd10e90d1ff7196d38a7d476764b272fffa645191abaabdf",
+      "sha256": "0be3f395d7262a06fd10e90d1ff7196d38a7d476764b272fffa645191abaabdf"
+    },
+    {
+      "source": "src/policies/content/standard-skills.ts",
+      "file": "content/standard-skills.ts",
+      "sourceSha256": "8fe921e9dbce019c5132973ce744587a42a1f0dc889a87d42f6b53b495d5825d",
+      "sha256": "8fe921e9dbce019c5132973ce744587a42a1f0dc889a87d42f6b53b495d5825d"
+    },
+    {
+      "source": "src/policies/content/standard/ganning.ts",
+      "file": "content/standard/ganning.ts",
+      "sourceSha256": "9ab611eadffc34fb0a03f0081e514e85ec46f93b5410e05c197b04e96373e0d9",
+      "sha256": "5f77af2b9ac3c60772d5af9a3f2f9f336942640677358ffd74a232c592d0dfdc"
+    },
+    {
+      "source": "src/policies/content/standard/common.ts",
+      "file": "content/standard/common.ts",
+      "sourceSha256": "5679d84f474e163ab645b3863066c7d0f9fe14e038a9e9d0a1bb36509f4cfd56",
+      "sha256": "4f5603f976a65bdf7601253b9480e0e3e53d431fe3aec686c54634bb167810f1"
+    },
+    {
+      "source": "src/policies/content/standard/zhugeliang.ts",
+      "file": "content/standard/zhugeliang.ts",
+      "sourceSha256": "a6e09e04f761bc462f25dc63a1101ea9e5c3d3db2e28afc82e25f5fbc9ed2341",
+      "sha256": "e8ff5f006f0726238d7f8c55c78a87f7506d42f395ec689e6f2952ad3fec3da7"
+    },
+    {
+      "source": "src/policies/content/standard/lvmeng.ts",
+      "file": "content/standard/lvmeng.ts",
+      "sourceSha256": "b6fe37c658d3229d4c968389da3db6f491eacebd976cb28c5c2ca59b262cbc52",
+      "sha256": "b6fe37c658d3229d4c968389da3db6f491eacebd976cb28c5c2ca59b262cbc52"
+    },
+    {
+      "source": "src/policies/content/standard/simayi.ts",
+      "file": "content/standard/simayi.ts",
+      "sourceSha256": "f75b2f711a3dbbae0982eb41be39b0b232f80847d5c9d5856be10bb4bed61b04",
+      "sha256": "b06969d816612faa6c6f7c013dc58abc5c6ba3e5d949984b6f5143ab787fd497"
+    },
+    {
+      "source": "src/policies/content/standard/zhouyu.ts",
+      "file": "content/standard/zhouyu.ts",
+      "sourceSha256": "6c79b6df0f136f2c2bae07cb5d3f8cfd9c7ef4fec4a9c7c1ca455634c64f0b64",
+      "sha256": "6c79b6df0f136f2c2bae07cb5d3f8cfd9c7ef4fec4a9c7c1ca455634c64f0b64"
+    },
+    {
+      "source": "src/policies/content/standard/diaochan.ts",
+      "file": "content/standard/diaochan.ts",
+      "sourceSha256": "967be502d97ce151b50e2cfab38a0bfd6947922f7d87822dddde49db930b41d2",
+      "sha256": "967be502d97ce151b50e2cfab38a0bfd6947922f7d87822dddde49db930b41d2"
+    },
+    {
+      "source": "src/policies/content/standard/sunshangxiang.ts",
+      "file": "content/standard/sunshangxiang.ts",
+      "sourceSha256": "16ef5a72c5f5c7b6b1d967a4359c88d81cf7232c72e18d0345662f250dc9da90",
+      "sha256": "16ef5a72c5f5c7b6b1d967a4359c88d81cf7232c72e18d0345662f250dc9da90"
+    },
+    {
+      "source": "src/policies/content/standard/zhangliao.ts",
+      "file": "content/standard/zhangliao.ts",
+      "sourceSha256": "ae8c3b1fc3cf01fe6cfe157871758dec25d6d19877da3c8de765d3a973fd4a5f",
+      "sha256": "ae8c3b1fc3cf01fe6cfe157871758dec25d6d19877da3c8de765d3a973fd4a5f"
+    },
+    {
+      "source": "src/policies/content/standard/xuzhu.ts",
+      "file": "content/standard/xuzhu.ts",
+      "sourceSha256": "0cfdd17386a09ac94cbc1f93efdedd47f68b7dc36a20cbc497ff87c41a36445e",
+      "sha256": "0cfdd17386a09ac94cbc1f93efdedd47f68b7dc36a20cbc497ff87c41a36445e"
+    },
+    {
+      "source": "src/policies/content/standard/huanggai.ts",
+      "file": "content/standard/huanggai.ts",
+      "sourceSha256": "6c4bc4f519c40fb71464627660f2e16a568f0292c9fcb84c7a99f29a5daaeda2",
+      "sha256": "6c4bc4f519c40fb71464627660f2e16a568f0292c9fcb84c7a99f29a5daaeda2"
+    },
+    {
+      "source": "src/policies/content/standard/huatuo.ts",
+      "file": "content/standard/huatuo.ts",
+      "sourceSha256": "8e2beed54ce5d55852283e023131eff55be819bd3dd15fc93819e7e34d53050f",
+      "sha256": "8e2beed54ce5d55852283e023131eff55be819bd3dd15fc93819e7e34d53050f"
+    },
+    {
+      "source": "src/policies/content/standard/liubei.ts",
+      "file": "content/standard/liubei.ts",
+      "sourceSha256": "b5769e6b39a833c40338498116141e22f9fe388a69d4d466920a02dd5cba58cf",
+      "sha256": "b5769e6b39a833c40338498116141e22f9fe388a69d4d466920a02dd5cba58cf"
+    },
+    {
+      "source": "src/policies/content/standard/sunquan.ts",
+      "file": "content/standard/sunquan.ts",
+      "sourceSha256": "d91f3e3a91b94f1c9b63e10ada20c2024697dc806707a015468247532bfbd0ba",
+      "sha256": "ed9d35e45b6dc3f964bc661443f3987f1d396b55f7ae9d3209c70d8f92521684"
+    },
+    {
+      "source": "src/policies/content/junzheng.ts",
+      "file": "content/junzheng.ts",
+      "sourceSha256": "8ac3b546bd84456b7e0a0aa607adeaa1904d0a17293ac5bab1ffe330784fbee0",
+      "sha256": "a5b0d47671415932bf69470f2644e0bd7bb18c67417d3886653d3e1008ebd090"
+    }
+  ]
+}

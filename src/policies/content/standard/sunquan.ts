@@ -9,6 +9,7 @@ const building = (ctx: EvaluationContext) => Object.values(ctx.self.equip).filte
 function retention(ctx: EvaluationContext, card: Card): number {
   const earlier = ctx.self.hand.filter(other => other.name === card.name && other.id < card.id).length;
   if (cardTypeOf(card) === 'equip') {
+    if (card.name === 'tengjia' && ctx.value(card.id) <= 0.5) return 1;
     if (Object.values(ctx.self.equip).some(equipped => equipped?.id === card.id)) return 12;
     const equipped = ctx.self.equip[equipSlotOf(card)];
     return !equipped || ctx.value(card.id) > ctx.value(equipped.id) + 0.5 ? 10 : 1;

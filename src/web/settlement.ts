@@ -4,6 +4,7 @@ import { standardContent } from '../content/standard/content.ts';
 import type { WebGameDocument } from '../app/web-game-record.ts';
 import { battleReport, type BattleStat } from './battle-report.ts';
 import { appUrl } from './deployment.ts';
+import { gameUrl } from './game-setup.ts';
 
 const REASONS: Record<string, string> = {
   'last-survivor': '最后存活的武将获胜',
@@ -62,7 +63,8 @@ export function showSettlement(obs: Observation, mode: 'duel' | 'identity', game
   const overlay = document.getElementById('settlement')!;
   document.getElementById('settlement-result')!.textContent = summary.result;
   document.getElementById('settlement-winner')!.textContent = summary.winner;
-  document.getElementById('settlement-detail')!.textContent = `${summary.mode} · 第 ${summary.turn} 回合 · ${summary.reason}`;
+  const cards = game.config.cards ?? 'standard';
+  document.getElementById('settlement-detail')!.textContent = `${summary.mode} · ${cards === 'junzheng' ? '标准＋军争' : '标准牌包'} · 第 ${summary.turn} 回合 · ${summary.reason}`;
   const list = document.getElementById('settlement-players')!;
   const stats = battleReport(summary.rows.map(row => row.seat - 1),
     Object.fromEntries(game.players.map(player => [player.id, player.role ?? ''])), game.events);
@@ -78,10 +80,10 @@ export function showSettlement(obs: Observation, mode: 'duel' | 'identity', game
   renderReport(summary.rows, stats);
   void uploadGame(game);
   (document.getElementById('settlement-again') as HTMLButtonElement).onclick = () => {
-    location.href = `${location.pathname}?mode=${mode}`;
+    location.href = gameUrl(location.pathname, cards, mode);
   };
   (document.getElementById('settlement-modes') as HTMLButtonElement).onclick = () => {
-    location.href = location.pathname;
+    location.href = gameUrl(location.pathname, cards);
   };
   overlay.classList.remove('hidden');
   overlay.focus();

@@ -1,7 +1,7 @@
-import { NAMES, type CardName } from '../../catalog.ts';
+import { NAMES, CARD_SPECS, cardLabel, type CardName } from '../../catalog.ts';
 import type { Observation } from '../../contracts.ts';
 import type { VisibleEvent } from '../domain/events.ts';
-import { standardContent } from '../content/standard/content.ts';
+import type { CardDefinition } from '../rules/content-registry.ts';
 
 function seat(id: number, obs: Observation): string {
   if (obs.mode.id === 'identity') return `座${id + 1}`;
@@ -10,10 +10,11 @@ function seat(id: number, obs: Observation): string {
 
 function targetText(name: CardName, ids: readonly number[], source: number, obs: Observation): string {
   if (ids.length) return ids.map(id => seat(id, obs)).join('、');
-  const definition = standardContent.card(name);
+  const definition = CARD_SPECS.find(spec => spec.id === name) as CardDefinition | undefined;
+  if (!definition) return '无指定目标';
   if (definition.play.scope === 'all') return '全场';
   if (definition.play.scope === 'others') return '其他角色';
-  if (definition.play.scope === 'self' || definition.kind === 'equip' || definition.effect === 'recover')
+  if (definition.play.scope === 'self' || definition.kind === 'equip' || definition.effect === 'recover' || name === 'jiu')
     return seat(source, obs);
   return '无指定目标';
 }
@@ -25,7 +26,7 @@ export function tableCardLabel(event: VisibleEvent, obs: Observation): string | 
     const name = event.data.effectiveName ?? card?.name;
     if (!name) return null;
     const targets = event.data.targets;
-    return `${seat(event.data.source, obs)} 使用${NAMES[name] ?? name}\n${targetText(name, targets, event.data.source, obs)}`;
+    return `${seat(event.data.source, obs)} 使用${event.data.effectiveName ? NAMES[name] ?? name : card ? cardLabel(card) : NAMES[name] ?? name}\n${targetText(name, targets, event.data.source, obs)}`;
   }
   if (event.kind === 'nullificationUsed')
     return `${seat(event.data.player, obs)} 打出无懈\n${event.data.parityBefore % 2 ? '恢复' : '抵消'}${NAMES[event.data.cname]}·${seat(event.data.target, obs)}`;

@@ -35,8 +35,6 @@ export class AttackRedirectFlow {
       owner, targets: [action.target] });
     discardOwned(state, owner, action.card);
     window.data.redirected = true;
-    window.data.then = [{ kind: 'shaStart', source: attack.source, target: action.target,
-      sha: attack.sha, ignoreDistance: attack.ignoreDistance, redirectedBy: owner,
-      forcedBy: attack.forcedBy }];
+    window.data.then = [{ kind: 'shaStart', ...attack, target: action.target, redirectedBy: owner }];
   }
 }

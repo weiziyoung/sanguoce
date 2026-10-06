@@ -29,7 +29,7 @@ export function handleResponsePollTask(s: GameState, runtime: ContentRuntime = g
   const need = ["sha", "wanjian"].includes(mode) ? "shan" : "sha";
   const baguaAllowed = need === "shan" && !context.baguaTried &&
     runtime.abilities.has(s, actor, 'standard.bagua') &&
-    !(mode === "sha" && runtime.abilities.has(s, context.source, 'standard.qinggang'));
+    !(mode === "sha" && (context.ignoreArmor || runtime.abilities.has(s, context.source, 'standard.qinggang')));
   const options = responseOptions(s, actor, need, baguaAllowed, runtime);
   if ((mode === 'sha' || mode === 'juedou' || mode === 'nanman') && !context.proxyTried &&
     s.mode.id === 'identity' && s.mode.roles[actor] === 'lord') {
@@ -62,7 +62,8 @@ export function responseSuccess(s: GameState, context: ResponseContext): void {
     return;
   }
   if (mode === "sha") {
-    resume({ kind: "shaMiss", source, target: actor, sha: context.sha });
+    const { mode: _mode, actor: _actor, baguaTried: _bagua, remaining: _remaining, proxyTried: _proxy, ...attack } = context;
+    resume({ ...attack, kind: 'shaMiss', target: actor });
   } else if (mode === "juedou") {
     response.data.context = { ...context, actor: source, source: actor,
       remaining: undefined };
@@ -73,7 +74,8 @@ export function responseSuccess(s: GameState, context: ResponseContext): void {
 export function responseFailure(s: GameState, context: ResponseContext): void {
   const { mode, actor, source } = context;
   if (mode === "sha") {
-    push(s, { kind: "shaHit", source, target: actor, sha: context.sha });
+    const { mode: _mode, actor: _actor, baguaTried: _bagua, remaining: _remaining, proxyTried: _proxy, ...attack } = context;
+    push(s, { ...attack, kind: 'shaHit', target: actor });
   } else {
     if (mode === 'juedou') emitEvent(s, 'duelEnded', { loser: actor });
     damage(s, actor, source, 1, null, context.cardId ?? null);
