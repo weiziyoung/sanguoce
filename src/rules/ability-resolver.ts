@@ -3,7 +3,7 @@ import { ContentRegistry, type SkillDefinition } from './content-registry.ts';
 
 export interface AbilityInstance {
   readonly definition: SkillDefinition;
-  readonly source: { readonly kind: 'general'; readonly id: string } |
+  readonly source: { readonly kind: 'general' | 'granted'; readonly id: string } |
     { readonly kind: 'equipment'; readonly slot: EquipSlot; readonly cardId: number };
 }
 /** Current grants are derived from authoritative equipment and selected general. */
@@ -27,6 +27,8 @@ export class AbilityResolver {
         source: { kind: 'equipment', slot: slot as EquipSlot, cardId },
       });
     }
+    for (const skill of this.#content.skills()) if (skill.grantedTo?.(state, playerId))
+      instances.push({ definition: skill, source: { kind: 'granted', id: skill.id } });
     return instances;
   }
   list(state: ReadonlyGameState, playerId: number): readonly SkillDefinition[] {

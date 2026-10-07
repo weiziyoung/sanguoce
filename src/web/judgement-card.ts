@@ -1,10 +1,17 @@
 import { NAMES, type Card } from '../../catalog.ts';
-import type { Observation } from '../../contracts.ts';
+import type { Decision, Observation } from '../../contracts.ts';
 import type { VisibleEvent } from '../domain/events.ts';
 
 export type JudgementCardCue =
   | { kind: 'finish'; card: Card; label: string }
   | { kind: 'replace'; card: Card; oldCard: Card; owner: number; label: string };
+
+/** The prompt identifies the current public card even when other cards are on the table. */
+export function pendingJudgementCard(obs: Observation, decision: Decision | null): Card | undefined {
+  if (decision?.kind !== 'judgeReplace') return undefined;
+  const currentId = (decision.context as { currentId?: number } | undefined)?.currentId;
+  return obs.table.find(card => card.id === currentId);
+}
 
 /** Every judgement phase uses only cards and facts already public to this viewer. */
 export function judgementCard(event: VisibleEvent, obs: Observation): JudgementCardCue | null {

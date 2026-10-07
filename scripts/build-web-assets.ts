@@ -3,8 +3,8 @@ import { join, resolve } from 'node:path';
 import { CARD_SPECS } from '../catalog.ts';
 const ART_SPECS = [...CARD_SPECS, { id: 'huosha', label: '火杀' }, { id: 'leisha', label: '雷杀' }];
 const AUDIO_SPECS = [...ART_SPECS, { id: 'tiesuoRecast', label: '重铸' }];
-import { standardContent } from '../src/content/standard/content.ts';
-import { standardGeneralDefinitions } from '../src/content/standard/generals.ts';
+import { allContent } from '../src/app/game-content.ts';
+
 import { SYSTEM_SOUND_FILES } from '../src/web/sound-cues.ts';
 import type { CardVoices, AssetManifest } from '../src/web/assets.ts';
 import { HEALTH_PIP_STATES } from '../src/web/health-pips.ts';
@@ -60,8 +60,9 @@ for (const card of ART_SPECS) {
   }
   if (!manifest.cards[card.id]) throw new Error(`缺少卡牌图片：${card.label}`);
 }
-for (const general of standardGeneralDefinitions) {
-  const image = add(join(source, '三国杀卡牌全高清图/标准25', `${general.label}.png`),
+for (const general of allContent.generals()) {
+  const image = add(join(source, `三国杀卡牌全高清图/${general.id.startsWith('wind.') ? '风包' : general.id.startsWith('fire.') ? '火包' : '标准25'}`,
+    `${general.id === 'wind.caoren' || general.id === 'wind.zhangjiao' ? general.label + '2010' : general.id === 'fire.wolong' ? '卧龙诸葛' : general.id === 'fire.yanliangwenchou' ? '颜良&文丑' : general.label}.png`),
     `generals/${general.id}.png`);
   if (image) manifest.generals[general.id] = image;
   const groupDir = { wei: '魏国', shu: '蜀国', wu: '吴国', qun: '群雄' }[general.group ?? 'wei'];
@@ -70,17 +71,16 @@ for (const general of standardGeneralDefinitions) {
   const generalDir = readdirSync(groupPath).find(entry => /^\d+-/.test(entry) && entry.split('-')[1] === general.label);
   if (!generalDir) continue;
   const base = join(groupPath, generalDir);
-  const voiceDirs = ['标/普通', '普通'];
+  const voiceDirs = general.id.startsWith('wind.') ? ['风/普通', '普通'] : general.id.startsWith('fire.') ? ['火/普通', '火/普通2', '普通'] : ['标/普通', '普通'];
   const voiceDir = voiceDirs.find(dir => existsSync(join(base, dir)));
   if (!voiceDir) continue;
-  const folder = join(base, voiceDir);
   const voices: AssetManifest['generalAudio'][string] = { skills: {}, aliases: {} };
-  voices.death = add(join(folder, '阵亡.mp3'), `audio/generals/${general.id}/death.mp3`);
+  voices.death = add(join(base, voiceDirs.find(dir => existsSync(join(base, dir, '阵亡.mp3'))) ?? voiceDir, '阵亡.mp3'), `audio/generals/${general.id}/death.mp3`);
   for (const ability of general.abilities) {
-    const skill = standardContent.requireSkill(ability);
+    const skill = allContent.requireSkill(ability);
     const label = skill.label;
     if (!label) continue;
-    const clips = [1, 2].map(index => add(join(folder, `${label}${index}.mp3`),
+    const clips = [1, 2].map(index => add(join(base, voiceDirs.find(dir => existsSync(join(base, dir, `${label}${index}.mp3`))) ?? voiceDir, `${label}${index}.mp3`),
       `audio/generals/${general.id}/${ability}-${index}.mp3`)).filter((clip): clip is string => Boolean(clip));
     if (!clips.length) continue;
     voices.skills[ability] = clips;

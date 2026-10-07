@@ -1,3 +1,4 @@
+import type { ContentRuntime } from '../../rules/content-runtime.ts';
 import { cardText } from '../../../catalog.ts';
 import { leaf, setPrompt } from '../../core/decision-manager.ts';
 import { emitEvent } from '../../domain/event-journal.ts';
@@ -17,39 +18,40 @@ export function resolveChain(s: GameState, { target }: TrickContext): void {
   emitEvent(s, 'chainChanged', { player: target, chained: s.players[target].chained! });
 }
 
-export function resolveFireAttack(s: GameState, { source, target, cid }: TrickContext): void {
+export function resolveFireAttack(s: GameState, { source, target, cid, trickFrameId }: TrickContext): void {
   if (!s.players[source].alive || !s.players[target].hand.length) return;
+  const card = resolutionStack.get(s, trickFrameId, 'trick').data.card;
   setPrompt(s, target, 'fireAttackReveal', '【火攻】：展示一张手牌',
     s.players[target].hand.map(cid => leaf(`fire-reveal:${cid}`, `展示${cardText(s.cards[cid])}`,
-      { type: 'reveal', cid })), { source, target, cid });
+      { type: 'reveal', cid })), { source, target, cid, ...(card ? { card } : {}) });
 }
 
 export function chooseFireReveal(s: GameState, prompt: PromptOf<'fireAttackReveal'>,
-  action: ActionMap['fireAttackReveal']): void {
+  action: ActionMap['fireAttackReveal'], runtime: ContentRuntime): void {
   if (prompt.actor !== prompt.context.target || !s.players[prompt.actor].hand.includes(action.cid)) throw new Error('火攻展示牌已失效');
   emitEvent(s, 'cardRevealed', { player: prompt.actor, card: action.cid, cause: 'huogong' });
   // Queue payment so loss triggers caused by the preceding use have fully settled.
-  resolutionStack.enqueue(s, { kind: 'fireAttackPay', ...prompt.context, suit: s.cards[action.cid].suit });
+  resolutionStack.enqueue(s, { kind: 'fireAttackPay', ...prompt.context, suit: runtime.queries.suit(s, prompt.actor, s.cards[action.cid])! });
 }
 
-export function offerFirePayment(s: GameState, task: TaskOf<'fireAttackPay'>): void {
-  const { source, target, cid, suit } = task;
+export function offerFirePayment(s: GameState, task: TaskOf<'fireAttackPay'>, runtime: ContentRuntime): void {
+  const { source, target, cid, suit, card } = task;
   if (!s.players[source].alive || !s.players[target].alive) return;
-  const costs = s.players[source].hand.filter(id => s.cards[id].suit === suit);
+  const costs = s.players[source].hand.filter(id => runtime.queries.suit(s, source, s.cards[id]) === suit);
   if (!costs.length) return;
   setPrompt(s, source, 'fireAttackPay', '【火攻】：弃置同花色手牌，造成1点火焰伤害？', [
     ...costs.map(cid => leaf(`fire-pay:${cid}`, `弃置${cardText(s.cards[cid])}`, { type: 'discard', cid })),
     leaf('fire-pay:pass', '放弃火攻', { type: 'pass' }),
-  ], { source, target, cid, suit });
+  ], { source, target, cid, suit, ...(card ? { card } : {}) });
 }
 
 export function chooseFirePayment(s: GameState, prompt: PromptOf<'fireAttackPay'>,
-  action: ActionMap['fireAttackPay']): void {
+  action: ActionMap['fireAttackPay'], runtime: ContentRuntime): void {
   if (action.type === 'pass') return;
-  const { source, target, cid, suit } = prompt.context;
-  if (prompt.actor !== source || !s.players[source].hand.includes(action.cid) || s.cards[action.cid].suit !== suit) throw new Error('火攻费用已失效');
+  const { source, target, cid, suit, card } = prompt.context;
+  if (prompt.actor !== source || !s.players[source].hand.includes(action.cid) || runtime.queries.suit(s, source, s.cards[action.cid]) !== suit) throw new Error('火攻费用已失效');
   discardOwned(s, source, action.cid);
-  damage(s, target, source, 1, null, cid, { nature: 'fire' });
+  damage(s, target, source, 1, null, card ?? cid, { nature: 'fire' });
 }
 
 export function applySupplyJudgement(s: GameState, owner: number, cid: number, result: number | null): void {

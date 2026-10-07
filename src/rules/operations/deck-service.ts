@@ -4,7 +4,7 @@ import { cardMovement } from './card-movement-service.ts';
 import { shuffle } from './random.ts';
 
 /** Only this service decides how an exhausted draw pile is replenished. */
-type DrawDestination = { kind: 'table' | 'discard' } | { kind: 'hand'; owner: number };
+type DrawDestination = { kind: 'table' | 'discard' } | { kind: 'hand'; owner: number } | { kind: 'pile'; owner: number; ability: string };
 
 export class DeckService {
   shuffle(s: GameState): void {

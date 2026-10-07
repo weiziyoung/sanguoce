@@ -240,12 +240,12 @@ test('结算帧协议拒绝覆盖未提交选择，异常不能推进 ID 或损�
   assert.deepEqual(state, before);
 });
 
-test('身份模式六场行动与业务状态摘要保持 v5 策略基线', () => {
+test('身份模式六场行动与业务状态摘要保持基础规则策略基线', () => {
   const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-  const baselines: { policyVersion: string; count: number; seed: number; choices: string; gameplay: string }[] = JSON.parse(
-    readFileSync(new URL('./fixtures/identity-v5-baseline.json', import.meta.url), 'utf8'));
+  const baselines: { policy: string; count: number; seed: number; choices: string; gameplay: string }[] = JSON.parse(
+    readFileSync(new URL('./fixtures/identity-rule-baseline.json', import.meta.url), 'utf8'));
   for (const expected of baselines) {
-    assert.equal(expected.policyVersion, 'v5');
+    assert.equal(expected.policy, 'RuleBasePolicy');
     // The frozen five-player traces predate the standard seat-one lord rule.
     let state = createGame({ mode: 'identity', seed: expected.seed, ...(expected.count === 5 ? { first: 4 } : {}),
       players: Array.from({ length: expected.count }, (_, id) => ({ label: `角色${id}`, sex: id % 2 ? 'female' : 'male' })) });

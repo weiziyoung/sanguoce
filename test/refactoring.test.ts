@@ -20,12 +20,12 @@ import { fixture } from './support/scenario-builder.ts';
 
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-test('30 个标准局种子的行动序列与状态投影保持 v5 策略基线', () => {
-  const baseline: { policyVersion: string; seed: number; choices: string; state: string }[] = JSON.parse(
-    readFileSync(new URL('./fixtures/standard-v5-baseline.json', import.meta.url), 'utf8'));
+test('30 个标准局种子的行动序列与状态投影保持基础规则策略基线', () => {
+  const baseline: { policy: string; seed: number; choices: string; state: string }[] = JSON.parse(
+    readFileSync(new URL('./fixtures/standard-rule-baseline.json', import.meta.url), 'utf8'));
   const policy = new RuleBasePolicy();
   for (const expected of baseline) {
-    assert.equal(expected.policyVersion, 'v5');
+    assert.equal(expected.policy, 'RuleBasePolicy');
     let state = createGame({ seed: expected.seed });
     const picks: string[] = [];
     while (state.outcome.status === 'ongoing' && picks.length < 2000) {

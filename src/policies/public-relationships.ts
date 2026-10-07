@@ -18,7 +18,7 @@ export interface PublicRelationship {
 export function publicRelationships(observation: Observation): PublicRelationship[] {
   const players = [observation.self, ...observation.others].sort((a, b) => a.id - b.id);
   // Recent events must not be counted again on top of the whole-game totals.
-  const baseline = new RelationshipModel({ ...observation, events: [] });
+  const baseline = new RelationshipModel({ ...observation, events: [], publicInteractions: [] });
   const importance = (id: number): number => {
     const target = players.find(player => player.id === id);
     if (target && !target.alive && target.role && observation.self.role !== 'renegade') {
@@ -41,4 +41,3 @@ export function publicRelationships(observation: Observation): PublicRelationshi
       behaviorHate, baselineHate, evidence };
   });
 }
-

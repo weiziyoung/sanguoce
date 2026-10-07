@@ -32,7 +32,6 @@ export { ContentRuntime } from './src/rules/content-runtime.ts';
 export { standardPack, standardContent } from './src/content/standard/content.ts';
 export { pilotSkillPack } from './src/content/pilot/content.ts';
 export { StrategicPolicy } from './src/policies/strategic-policy.ts';
-export { RULE_POLICY_VERSION } from './src/policies/rule-policy-version.ts';
 export { JevPolicy } from './src/policies/jev-policy.ts';
 export type { JevPolicyOptions } from './src/policies/jev-policy.ts';
 export { LayaPolicy } from './src/policies/laya-policy.ts';
@@ -40,4 +39,8 @@ export type { LayaPolicyOptions } from './src/policies/laya-policy.ts';
 export { EvaluationRegistry } from './src/policies/evaluation-registry.ts';
 
 export { junzhengPack } from './src/content/junzheng/content.ts';
-export { expandedContent, contentForCards, type CardSet } from './src/app/game-content.ts';
+export { expandedContent, contentForCards, type CardSet, type GeneralPack } from './src/app/game-content.ts';
+
+export { windPack, windGeneralDefinitions } from './src/content/wind/content.ts';
+
+export { firePack, fireGeneralDefinitions } from './src/content/fire/content.ts';

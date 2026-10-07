@@ -66,10 +66,23 @@ export class RuleQueryService {
     }
     return value;
   }
+  suit(s: ReadonlyGameState, owner: number, card: CardLike): import('../../catalog.ts').Suit | null {
+    let suit = card.suit;
+    if (suit) for (const skill of this.#abilities?.list(s, owner) ?? []) suit = skill.modifier?.suit?.(s, owner, suit) ?? suit;
+    return suit;
+  }
+  survivesDying(s: ReadonlyGameState, owner: number): boolean {
+    return (this.#abilities?.list(s, owner) ?? []).some(skill => skill.modifier?.survivesDying?.(s, owner));
+  }
+  sourceDamageAmount(s: ReadonlyGameState, source: number, target: number, card: number | CardLike | null, initial: number): number {
+    let value = initial;
+    for (const skill of this.#abilities?.list(s, source) ?? []) value = skill.modifier?.damageAmount?.(s, source, target, card, value) ?? value;
+    return value;
+  }
   damageAmount(s: ReadonlyGameState, source: number | null, target: number,
     card: number | CardLike | null, initial: number, context?: import('../domain/resolution.ts').FrameData['damage']): number {
     let value = initial;
-    for (const skill of source === null || context?.propagated ? [] : this.#abilities?.list(s, source) ?? []) {
+    for (const skill of source === null || context?.propagated || context?.sourceModified ? [] : this.#abilities?.list(s, source) ?? []) {
       value = skill.modifier?.damageAmount?.(s, source!, target, card, value) ?? value;
     }
     if (context) for (const instance of this.#abilities?.instances(s, target) ?? []) {
@@ -77,6 +90,9 @@ export class RuleQueryService {
       value = instance.definition.modifier?.damageReceived?.(s, target, context, value) ?? value;
     }
     return value;
+  }
+  autoShan(s: ReadonlyGameState, actor: number): boolean {
+    return (this.#abilities?.list(s, actor) ?? []).some(skill => skill.modifier?.autoShan?.(s, actor));
   }
   ignoresArmor(s: ReadonlyGameState, source: number): boolean {
     return (this.#abilities?.list(s, source) ?? []).some(skill => skill.modifier?.ignoresArmor?.(s, source));

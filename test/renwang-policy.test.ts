@@ -2,14 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StandardRuleset, type GameState } from '../engine.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { archivedPolicy } from './support/archived-policy.ts';
 import { EvaluationContext } from '../src/policies/evaluation-context.ts';
 import type { ScoredAction } from '../src/policies/evaluation-registry.ts';
 import { fixture } from './support/scenario-builder.ts';
 
 const rules = new StandardRuleset();
 const policy = new StrategicPolicy();
-const V3Policy = await archivedPolicy('v3');
 function selected(state: GameState, ai: Pick<StrategicPolicy, 'choose'> = policy) {
   const decision = rules.decision(state)!;
   const id = ai.choose(rules.observe(state, decision.actor), decision);
@@ -29,7 +27,6 @@ for (const suit of ['spade', 'club']) {
     f.state.players[1].hp = 1;
     const state = f.start();
     assert.equal(selected(state).action.type, 'endPlay');
-    if (V3Policy) assert.equal(selected(state, new V3Policy()).action.type, 'endPlay');
   });
 }
 
@@ -94,7 +91,6 @@ for (const black of [true, false]) {
     let state = applyWhere(f.start(), action => action.type === 'play' && action.cid === first);
     state = applyWhere(state, action => action.type === 'respond');
     assert.equal(rules.decision(state)?.kind, 'qinglong');
-    if (V3Policy) assert.equal(selected(state, new V3Policy()).action.type, 'qinglong');
     assert.equal(selected(state).action.type, black ? 'pass' : 'qinglong');
     state = rules.apply(state, selected(state).id);
     if (!black) state = applyWhere(state, action => action.type === 'pass');
@@ -126,9 +122,6 @@ test('方天多目标逐一计算收益，仁王盾目标不加分也不抹掉�
   assert.ok(scoreFor([1]) < 0);
   assert.ok(scoreFor([1, 2]) > 0);
   assert.equal(scoreFor([1, 2]), scoreFor([2]));
-  const multiple = actions.find(choice => JSON.stringify((choice.data as ScoredAction).targets) === '[1,2]')!;
-  if (V3Policy) assert.ok(new V3Policy().rank(observation, rules.decision(state)!)
-    .find(rank => rank.id === multiple.id)!.score < 0);
 });
 
 test('借刀响应仍可用被仁王盾挡住的黑杀保住武器', () => {

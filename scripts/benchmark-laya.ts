@@ -4,7 +4,7 @@ import { GameEngine } from '../engine.ts';
 import { standardContent } from '../src/content/standard/content.ts';
 import { LayaPolicy } from '../src/policies/laya-policy.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 
 const args = process.argv.slice(2);
 const option = (name: string, fallback: string) => {
@@ -37,7 +37,7 @@ const startedAt = new Date().toISOString();
 function save(): void {
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, JSON.stringify({
-    model: 'laya multilingual', baseline: `StrategicPolicy ${RULE_POLICY_VERSION}`, mode: 'duel', labels: 'seat', startedAt,
+    model: 'laya multilingual', baseline: rulePolicyBaseline, mode: 'duel', labels: 'seat', startedAt,
     games, seedsPerGeneral, seedStart, stepLimit,
     generals: generals.map(({ id, label }) => ({ id, label })),
     completed: results.length, results,

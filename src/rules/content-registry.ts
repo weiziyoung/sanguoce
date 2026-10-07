@@ -29,6 +29,17 @@ export interface CardDefinition {
   readonly leaveEquipment?: (state: GameState, owner: number, cid: number) => void;
 }
 export interface SkillDefinition {
+  readonly grantedTo?: (state: ReadonlyGameState, owner: number) => boolean;
+  readonly phaseBefore?: { readonly phases: readonly ('judge' | 'play')[]; execute(state: GameState, owner: number, phase: 'judge' | 'play', runtime: ContentRuntime): void };
+  readonly beforeDamage?: (state: GameState, owner: number, runtime: ContentRuntime) => void;
+  readonly afterDamage?: (state: GameState, owner: number, context: import('../domain/resolution.ts').FrameData['damage'], amount: number, runtime: ContentRuntime) => void;
+  readonly hpChanged?: (state: GameState, owner: number, before: number, after: number, runtime: ContentRuntime) => void;
+  readonly responseUsed?: (state: GameState, owner: number, name: CardName, runtime: ContentRuntime) => void;
+  readonly choice?: {
+    options(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime): readonly { id: string; label: string; ids?: readonly number[]; targets?: readonly number[]; pass?: boolean }[];
+    execute(state: GameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, action: import('../domain/state.ts').ContentChoiceAction, runtime: ContentRuntime): void;
+  };
+  readonly callback?: (state: GameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime) => void;
   readonly id: string;
   readonly label?: string;
   /** Display metadata; lord eligibility remains enforced by mode rules. */
@@ -42,7 +53,7 @@ export interface SkillDefinition {
   readonly active?: ActiveSkillDefinition;
   readonly drawPhase?: { readonly optional?: boolean;
     options(state: ReadonlyGameState, owner: number): readonly { id: string; label: string; targets: readonly number[] }[];
-    execute(state: GameState, owner: number, targets: readonly number[]): void };
+    execute(state: GameState, owner: number, targets: readonly number[], runtime: ContentRuntime): void };
   readonly startPhase?: {
     available(state: ReadonlyGameState, owner: number): boolean;
     activate(state: GameState, owner: number, runtime: ContentRuntime): void;
@@ -56,7 +67,7 @@ export interface SkillDefinition {
   readonly trigger?: AnyTriggerDefinition;
   readonly transformation?: CardTransformation;
   readonly transformations?: readonly CardTransformation[];
-  readonly judgement?: { cards(state: ReadonlyGameState, owner: number): readonly number[] };
+  readonly judgement?: { cards(state: ReadonlyGameState, owner: number): readonly number[]; readonly gainReplaced?: boolean; readonly allowEquipment?: boolean };
   readonly attackJudgement?: { bypassResponse(state: ReadonlyGameState, owner: number, finalId: number | null): boolean };
   readonly skillJudgement?: {
     actor(state: ReadonlyGameState, owner: number, source: number | null): number | null;
@@ -72,13 +83,13 @@ export interface SkillDefinition {
 }
 export interface ActiveSkillDefinition {
   readonly limit?: 'oncePerTurn';
-  readonly cost: 'discardOwned' | 'transfer' | 'none' | 'loseHp';
+  readonly cost: 'discardOwned' | 'transfer' | 'none' | 'loseHp' | 'custom';
   /** Small fixed costs can be offered directly; large sets use selection. */
   costs?(state: ReadonlyGameState, owner: number): readonly (readonly number[])[];
   readonly selection?: { readonly min: number; readonly max?: number;
     selectable(state: ReadonlyGameState, owner: number): readonly number[] };
-  targets(state: ReadonlyGameState, owner: number, costs: readonly number[]): readonly (readonly number[])[];
-  execute?(state: GameState, owner: number, costs: readonly number[], targets: readonly number[]): void;
+  targets(state: ReadonlyGameState, owner: number, costs: readonly number[], runtime: ContentRuntime): readonly (readonly number[])[];
+  execute?(state: GameState, owner: number, costs: readonly number[], targets: readonly number[], runtime: ContentRuntime): void;
   readonly followup?: {
     actor(state: ReadonlyGameState, owner: number, targets: readonly number[]): number;
     options(state: ReadonlyGameState, owner: number, targets: readonly number[]): readonly { id: string; label: string }[];
@@ -86,6 +97,9 @@ export interface ActiveSkillDefinition {
   };
 }
 export interface SkillModifier {
+  autoShan?(state: ReadonlyGameState, owner: number): boolean;
+  suit?(state: ReadonlyGameState, owner: number, suit: import('../../catalog.ts').Suit): import('../../catalog.ts').Suit;
+  survivesDying?(state: ReadonlyGameState, owner: number): boolean;
   responseCount?(state: ReadonlyGameState, owner: number, source: number, target: number,
     mode: 'sha' | 'juedou', current: number): number;
   targetEnabled?(state: ReadonlyGameState, owner: number, source: number, target: number, card: CardName): boolean;
@@ -230,6 +244,7 @@ export class ContentRegistry {
     if (!definition) throw new Error(`未知武将定义：${id}`);
     return definition;
   }
+  generals(): readonly GeneralDefinition[] { return [...this.#generals.values()]; }
   skills(): readonly SkillDefinition[] { return [...this.#skills.values()]; }
   cards(): readonly CardDefinition[] { return [...this.#cards.values()]; }
 }

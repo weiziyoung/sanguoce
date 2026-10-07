@@ -19,7 +19,7 @@ export function promptDying(s: GameState, runtime: ContentRuntime): void {
   const frame = resolutionStack.require(s, 'dying');
   const d = frame.data;
   const victim = person(s, d.target);
-  if (victim.hp > 0 || !victim.alive) return;
+  if (victim.hp > 0 || !victim.alive || runtime.queries.survivesDying(s, d.target)) return;
   // Recompute participants on resume: a child may have killed a rescuer or consumed their peach.
   const living = alive(s);
   while (!living.every(id => d.passed.includes(id))) {

@@ -1,3 +1,4 @@
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { ChineseView } from '../chinese-view.ts';
@@ -79,7 +80,7 @@ while (!game.finished && steps < stepLimit) {
 }
 const outcome = game.getObservation(0).outcome;
 mkdirSync(dirname(output), { recursive: true });
-writeFileSync(output, JSON.stringify({ rulePolicyVersion: rule.version, general: general.id, opponentGeneral: opponent.id,
+writeFileSync(output, JSON.stringify({ rulePolicySource: rulePolicyBaseline, general: general.id, opponentGeneral: opponent.id,
   seed, layaSeat, labels, replayUntil, stepLimit, steps,
   outcome, decisions }, null, 2) + '\n');
 process.stdout.write(`${output}\n`);

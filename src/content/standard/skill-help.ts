@@ -1,5 +1,8 @@
+import { FIRE_SKILL_HELP } from '../fire/skill-help.ts';
+import { WIND_SKILL_HELP } from '../wind/skill-help.ts';
 /** Human-readable skill help for the standard pack; game rules stay in the shared content registry. */
 export const STANDARD_SKILL_HELP: Readonly<Record<string, string>> = {
+  ...WIND_SKILL_HELP, ...FIRE_SKILL_HELP,
   'standard.qingnang': '出牌阶段限一次，你可以弃置一张手牌并令一名角色回复1点体力。',
   'standard.jijiu': '你的回合外，你可以将一张红色牌当做【桃】使用。',
   'standard.jizhi': '当你使用普通锦囊牌时，你可以摸一张牌。',

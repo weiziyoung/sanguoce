@@ -1,15 +1,15 @@
-import { standardContent } from '../content/standard/content.ts';
+import { allContent } from '../app/game-content.ts';
 import { STANDARD_SKILL_HELP } from '../content/standard/skill-help.ts';
 import type { AssetManifest } from './assets.ts';
 
 const GROUPS = { wei: '魏', shu: '蜀', wu: '吴', qun: '群' };
 
 export function selectionDetails(id: string, lordSkillsAvailable: boolean) {
-  const general = standardContent.general(id);
+  const general = allContent.general(id);
   return {
     title: `${general.label} · ${GROUPS[general.group ?? 'qun']} · 体力 ${general.hp}`,
     skills: general.abilities.map(ability => {
-      const skill = standardContent.requireSkill(ability);
+      const skill = allContent.requireSkill(ability);
       return { title: `${skill.label ?? ability}${skill.lordSkill ? ' · 主公技' : ''}`,
         body: STANDARD_SKILL_HELP[ability] ?? '技能详情暂缺',
         unavailable: Boolean(skill.lordSkill && !lordSkillsAvailable) };

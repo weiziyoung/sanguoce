@@ -4,7 +4,7 @@ import type { Observation } from '../../contracts.ts';
 import type { VisibleEvent } from '../domain/events.ts';
 import type { TableAssets } from './assets.ts';
 import type { GameAudio } from './audio.ts';
-import { deckPosition, handPosition, handCardPosition, playerPosition, trickTablePosition, discardTablePosition, type Point } from './layout.ts';
+import { deckPosition, handPosition, handCardPosition, playerPosition, trickTablePosition, judgementTablePosition, discardTablePosition, type Point } from './layout.ts';
 import { cardFlight, sampleCardFlight } from './card-flight.ts';
 import { cardBack, cardView, text } from './visuals.ts';
 import { SoundCueRouter } from './sound-cues.ts';
@@ -26,6 +26,7 @@ export class TableEffects {
   private judgementTableCard: { id: number; view: Phaser.GameObjects.Container } | null = null;
   private activeTrick: CardName | null = null;
   private choosingZone = false;
+  private judgementPickerCount = 0;
   private landedCards: Phaser.GameObjects.Container[] = [];
   constructor(private scene: Phaser.Scene, assets: TableAssets, private audio: GameAudio) {
     this.cues = new SoundCueRouter(assets.manifest);
@@ -44,7 +45,10 @@ export class TableEffects {
       this.judgementTableCard?.id === id;
   }
   hasActiveJudgementCard(): boolean { return this.judgementTableCard !== null; }
-  setZonePickerActive(active: boolean): void {
+  setZonePickerActive(active: boolean, judgementPickerCount = 0): void {
+    this.judgementPickerCount = judgementPickerCount;
+    const judgementPosition = judgementTablePosition(judgementPickerCount);
+    this.judgementTableCard?.view.setPosition(judgementPosition.x, judgementPosition.y);
     if (this.choosingZone === active) return;
     this.choosingZone = active;
     if (!this.activeTrick) return;
@@ -111,6 +115,7 @@ export class TableEffects {
     await this.tween(sprite, { y: 462, alpha: 0, duration: 220 });
   }
   private async showJudgement(cue: JudgementCardCue, obs: Observation, origin?: Point): Promise<void> {
+    const destination = judgementTablePosition(this.judgementPickerCount);
     if (cue.kind === 'finish') {
       if (this.judgementTableCard?.id !== cue.card.id) {
         this.clearJudgementCard();
@@ -120,7 +125,7 @@ export class TableEffects {
         this.judgementTableCard = { id: cue.card.id, view: sprite };
         this.caption(sprite, cue.label, 111);
         await new Promise<void>(resolve => this.scene.tweens.add({ targets: sprite,
-          x: 790, y: 478, scale: 1, alpha: 1, duration: origin ? 180 : 420,
+          ...destination, scale: 1, alpha: 1, duration: origin ? 180 : 420,
           ease: 'Cubic.Out', onComplete: () => resolve() }));
       } else {
         this.caption(this.judgementTableCard.view, cue.label, 111);
@@ -128,11 +133,12 @@ export class TableEffects {
       const sprite = this.judgementTableCard!.view;
       await new Promise<void>(resolve => this.scene.time.delayedCall(850, resolve));
       this.judgementTableCard = null;
-      await this.tween(sprite, { y: 454, alpha: 0, duration: 250 });
+      await this.tween(sprite, { y: sprite.y - 24, alpha: 0, duration: 250 });
       return;
     }
+    const previousPosition = origin ?? destination;
     const previous = this.judgementTableCard ?? {
-      id: cue.oldCard.id, view: cardView(this.scene, cue.oldCard, 790, 478, 108, 154).container
+      id: cue.oldCard.id, view: cardView(this.scene, cue.oldCard, previousPosition.x, previousPosition.y, 108, 154).container
         .setDepth(1119).setAlpha(0.66),
     };
     this.judgementTableCard = null;
@@ -144,9 +150,30 @@ export class TableEffects {
     this.judgementTableCard = { id: cue.card.id, view: sprite };
     await Promise.all([
       new Promise<void>(resolve => this.scene.tweens.add({ targets: sprite,
-        x: 790, y: 478, scale: 1, duration: 420, ease: 'Cubic.Out', onComplete: () => resolve() })),
-      this.tween(previous.view, { x: 700, alpha: 0, duration: 260 }),
+        ...destination, scale: 1, duration: 420, ease: 'Cubic.Out', onComplete: () => resolve() })),
+      this.tween(previous.view, { x: previous.view.x - 90, alpha: 0, duration: 260 }),
     ]);
+  }
+  private async showPindian(event: Extract<VisibleEvent, { kind: 'pindianRevealed' }>, obs: Observation): Promise<void> {
+    await Promise.all([this.finishTableCards(0), this.finishDiscards(0)]);
+    const seats = [obs.self, ...obs.others].map(player => player.id);
+    const entries = [{ player: event.data.source, id: event.data.sourceCard, won: event.data.won },
+      { player: event.data.target, id: event.data.targetCard, won: !event.data.won }];
+    const sprites = entries.map((entry, index) => {
+      const card = obs.eventCards?.[entry.id];
+      if (!card) return null;
+      const from = handPosition(entry.player, seats, obs.self.id);
+      const sprite = cardView(this.scene, card, from.x, from.y, 116, 166).container.setDepth(1120).setScale(0.72);
+      const actor = obs.mode.id === 'identity' ? `座${entry.player + 1}` : entry.player === obs.self.id ? '你' : '对手';
+      // A tie means the initiator did not win; neither card is labelled as the winner.
+      const tied = obs.eventCards?.[event.data.sourceCard]?.rank === obs.eventCards?.[event.data.targetCard]?.rank;
+      this.caption(sprite, `${actor} · ${card.rank}点\n${tied ? '平局' : entry.won ? '赢' : '未赢'}`, 108);
+      return { sprite, x: index === 0 ? 710 : 870 };
+    }).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    await Promise.all(sprites.map(({ sprite, x }) => new Promise<void>(resolve => this.scene.tweens.add({
+      targets: sprite, x, y: 478, scale: 1, duration: 350, ease: 'Cubic.Out', onComplete: () => resolve() }))));
+    await new Promise<void>(resolve => this.scene.time.delayedCall(850, resolve));
+    await Promise.all(sprites.map(({ sprite }) => this.tween(sprite, { y: 454, alpha: 0, duration: 250 })));
   }
   private async showDuelResponse(event: Extract<VisibleEvent, { kind: 'duelResponded' }>,
     obs: Observation): Promise<void> {
@@ -356,6 +383,8 @@ export class TableEffects {
         await new Promise<void>(resolve => this.scene.time.delayedCall(680, resolve));
         await this.tween(sprite, { y: 462, alpha: 0, duration: 220 });
       }
+    } else if (event.kind === 'pindianRevealed') {
+      await this.showPindian(event, obs);
     } else if (event.kind === 'cardRevealed') {
       const card = obs.eventCards?.[event.data.card];
       if (card) await this.showResponse({ player: event.data.player, card }, obs, '展示');

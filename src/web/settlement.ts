@@ -1,9 +1,10 @@
 import type { Observation } from '../../contracts.ts';
 import { roleLabel } from '../../chinese-view.ts';
-import { standardContent } from '../content/standard/content.ts';
+import { allContent } from '../app/game-content.ts';
 import type { WebGameDocument } from '../app/web-game-record.ts';
 import { battleReport, type BattleStat } from './battle-report.ts';
 import { appUrl } from './deployment.ts';
+import { generalPackLabel } from '../app/game-content.ts';
 import { gameUrl } from './game-setup.ts';
 
 const REASONS: Record<string, string> = {
@@ -41,7 +42,7 @@ export function settlementSummary(obs: Observation): SettlementSummary {
   const winners = obs.outcome.status === 'finished' ? new Set(obs.outcome.winners) : new Set<number>();
   const rows = players.map(player => ({
     seat: player.id + 1, label: player.label,
-    general: player.general ? standardContent.general(player.general).label : player.label,
+    general: player.general ? allContent.general(player.general).label : player.label,
     role: identity ? roleLabel(player.role) : '',
     alive: player.alive, hp: player.hp, winner: winners.has(player.id), self: player.id === obs.self.id,
   }));
@@ -64,7 +65,7 @@ export function showSettlement(obs: Observation, mode: 'duel' | 'identity', game
   document.getElementById('settlement-result')!.textContent = summary.result;
   document.getElementById('settlement-winner')!.textContent = summary.winner;
   const cards = game.config.cards ?? 'standard';
-  document.getElementById('settlement-detail')!.textContent = `${summary.mode} · ${cards === 'junzheng' ? '标准＋军争' : '标准牌包'} · 第 ${summary.turn} 回合 · ${summary.reason}`;
+  document.getElementById('settlement-detail')!.textContent = `${summary.mode} · ${cards === 'junzheng' ? '标准＋军争' : '标准牌包'}${game.config.generalPacks?.length ? ' · ' + generalPackLabel(game.config.generalPacks) : ''} · 第 ${summary.turn} 回合 · ${summary.reason}`;
   const list = document.getElementById('settlement-players')!;
   const stats = battleReport(summary.rows.map(row => row.seat - 1),
     Object.fromEntries(game.players.map(player => [player.id, player.role ?? ''])), game.events);
@@ -80,10 +81,10 @@ export function showSettlement(obs: Observation, mode: 'duel' | 'identity', game
   renderReport(summary.rows, stats);
   void uploadGame(game);
   (document.getElementById('settlement-again') as HTMLButtonElement).onclick = () => {
-    location.href = gameUrl(location.pathname, cards, mode);
+    location.href = gameUrl(location.pathname, cards, mode, game.config.generalPacks);
   };
   (document.getElementById('settlement-modes') as HTMLButtonElement).onclick = () => {
-    location.href = gameUrl(location.pathname, cards);
+    location.href = gameUrl(location.pathname, cards, undefined, game.config.generalPacks);
   };
   overlay.classList.remove('hidden');
   overlay.focus();

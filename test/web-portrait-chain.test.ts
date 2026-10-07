@@ -7,7 +7,7 @@ import { portraitChainLinks, portraitChainUpdate } from '../src/web/portrait-cha
 import { fixture } from './support/scenario-builder.ts';
 
 test('各模式画像的锁链闭合环绕四边，转角平滑，链节间距一致', () => {
-  for (const [width, height] of [[196, 218], [196, 242], [172, 214], [204, 260]]) {
+  for (const [width, height] of [[196, 194], [196, 214], [172, 214], [204, 214], [204, 260]]) {
     const links = portraitChainLinks(width, height);
     assert.ok(links.length > 55);
     for (const edge of [

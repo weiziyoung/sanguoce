@@ -47,9 +47,15 @@ export class TableHud {
     const tuxiSelecting = model?.tuxiActive ?? false;
     const qilinSelecting = model?.decision.kind === 'qilin';
     const guanshiSelecting = model?.decision.kind === 'guanshi';
+    const content = model?.decision.kind === 'contentChoice' ? model.decision.context as { ability: string; timing: string; amount?: number } : undefined;
     let prompt = busy || !model ? '对手正在行动…' : model.decision.title;
     if (ready && model) {
-      if (model.decision.kind === 'fireAttackReveal') prompt = '火攻：点选一张手牌并确认展示';
+      if (content?.ability === 'wind.tianxiang') prompt = `天香：选择红桃或黑桃手牌，再选择伤害接收者（${content.amount ?? 1}点伤害）`;
+      else if (content?.ability === 'wind.leiji') prompt = '雷击：点击亮起的武将，再确认判定目标';
+      else if (content?.ability === 'wind.shensu') prompt = content.timing === 'judge' ? '神速：选择杀的目标，跳过判定与摸牌' : '神速：选择手牌或桌面装备，再选择杀的目标';
+      else if (content?.ability === 'wind.buqu' && content.timing === 'remove') prompt = '不屈：选择中央亮出的不屈牌，再确认移去';
+      else if (model.decision.kind === 'pindian') prompt = '拼点：点选一张手牌并确认 · 双方选定后同时公开';
+      else if (model.decision.kind === 'fireAttackReveal') prompt = '火攻：点选一张手牌并确认展示';
       else if (model.decision.kind === 'fireAttackPay') prompt = '火攻：选择同花色手牌弃置，或放弃';
       else if (tuxiSelecting) prompt = `突袭：点选一至两名有手牌的其他角色（已选 ${model.targets.length}/2）`;
       else if (tuxiIntent) prompt = '摸牌阶段：发动突袭，或正常摸两张牌';
@@ -84,7 +90,7 @@ export class TableHud {
     play.onclick = () => { if (model?.decision.kind === 'discard') submitBatch(batch); else if (primary) submit(primary); };
     const end = node('end-action') as HTMLButtonElement;
     end.classList.toggle('hidden', Boolean(ganglieIntent || tuxiIntent));
-    end.textContent = model?.decision.kind === 'fireAttackPay' ? '放弃火攻' : finish ? '结束出牌' : qilinSelecting || guanshiSelecting ? '不发动' : pass?.actionType === 'cancel' ? '取消发动' : '不响应';
+    end.textContent = model?.decision.kind === 'fireAttackPay' ? '放弃火攻' : finish ? '结束出牌' : qilinSelecting || guanshiSelecting || content ? '不发动' : pass?.actionType === 'cancel' ? '取消发动' : '不响应';
     end.disabled = !ready || !(finish ?? pass); end.onclick = () => { const c = finish ?? pass; if (c) submit(c); };
     const cancel = node('cancel-action') as HTMLButtonElement;
     cancel.textContent = ganglieDiscarding || tuxiSelecting ? '返回选择' : '撤销选择';

@@ -26,8 +26,6 @@ dist-preview/
 
 # Retain legacy research locally; the public runtime uses its own AI profiles.
 /noname-ai-data.ts
-/src/policies/versions/v[0-4]/
-/scripts/benchmark-rule-versions.ts
 
 # Private regression data tied to the retired strategy.
 /test/internal/

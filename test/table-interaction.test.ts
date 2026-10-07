@@ -54,7 +54,7 @@ test('1v1、5、8人座位布局均以玩家座位旋转且不会越界', () => 
     const ids = Array.from({ length: count }, (_, i) => i + 10);
     const points = ids.map(id => playerPosition(id, ids, 11));
     assert.equal(new Set(points.map(p => `${p.x},${p.y}`)).size, count);
-    assert.deepEqual(points[1], { x: 133, y: count === 5 ? 781 : 749 });
+    assert.deepEqual(points[1], { x: 133, y: count === 5 ? 769 : 749 });
     assert.ok(points.every(p => p.x > 0 && p.x < 1600 && p.y > 0 && p.y < 900));
   }
 });

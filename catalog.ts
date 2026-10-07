@@ -21,6 +21,7 @@ export interface Card {
   slot?: 'weapon' | 'armor' | 'plusHorse' | 'minusHorse';
 }
 export interface VirtualCard {
+  subcards?: readonly number[];
   name: CardName;
   suit: Suit | null;
   color?: "red" | "black" | "none";

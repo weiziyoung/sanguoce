@@ -13,10 +13,10 @@ export interface ZonePick {
 
 /** Present every legal zone choice together; hidden hands remain card backs. */
 export function zonePickerChoices(obs: Observation, model: TableInteraction | null): ZonePick[] {
-  if (model?.decision.kind === 'guanshi') {
+  if (model && (['guanshi', 'contentChoice', 'judgeReplace'].includes(model.decision.kind) || model.decision.kind === 'play' && model.focus)) {
     // A cost option contains a pair of IDs, not a zone action. Show each owned
     // equipment card once, but leave its click to normal multi-card selection.
-    const costs = model.scoped.filter(choice => choice.actionType === 'guanshi');
+    const costs = model.scoped;
     return Object.values(obs.self.equip).flatMap<ZonePick>(card => {
       if (!card) return [];
       const choice = costs.find(choice => choice.cardIds.includes(card.id));

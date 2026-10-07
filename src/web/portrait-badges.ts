@@ -1,5 +1,7 @@
 import type Phaser from 'phaser';
 import type { VisiblePlayer } from '../../contracts.ts';
+import { NAMES, type Card } from '../../catalog.ts';
+import { JUDGE_MARKER } from './layout.ts';
 import { text } from './visuals.ts';
 
 const FACTIONS = {
@@ -22,6 +24,22 @@ function shape(g: Phaser.GameObjects.Graphics, vertices: BadgePoint[], dx = 0, d
   for (const point of vertices.slice(1)) g.lineTo(point.x + dx, point.y + dy);
   if (closed) g.closePath();
   return g;
+}
+
+/** Small seals keep delayed tricks recognizable without showing a full card at rest. */
+export function delayedTrickMarker(scene: Phaser.Scene, x: number, y: number, card: Card) {
+  const view = scene.add.container(x, y).setSize(JUDGE_MARKER.width, JUDGE_MARKER.height);
+  const g = scene.add.graphics();
+  g.fillStyle(0x0d1c19, 0.95).fillRoundedRect(-13, -13, 26, 26, 3);
+  g.lineStyle(1, 0xb2945e, 0.85).strokeRoundedRect(-13, -13, 26, 26, 3);
+  view.add(g);
+  if (card.name === 'shandian') {
+    shape(g.fillStyle(0xf2d299), points([[3, -10], [-7, 2], [-1, 2], [-4, 10], [8, -3], [2, -3]])).fillPath();
+  } else {
+    const glyph = card.name === 'lebu' ? '乐' : card.name === 'bingliang' ? '兵' : (NAMES[card.name] ?? card.name)[0];
+    view.add(text(scene, 0, 0, glyph, 21, '#f2d299'));
+  }
+  return view;
 }
 
 /** A stitched, fork-tailed banner anchored to the portrait's name column. */

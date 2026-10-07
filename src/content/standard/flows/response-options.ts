@@ -17,7 +17,7 @@ export function responseOptions(state: GameState, actor: number, need: 'sha' | '
       { type: 'respond', ids: cost.ids, ...transformationAction(ability) }));
   }
   if (need === 'shan' && baguaAllowed) {
-    options.push(leaf('respond:bagua', '发动【八卦阵】判定', { type: 'bagua' }));
+    options.push(leaf('respond:bagua', `发动【${runtime.abilities.list(state, actor).find(skill => skill.modifier?.autoShan?.(state, actor))?.label ?? '八卦阵'}】判定`, { type: 'bagua' }));
   }
   options.push(leaf('respond:pass', `不打出【${NAMES[need]}】`, { type: 'pass' }));
   return options;

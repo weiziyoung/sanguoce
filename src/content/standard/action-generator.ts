@@ -97,8 +97,8 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
         const prefix = transformationKey(ability);
         const choices: InternalOption[] = costs.map(({ ids, transformation }) => ({
           id: `${prefix}:${ids.join(':')}`, label: transformationCostLabel(s, ids),
-          children: targets.map(id => leaf(`${prefix}:${ids.join(':')}:${id}`, `目标：${person(s, id).label}`, {
-            type: 'virtualSha', ids, targets: [id], ...transformationAction(transformation),
+          children: subsets(targets, runtime.queries.shaTargets(s, actor)).map(selected => leaf(`${prefix}:${ids.join(':')}:${selected.join(':')}`, `目标：${selected.map(id => person(s, id).label).join('、')}`, {
+            type: 'virtualSha', ids, targets: selected, ...transformationAction(transformation),
           })),
         }));
         const label = ability === 'standard.zhangba' ? '丈八蛇矛：两张手牌当【杀】' :
@@ -125,19 +125,23 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
       (item): item is NonNullable<typeof item> => item !== undefined)) {
       const cname = transformation.produces;
       const definition = runtime.content.card(cname);
-      if (!['trick', 'delay'].includes(definition.kind) || definition.play.targeting !== 'single') continue;
+      if (!['trick', 'delay'].includes(definition.kind) || !['single', 'multiple', 'none'].includes(definition.play.targeting)) continue;
       const costs = runtime.transforms.candidates(s, actor, cname).filter(item =>
-        item.virtual && item.transformation === transformation.id && item.ids.length === 1);
-      const targets = alive(s).filter(id => id !== actor &&
+        item.virtual && item.transformation === transformation.id);
+      const targets = alive(s).filter(id => (definition.play.allowSelf || id !== actor) &&
         targetAllowed(s, actor, id, cname, definition.play.targetRule, runtime));
-      const choices = costs.map(cost => ({
-        id: `virtual-trick:${transformation.id}:${cost.ids.join(':')}`,
-        label: transformationCostLabel(s, cost.ids),
-        children: targets.map(target => leaf(`virtual-trick:${transformation.id}:${cost.ids.join(':')}:${target}`,
-          `目标：${person(s, target).label}`, definition.kind === 'delay' ?
-            { type: 'virtualDelay', cname, ids: cost.ids, targets: [target], transformation: transformation.id } :
-            { type: 'virtualTrick', cname, ids: cost.ids, targets: [target], transformation: transformation.id })),
-      })).filter(item => item.children.length);
+      const groups = definition.play.targeting === 'none' ? [[]] : definition.play.targeting === 'multiple' ?
+        subsets(targets, definition.play.maxTargets ?? 1) : targets.map(id => [id]);
+      const choices = costs.map(cost => {
+        const prefix = `virtual-trick:${transformation.id}:${cost.ids.join(':')}`;
+        const children: InternalOption[] = groups.map(selected => leaf(`${prefix}:${selected.join(':') || 'all'}`,
+          selected.length ? `目标：${selected.map(id => person(s, id).label).join('、')}` : `使用【${definition.label}】`,
+          definition.kind === 'delay' ? { type: 'virtualDelay', cname, ids: cost.ids, targets: selected, transformation: transformation.id } :
+            { type: 'virtualTrick', cname, ids: cost.ids, targets: selected, transformation: transformation.id }));
+        if (definition.play.recast) children.push(leaf(`${prefix}:recast`, '重铸：弃置此牌并摸一张牌',
+          { type: 'virtualRecast', cname, ids: cost.ids, transformation: transformation.id }));
+        return { id: prefix, label: transformationCostLabel(s, cost.ids), children };
+      }).filter(item => item.children.length);
       if (choices.length) options.push({ id: `virtual-trick:${transformation.id}`,
         label: `【${skill.label ?? skill.id}】当【${definition.label}】使用`, children: choices });
     }

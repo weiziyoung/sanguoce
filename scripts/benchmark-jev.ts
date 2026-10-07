@@ -5,7 +5,7 @@ import { GameEngine } from '../engine.ts';
 import { standardContent } from '../src/content/standard/content.ts';
 import { JevPolicy } from '../src/policies/jev-policy.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 
 const args = process.argv.slice(2);
 function option(name: string, fallback: string): string {
@@ -42,7 +42,7 @@ type Report = { modelRequested: string; modelObserved: string[]; baseline: strin
   usage: { calls: number; inputTokens: number; outputTokens: number }; results: Result[]; progress: Progress | null };
 
 const config = {
-  modelRequested: 'jev-latest', baseline: `StrategicPolicy ${RULE_POLICY_VERSION}`, mode: 'duel', labels: 'seat',
+  modelRequested: 'jev-latest', baseline: rulePolicyBaseline, mode: 'duel', labels: 'seat',
   games, seedsPerGeneral, seedStart, stepLimit,
   generals: generals.map(({ id, label }) => ({ id, label })),
 };

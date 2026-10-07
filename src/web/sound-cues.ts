@@ -71,7 +71,8 @@ export function eventSounds(event: VisibleEvent, obs: Observation, manifest: Ass
     const name = event.data.produces ?? 'sha';
     const separatelyAnnounced = obs.events.some(next => next.id > event.id && next.id - event.id <= 4 &&
       ((next.kind === 'cardUsed' && next.data.source === event.data.owner && next.data.effectiveName === name) ||
-       (next.kind === 'delayPlaced' && next.data.source === event.data.owner && next.data.effectiveName === name)));
+       (next.kind === 'delayPlaced' && next.data.source === event.data.owner && next.data.effectiveName === name) ||
+       (next.kind === 'cardRecast' && next.data.player === event.data.owner && name === 'tiesuo')));
     if (!separatelyAnnounced && event.data.responseMode !== 'juedou')
       sounds.push(cardVoice(manifest.cardAudio[name], sex(event.data.owner)));
   } else if (event.kind === 'cardRecast') {

@@ -147,7 +147,7 @@ test('体力超上限不多画格子，死亡状态即使体力为正也全部�
 });
 
 test('短名、长名及三至五血的血条始终在名字下方且不越出头像底部', () => {
-  for (const height of [214, 218, 242, 260]) for (const nameHeight of [54, 81]) for (const count of [3, 4, 5]) {
+  for (const height of [194, 214, 260]) for (const nameHeight of [54, 81]) for (const count of [3, 4, 5]) {
     const nameBottom = -height / 2 + 43 + nameHeight;
     const slots = healthPipLayout(nameBottom, height / 2, count);
     assert.equal(slots.length, count);

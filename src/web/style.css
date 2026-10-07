@@ -13,6 +13,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; transition: back
 button:focus-visible { outline: 2px solid #ffe0a0; outline-offset: 3px; }
 button:disabled { cursor: default; }
 .screen-overlay.mode-screen { background: #30363a url('/boot-scene-v2.png') center/cover no-repeat; }
+.home-links { position: absolute; top: 2%; right: 13%; display: flex; align-items: center; gap: .8cqw; }
+.home-links a { color: #e1dbcd; border-color: #e3ddd088; background: #15202599; text-decoration: none; white-space: nowrap; transition: background .15s, border-color .15s; }
+.home-links a:hover { background: #283238bb; border-color: #f4f0e5; }
+.home-links a:focus-visible { outline: 2px solid #ffe0a0; outline-offset: 3px; }
 .mode-screen .mode-panel { position: absolute; bottom: 11%; width: 42cqw; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .mode-screen .mode-options { gap: 1.2cqw; }
 .card-set-options { display: flex; justify-content: center; gap: 2cqw; margin: 0 0 1.2cqw; padding: .8cqw; border: 1px solid #e3ddd077; background: #15202599; backdrop-filter: blur(4px); }

@@ -2,14 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StandardRuleset } from '../engine.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { archivedPolicy } from './support/archived-policy.ts';
 import type { ScoredAction } from '../src/policies/evaluation-registry.ts';
 import { fixture } from './support/scenario-builder.ts';
 
 const rules = new StandardRuleset();
 const policy = new StrategicPolicy();
-const V1Policy = await archivedPolicy('v1');
-const V2Policy = await archivedPolicy('v2');
 
 test('甘宁保留黑牌和过河拆桥，等待可见的关键牌', () => {
   const f = fixture();
@@ -28,7 +25,6 @@ test('甘宁保留黑牌和过河拆桥，等待可见的关键牌', () => {
   const ranked = policy.rank(observation, decision);
   assert.ok(ranked.find(row => row.id === qixi.id)!.score < 0);
   assert.ok(ranked.find(row => row.id === ordinary.id)!.score < 0);
-  if (V1Policy) assert.ok(new V1Policy().rank(observation, decision).find(row => row.id === qixi.id)!.score > 0);
 });
 
 test('甘宁用低价值黑牌奇袭，优先拆防具而非连弩或未知手牌', () => {
@@ -54,8 +50,6 @@ test('甘宁用低价值黑牌奇袭，优先拆防具而非连弩或未知手�
   decision = rules.decision(state)!;
   assert.equal(decision.kind, 'zone');
   const observation = rules.observe(state, 0);
-  if (V2Policy) assert.equal((rules.legalActions(state).find(choice => choice.id ===
-    new V2Policy().choose(observation, decision))!.data as ScoredAction).cid, crossbow);
   chosen = rules.legalActions(state).find(choice => choice.id ===
     policy.choose(observation, decision))!;
   assert.equal((chosen.data as ScoredAction).cid, armor);

@@ -11,12 +11,13 @@ export class CaoCaoGeneral implements StandardGeneralModule {
       event: 'damageTaken', priority: 5, optional: true,
       owners: (_state, event) => [event.data.target],
       eligible: (state, event, owner) => event.data.target === owner &&
-        typeof event.data.card === 'number' && state.table.includes(event.data.card),
+        (typeof event.data.card === 'number' ? state.table.includes(event.data.card) : Boolean(event.data.card && 'subcards' in event.data.card && event.data.card.subcards?.some(id => state.table.includes(id)))),
       execute: (state, event, owner) => {
         const card = event.data.card;
-        if (typeof card !== 'number') return;
-        cardMovement.move(state, [card], { kind: 'hand', owner });
-        emitEvent(state, 'gained', { from: owner, to: owner, card, hidden: false });
+        const ids = (typeof card === 'number' ? [card] : card && 'subcards' in card ? card.subcards ?? [] : []).filter(id => state.table.includes(id));
+        if (!ids.length) return;
+        cardMovement.move(state, ids, { kind: 'hand', owner });
+        for (const id of ids) emitEvent(state, 'gained', { from: owner, to: owner, card: id, hidden: false });
       },
     } },
     { id: 'standard.hujia', label: '护驾', lordSkill: true,

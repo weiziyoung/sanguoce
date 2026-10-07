@@ -11,7 +11,8 @@ export interface PlayerState {
   general?: string;
   group?: 'wei' | 'shu' | 'wu' | 'qun';
   hp: number; maxHp: number; alive: boolean;
-  chained?: boolean; drunk?: number;
+  chained?: boolean; drunk?: number; faceDown?: boolean;
+  piles?: Record<string, number[]>; skillFlags?: Record<string, boolean>;
   hand: number[]; equip: Equipment; judge: number[];
 }
 export interface AttackContext {
@@ -32,15 +33,19 @@ export type ResponseContext =
       redirectedBy?: number; forcedBy?: number; baguaTried?: boolean;
       remaining?: number; proxyTried?: boolean }
   | { mode: 'juedou' | 'nanman' | 'wanjian'; actor: number; source: number;
-      cardId?: number; cardName?: CardName; baguaTried?: boolean; remaining?: number; proxyTried?: boolean };
+      cardId?: number; card?: CardLike; cardName?: CardName; baguaTried?: boolean; remaining?: number; proxyTried?: boolean };
 export interface TaskData {
   openTriggers: { signal: TriggerSignal; then: Task[] }; triggerCollect: {}; triggerNext: {}; triggerExecute: {};
   cardUseStart: {}; responsePoll: {}; proxyResponsePoll: {}; proxyResponseSuccess: {};
   attackPrepare: {}; attackLaunch: {};
   equipmentLeft: { owner: number; cid: number };
-  fireAttackPay: { source: number; target: number; cid: number; suit: import('../../catalog.ts').Suit };
+  fireAttackPay: { source: number; target: number; cid: number; card?: CardLike; suit: import('../../catalog.ts').Suit };
   damagePropagate: { target: number; source: number | null; amount: number; card: number | CardLike | null; nature: DamageNature };
-  damageApply: {}; dyingPoll: {}; nullifyPoll: {};
+  damagePrepare: {}; damageApply: {}; dyingPoll: {}; nullifyPoll: {};
+  pindianOffer: {}; pindianResolve: {};
+  contentChoiceOffer: {}; contentCallback: { ability: string; owner: number; context: ContentChoiceContext };
+  contentHpChanged: { player: number; before: number; after: number };
+  phaseBefore: { phase: 'judge' | 'play' };
   skillExecute: {}; skillEffect: {}; skillDying: {}; skillSelectCost: {}; skillSelectTarget: {};
   distributionPoll: {};
   deckReorderPoll: {};
@@ -49,7 +54,7 @@ export interface TaskData {
   applyAttackJudgement: AttackContext & { ability: string };
   applySkillJudgement: { ability: string; owner: number; source: number | null };
   resolveCardUse: { source: number; cid: number; targets: number[] };
-  resolveVirtualTrick: { source: number; cid: number; cname: CardName; targets: number[] };
+  resolveVirtualTrick: { source: number; cid: number; cname: CardName; targets: number[]; card?: CardLike };
   death: { context: DeathContext };
   phaseStart: {}; phaseJudge: {}; phaseDraw: {}; phasePlay: {}; phaseDiscard: {}; phaseEnd: {};
   phaseStartOffer: { ability: string; owner: number };
@@ -69,8 +74,13 @@ export interface TaskData {
 }
 export type TaskOf<K extends keyof TaskData> = { kind: K } & TaskData[K];
 export type Task = { [K in keyof TaskData]: TaskOf<K> }[keyof TaskData];
+export type ContentChoiceContext = { timing: string; target?: number; source?: number | null;
+  amount?: number; before?: number; after?: number; finalId?: number | null; won?: boolean };
+export interface ContentChoiceAction { type: 'choose' | 'pass'; choice: string; ids: number[]; targets: number[]; }
 export interface ActionMap {
-  play: { type: 'recast'; cid: number } | { type: 'play'; cid: number; targets: number[] } |
+  pindian: { type: 'pindian'; cid: number };
+  contentChoice: ContentChoiceAction;
+  play: { type: 'virtualRecast'; ids: number[]; cname: CardName; transformation: string } | { type: 'recast'; cid: number } | { type: 'play'; cid: number; targets: number[] } |
     { type: 'virtualSha'; ids: number[]; targets: number[]; transformation?: string } |
     { type: 'virtualTrick'; cname: CardName; ids: number[]; targets: number[]; transformation: string } |
     { type: 'virtualDelay'; cname: CardName; ids: number[]; targets: number[]; transformation: string } |
@@ -92,7 +102,7 @@ export interface ActionMap {
   phaseDrawChoice: { type: 'normal' } | { type: 'skill'; ability: string; choice: string; targets?: number[] };
   judgeReplace: { type: 'replace'; cid: number } | { type: 'pass' };
   discard: { type: 'discard'; cid: number };
-  nullify: { type: 'nullify'; cid: number } | { type: 'pass' };
+  nullify: { type: 'nullify'; cid: number; transformation?: string } | { type: 'pass' };
   dying: { type: 'save'; ids: number[]; transformation?: string } | { type: 'pass' };
   respond: { type: 'respond'; ids: number[]; transformation?: string } |
     { type: 'bagua' } | { type: 'proxy'; ability: string } | { type: 'pass' };
@@ -111,9 +121,11 @@ export interface ActionMap {
   qilin: { type: 'qilin'; cid: number } | { type: 'pass' };
 }
 export interface PromptContextMap {
+  pindian: { ability: string; source: number; target: number };
+  contentChoice: ContentChoiceContext & { ability: string; owner: number };
   attackPrepare: { ability: string; source: number; targets: number[]; damageBonus: number };
-  fireAttackReveal: { source: number; target: number; cid: number };
-  fireAttackPay: { source: number; target: number; cid: number; suit: import('../../catalog.ts').Suit };
+  fireAttackReveal: { source: number; target: number; cid: number; card?: CardLike };
+  fireAttackPay: { source: number; target: number; cid: number; card?: CardLike; suit: import('../../catalog.ts').Suit };
   play: {}; discard: { required: number }; nullify: {}; dying: { target?: number }; wugu: {};
   skillCost: { ability: string; selectedIds: number[] }; skillTarget: { ability: string; selectedIds: number[] };
   skillFollowup: { ability: string; owner: number };
@@ -157,7 +169,7 @@ export interface GameState {
   skillUses?: { owner: number; ability: string; turn: number; count: number }[];
   skillProgress?: { owner: number; ability: string; turn: number; count: number }[];
   virtualJudgeNames?: { card: number; name: CardName }[];
-  jiuUsed?: number; skipDraw?: boolean;
+  jiuUsed?: number; skipDraw?: boolean; skipJudge?: boolean;
   mode: ModeState; outcome: GameOutcome; events: RuleEvent[]; skipPlay: boolean;
 }
 

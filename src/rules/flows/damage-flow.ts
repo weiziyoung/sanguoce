@@ -9,19 +9,29 @@ import type { ContentRuntime } from '../content-runtime.ts';
 
 export function damage(s: GameState, target: number, source: number | null, amount = 1,
   continuation: Task | null = null, causeCard: CardLike | number | null = null,
-  intent: { redirectedBy?: number; forcedBy?: number; nature?: DamageNature; ignoreArmor?: boolean; propagated?: boolean } = {}): void {
+  intent: { redirectedBy?: number; forcedBy?: number; nature?: DamageNature; ignoreArmor?: boolean; propagated?: boolean; sourceModified?: boolean } = {}): void {
   const cause = typeof causeCard === 'number' ? s.cards[causeCard] : causeCard;
   const nature = intent.nature ?? cause?.nature ?? 'normal';
   resolutionStack.open(s, 'damage', { target, source, amount, card: causeCard,
     ...(nature === 'normal' ? {} : { nature }), ...intent },
-    [{ kind: 'damageApply' }, ...(continuation ? [continuation] : [])]);
+    [{ kind: 'damagePrepare' }, { kind: 'damageApply' }, ...(continuation ? [continuation] : [])]);
+}
+
+export function prepareDamage(s: GameState, runtime: ContentRuntime): void {
+  const context = resolutionStack.require(s, 'damage').data;
+  if (!person(s, context.target).alive || context.amount <= 0) return;
+  if (!context.sourceModified && !context.propagated && context.source !== null) {
+    context.amount = runtime.queries.sourceDamageAmount(s, context.source, context.target, context.card, context.amount);
+  }
+  context.sourceModified = true;
+  for (const skill of runtime.abilities.list(s, context.target)) skill.beforeDamage?.(s, context.target, runtime);
 }
 
 export function handleDamageApplyTask(s: GameState, runtime: ContentRuntime): void {
   const context = resolutionStack.require(s, 'damage').data;
   const { target, source, amount, card, redirectedBy, forcedBy, propagated } = context;
   const p = person(s, target);
-  if (!p.alive) return;
+  if (!p.alive || context.cancelled) return;
   const actual = runtime.queries.damageAmount(s, source, target, card, amount, context);
   if (!Number.isInteger(actual) || actual < 0) throw new Error('伤害修正结果无效');
   if (!actual) return;
@@ -36,6 +46,9 @@ export function handleDamageApplyTask(s: GameState, runtime: ContentRuntime): vo
   emitEvent(s, 'damaged', { target, source, amount: actual, hp: p.hp, maxHp: p.maxHp, card,
     ...(nature === 'normal' ? {} : { nature }), ...(propagated ? { propagated } : {}),
     ...(redirectedBy === undefined ? {} : { redirectedBy }), ...(forcedBy === undefined ? {} : { forcedBy }) });
+  if (source !== null && person(s, source).alive) {
+    for (const skill of runtime.abilities.list(s, source)) skill.afterDamage?.(s, source, context, actual, runtime);
+  }
   // LIFO enqueue: damage triggers and dying complete before each propagation.
   if (targets.length) resolutionStack.enqueue(s, ...targets.map(target => ({ kind: 'damagePropagate' as const,
     target, source, amount: actual, card, nature })));

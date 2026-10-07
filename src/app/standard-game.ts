@@ -19,7 +19,7 @@ import { ContentRegistry } from '../rules/content-registry.ts';
 import { ContentRuntime } from '../rules/content-runtime.ts';
 import { random } from '../rules/operations/random.ts';
 
-export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry | undefined = undefined, content: ContentRegistry = contentForCards(config.cards)): GameState {
+export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry | undefined = undefined, content: ContentRegistry = contentForCards(config.cards, config.generalPacks)): GameState {
   const runtime = new ContentRuntime(content, triggers);
   const {
     seed = 1, players = [
@@ -99,7 +99,7 @@ export class StandardRuleset implements RuleSet<GameState> {
   }
   isFinished(state: GameState): boolean { return state.outcome.status !== 'ongoing'; }
   create(config: GameConfig = {}, trace?: TransitionSink<GameState>) {
-    if (config.cards && this.#content !== contentForCards(config.cards)) throw new Error('卡包配置与规则装配不一致');
+    if ((config.cards || config.generalPacks) && this.#content !== contentForCards(config.cards, config.generalPacks)) throw new Error('卡包配置与规则装配不一致');
     return createGame({ ...config, deck: config.deck ?? this.pack.cards }, trace, this.#modes, this.#triggers, this.#content);
   }
   decision(state: GameState): Decision | null { return decision(state); }

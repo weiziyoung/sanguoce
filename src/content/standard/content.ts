@@ -7,7 +7,7 @@ import { standardGeneralDefinitions, standardGeneralSkills } from './generals.ts
 const standardSkills: readonly SkillDefinition[] = [
   ...standardTriggerDefinitions.map(trigger => ({ id: trigger.id, label: trigger.label, trigger })),
   ...standardGeneralSkills,
-  { id: 'standard.bagua', label: NAMES.bagua },
+  { id: 'standard.bagua', label: NAMES.bagua, modifier: { autoShan: () => true } },
   { id: 'standard.qinggang', label: NAMES.qinggang, modifier: { ignoresArmor: () => true } },
   { id: 'standard.plusHorse', label: '防御坐骑', modifier: {
     distance: (_s, owner, _from, to, current) => owner === to ? current + 1 : current,
@@ -17,7 +17,7 @@ const standardSkills: readonly SkillDefinition[] = [
   } },
   { id: 'standard.zhuge', label: NAMES.zhuge, modifier: { shaLimit: () => Infinity } },
   { id: 'standard.fangtian', label: NAMES.fangtian, modifier: {
-    shaTargets: (state, owner, current) => state.players[owner].hand.length === 1 ? 3 : current,
+    shaTargets: (state, owner, current) => state.players[owner].hand.length === 1 ? current + 2 : current,
   } },
   { id: 'standard.zhangba', label: NAMES.zhangba, transformation: {
     id: 'standard.zhangba', grantedBy: 'standard.zhangba', produces: 'sha',

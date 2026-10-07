@@ -39,7 +39,7 @@ function modelSkills(player: VisiblePlayer): string {
   }).join('；');
 }
 function modelEvent(line: string): string {
-  return line.replace(/\b(?:standard|pilot)\.[a-z][\w.-]*\b/giu, id => {
+  return line.replace(/\b(?:standard|pilot|wind|fire)\.[a-z][\w.-]*\b/giu, id => {
     const cardId = id.startsWith('standard.') ? id.slice('standard.'.length) : id;
     const label = (NAMES as Record<string, string>)[cardId] ?? STANDARD_MODEL_SKILL_NAMES[id];
     if (!label) throw new Error(`事件展示名称缺失：${id}`);
@@ -68,7 +68,10 @@ function hearts(player: VisiblePlayer): string {
   return "♥".repeat(Math.max(0, player.hp)) + "♡".repeat(Math.max(0, player.maxHp - player.hp));
 }
 function publicStatus(player: VisiblePlayer): string {
-  return [player.chained ? '连环' : '', player.drunk ? '已饮酒：本回合下一张【杀】伤害+1，使用该杀即消耗' : '']
+  return [player.faceDown ? '背面朝上：下个回合跳过并翻回正面' : '',
+    player.spentLimitedSkills?.length ? `已用限定技：${player.spentLimitedSkills.map(id => STANDARD_MODEL_SKILL_NAMES[id] ?? id).join('、')}` : '',
+    player.piles?.['wind.buqu']?.length ? `不屈牌点数：${player.piles['wind.buqu'].map(card => card.rank).join('、')}` : '',
+    player.chained ? '连环' : '', player.drunk ? '已饮酒：本回合下一张【杀】伤害+1，使用该杀即消耗' : '']
     .filter(Boolean).join('；') || '无';
 }
 function cellWidth(character: string): number {

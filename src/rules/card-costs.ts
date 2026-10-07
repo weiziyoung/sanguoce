@@ -10,7 +10,9 @@ export function effectiveCard(s: GameState, actor: number, ids: number[], need: 
   runtime: ContentRuntime, transformation?: string): CardLike {
   if (ids.length === 1 && !transformation) {
     if (!s.players[actor].hand.includes(ids[0]) || card(s, ids[0]).name !== need) throw new Error('实体响应牌已失效');
-    return card(s, ids[0]);
+    const physical = card(s, ids[0]);
+    const suit = runtime.queries.suit(s, actor, physical);
+    return suit && suit !== physical.suit ? { ...physical, suit } : physical;
   }
   const candidate = runtime.transforms.candidates(s, actor, need)
     .find(item => item.virtual && (transformation ? item.transformation === transformation : true) &&

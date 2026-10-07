@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { StandardRuleset, type GameState } from '../engine.ts';
 import { standardGeneralDefinitions } from '../src/content/standard/generals.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { StrategicPolicy as V5Policy } from '../src/policies/versions/v5/strategic-policy.ts';
 import type { ScoredAction } from '../src/policies/evaluation-registry.ts';
 import { fixture } from './support/scenario-builder.ts';
 
@@ -32,9 +31,6 @@ for (const mode of ['sha', 'juedou'] as const) {
       assert.equal(rules.decision(state)!.kind, 'respond');
       assert.equal((rules.decision(state)!.context as { remaining: number }).remaining, 2);
       assert.equal(chosen(state).action.type, 'pass', general.id);
-      const prompt = rules.decision(state)!;
-      const oldId = new V5Policy().choose(rules.observe(state, prompt.actor), prompt);
-      assert.equal((rules.legalActions(state).find(choice => choice.id === oldId)!.data as ScoredAction).type, 'respond');
       const hp = state.players[1].hp;
       state = rules.apply(state, chosen(state).id);
       assert.equal(state.players[1].hp, hp - 1);

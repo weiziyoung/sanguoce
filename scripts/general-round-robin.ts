@@ -1,3 +1,4 @@
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { GameEngine } from '../engine.ts';
@@ -31,7 +32,7 @@ const total = generals.length * (generals.length - 1) / 2 * gamesPerPair;
 function save(): void {
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, JSON.stringify({
-    policy: 'StrategicPolicy', policyVersion: policy.version, mode: 'duel', generals: generals.map(({ id, label }) => ({ id, label })),
+    policy: 'StrategicPolicy', policySource: rulePolicyBaseline, mode: 'duel', generals: generals.map(({ id, label }) => ({ id, label })),
     gamesPerPair, seedStart, stepLimit, total, completed: results.length, results,
   }, null, 2) + '\n');
 }

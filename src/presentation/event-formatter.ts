@@ -12,6 +12,11 @@ export function formatEvent(event: RuleEvent | VisibleEvent, labels: EventLabels
   const card = (id: number) => cardText(labels.cards[id]);
   const name = (id: string) => NAMES[id] ?? Object.values(labels.cards).find(card => card.name === id)?.label ?? id;
   switch (event.kind) {
+    case 'pindianRevealed': return `${player(event.data.source)}拼点${card(event.data.sourceCard)}，${player(event.data.target)}拼点${card(event.data.targetCard)}：发起者${event.data.won ? '赢' : '没赢'}`;
+    case 'turnedOver': return `${player(event.data.player)}将武将牌翻至${event.data.faceDown ? '背面' : '正面'}`;
+    case 'turnSkipped': return `${player(event.data.player)}跳过本回合`;
+    case 'judgementSkipped': return `${player(event.data.player)}跳过判定阶段`;
+    case 'pileChanged': return `${player(event.data.player)}的不屈牌：${event.data.cards.map(card).join('、') || '无'}`;
     case 'chainChanged': return `${player(event.data.player)}${event.data.chained ? '进入连环状态' : '解除连环状态'}`;
     case 'wineUsed': return `${player(event.data.player)}饮酒，下一张杀的伤害+${event.data.bonus}`;
     case 'cardRecast': return `${player(event.data.player)}重铸${card(event.data.card)}`;

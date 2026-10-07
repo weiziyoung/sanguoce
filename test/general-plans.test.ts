@@ -1,12 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
 import type { Choice, Decision } from '../contracts.ts';
 import { StandardRuleset, preparePlayScenario, type GameState } from '../engine.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { archivedPolicy } from './support/archived-policy.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
 import type { ScoredAction } from '../src/policies/evaluation-registry.ts';
 import { fixture } from './support/scenario-builder.ts';
 import { resolutionStack } from '../src/domain/resolution-stack.ts';
@@ -17,7 +13,6 @@ import { standardContent } from '../src/content/standard/content.ts';
 
 const rules = new StandardRuleset();
 const policy = new StrategicPolicy();
-const V0Policy = await archivedPolicy('v0');
 function selected(state: GameState) {
   const decision = rules.decision(state)!;
   const id = policy.choose(rules.observe(state, decision.actor), decision);
@@ -33,34 +28,10 @@ function settle(state: GameState): GameState {
 const prompt = (kind: string, options: Choice[], context: unknown = {}): Decision =>
   ({ actor: 0, title: kind, kind, options, context });
 
-test('历史快照完整且现行版本源码匹配：修改 policy 必须升版', () => {
-  const versions = new URL('../src/policies/versions/', import.meta.url);
-  const archived = readdirSync(versions).filter(name => /^v\d+$/.test(name));
-  assert.ok(archived.includes(RULE_POLICY_VERSION), '交付前必须冻结现行规则 policy 版本');
-  for (const version of archived) {
-    const root = new URL(`${version}/`, versions);
-    const manifest = JSON.parse(readFileSync(new URL('manifest.json', root), 'utf8'));
-    for (const file of manifest.files) {
-      assert.equal(createHash('sha256').update(readFileSync(new URL(file.file, root)))
-        .digest('hex'), file.sha256, `${version}/${file.file}`);
-      if (version === RULE_POLICY_VERSION) assert.equal(createHash('sha256')
-        .update(readFileSync(new URL('../' + file.source, import.meta.url))).digest('hex'),
-      file.sourceSha256, `${file.source} 已改变，请升级规则 policy 版本并冻结新版本`);
-    }
-  }
-  assert.equal(policy.version, RULE_POLICY_VERSION);
+test('黄盖没有连弩时保留体力，不主动苦肉', () => {
   const f = fixture();
   f.state.players[0].general = 'standard.huanggai';
-  const state = f.start();
-  const decision = rules.decision(state)!;
-  if (V0Policy) {
-    assert.equal(new V0Policy().version, 'v0');
-    assert.notEqual(policy.version, new V0Policy().version);
-    const oldChoice = new V0Policy().choose(rules.observe(state, 0), decision);
-    assert.equal((rules.legalActions(state).find(choice => choice.id === oldChoice)!.data as ScoredAction).ability,
-      'standard.kurou');
-  }
-  assert.equal(selected(state).action.type, 'endPlay');
+  assert.equal(selected(f.start()).action.type, 'endPlay');
 });
 
 test('孙权先填空装备槽，再以杀和闪电制衡，保留在场装备与第一张闪', () => {

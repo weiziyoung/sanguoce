@@ -37,8 +37,10 @@ export class TableInteraction {
   }
   get tuxiActive(): boolean { return this.focus?.id === 'ui:standard.tuxi'; }
   get unorderedTargets(): boolean {
-    return this.tuxiActive || this.decision.kind === 'play' && this.cards.length === 1 &&
-      this.unorderedTargetCards.has(this.cards[0]);
+    return this.tuxiActive || this.decision.kind === 'play' && (
+      this.cards.length === 1 && this.unorderedTargetCards.has(this.cards[0]) ||
+      this.cards.length > 0 && this.scoped.some(choice => sameCards(choice.cardIds, this.cards) &&
+        (choice.actionType === 'virtualSha' || choice.actionType === 'virtualTrick')));
   }
   get targetLimit(): number {
     return Math.max(0, ...this.scoped.filter(choice => sameCards(choice.cardIds, this.cards))

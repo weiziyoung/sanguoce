@@ -69,7 +69,22 @@
     "standard.liubei": "/assets/generals/standard.liubei.png",
     "standard.daqiao": "/assets/generals/standard.daqiao.png",
     "standard.luxun": "/assets/generals/standard.luxun.png",
-    "standard.sunshangxiang": "/assets/generals/standard.sunshangxiang.png"
+    "standard.sunshangxiang": "/assets/generals/standard.sunshangxiang.png",
+    "wind.xiahouyuan": "/assets/generals/wind.xiahouyuan.png",
+    "wind.caoren": "/assets/generals/wind.caoren.png",
+    "wind.huangzhong": "/assets/generals/wind.huangzhong.png",
+    "wind.weiyan": "/assets/generals/wind.weiyan.png",
+    "wind.xiaoqiao": "/assets/generals/wind.xiaoqiao.png",
+    "wind.zhoutai": "/assets/generals/wind.zhoutai.png",
+    "wind.zhangjiao": "/assets/generals/wind.zhangjiao.png",
+    "fire.xunyu": "/assets/generals/fire.xunyu.png",
+    "fire.dianwei": "/assets/generals/fire.dianwei.png",
+    "fire.pangtong": "/assets/generals/fire.pangtong.png",
+    "fire.wolong": "/assets/generals/fire.wolong.png",
+    "fire.taishici": "/assets/generals/fire.taishici.png",
+    "fire.yuanshao": "/assets/generals/fire.yuanshao.png",
+    "fire.yanliangwenchou": "/assets/generals/fire.yanliangwenchou.png",
+    "fire.pangde": "/assets/generals/fire.pangde.png"
   },
   "cardAudio": {
     "sha": {
@@ -585,6 +600,204 @@
       "aliases": {},
       "death": "/assets/audio/generals/standard.sunshangxiang/death.mp3",
       "selection": "/assets/audio/generals/standard.sunshangxiang/standard.xiaoji-1.mp3"
+    },
+    "wind.xiahouyuan": {
+      "skills": {
+        "wind.shensu": [
+          "/assets/audio/generals/wind.xiahouyuan/wind.shensu-1.mp3",
+          "/assets/audio/generals/wind.xiahouyuan/wind.shensu-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.xiahouyuan/death.mp3",
+      "selection": "/assets/audio/generals/wind.xiahouyuan/wind.shensu-1.mp3"
+    },
+    "wind.caoren": {
+      "skills": {
+        "wind.jushou": [
+          "/assets/audio/generals/wind.caoren/wind.jushou-1.mp3",
+          "/assets/audio/generals/wind.caoren/wind.jushou-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.caoren/death.mp3",
+      "selection": "/assets/audio/generals/wind.caoren/wind.jushou-1.mp3"
+    },
+    "wind.huangzhong": {
+      "skills": {
+        "wind.liegong": [
+          "/assets/audio/generals/wind.huangzhong/wind.liegong-1.mp3",
+          "/assets/audio/generals/wind.huangzhong/wind.liegong-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.huangzhong/death.mp3",
+      "selection": "/assets/audio/generals/wind.huangzhong/wind.liegong-1.mp3"
+    },
+    "wind.weiyan": {
+      "skills": {
+        "wind.kuanggu": [
+          "/assets/audio/generals/wind.weiyan/wind.kuanggu-1.mp3",
+          "/assets/audio/generals/wind.weiyan/wind.kuanggu-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.weiyan/death.mp3",
+      "selection": "/assets/audio/generals/wind.weiyan/wind.kuanggu-1.mp3"
+    },
+    "wind.xiaoqiao": {
+      "skills": {
+        "wind.tianxiang": [
+          "/assets/audio/generals/wind.xiaoqiao/wind.tianxiang-1.mp3",
+          "/assets/audio/generals/wind.xiaoqiao/wind.tianxiang-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.xiaoqiao/death.mp3",
+      "selection": "/assets/audio/generals/wind.xiaoqiao/selection.mp3"
+    },
+    "wind.zhoutai": {
+      "skills": {
+        "wind.buqu": [
+          "/assets/audio/generals/wind.zhoutai/wind.buqu-1.mp3",
+          "/assets/audio/generals/wind.zhoutai/wind.buqu-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.zhoutai/death.mp3",
+      "selection": "/assets/audio/generals/wind.zhoutai/wind.buqu-1.mp3"
+    },
+    "wind.zhangjiao": {
+      "skills": {
+        "wind.leiji": [
+          "/assets/audio/generals/wind.zhangjiao/wind.leiji-1.mp3",
+          "/assets/audio/generals/wind.zhangjiao/wind.leiji-2.mp3"
+        ],
+        "wind.guidao": [
+          "/assets/audio/generals/wind.zhangjiao/wind.guidao-1.mp3",
+          "/assets/audio/generals/wind.zhangjiao/wind.guidao-2.mp3"
+        ],
+        "wind.huangtian": [
+          "/assets/audio/generals/wind.zhangjiao/wind.huangtian-1.mp3",
+          "/assets/audio/generals/wind.zhangjiao/wind.huangtian-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/wind.zhangjiao/death.mp3",
+      "selection": "/assets/audio/generals/wind.zhangjiao/wind.leiji-1.mp3"
+    },
+    "fire.xunyu": {
+      "skills": {
+        "fire.quhu": [
+          "/assets/audio/generals/fire.xunyu/fire.quhu-1.mp3",
+          "/assets/audio/generals/fire.xunyu/fire.quhu-2.mp3"
+        ],
+        "fire.jieming": [
+          "/assets/audio/generals/fire.xunyu/fire.jieming-1.mp3",
+          "/assets/audio/generals/fire.xunyu/fire.jieming-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/fire.xunyu/death.mp3",
+      "selection": "/assets/audio/generals/fire.xunyu/fire.quhu-1.mp3"
+    },
+    "fire.dianwei": {
+      "skills": {
+        "fire.qiangxi": [
+          "/assets/audio/generals/fire.dianwei/fire.qiangxi-1.mp3",
+          "/assets/audio/generals/fire.dianwei/fire.qiangxi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/fire.dianwei/death.mp3",
+      "selection": "/assets/audio/generals/fire.dianwei/fire.qiangxi-1.mp3"
+    },
+    "fire.pangtong": {
+      "skills": {
+        "fire.lianhuan": [
+          "/assets/audio/generals/fire.pangtong/fire.lianhuan-1.mp3",
+          "/assets/audio/generals/fire.pangtong/fire.lianhuan-2.mp3"
+        ],
+        "fire.niepan": [
+          "/assets/audio/generals/fire.pangtong/fire.niepan-1.mp3",
+          "/assets/audio/generals/fire.pangtong/fire.niepan-2.mp3"
+        ]
+      },
+      "aliases": {
+        "fire.lianhuan": "fire.lianhuan"
+      },
+      "death": "/assets/audio/generals/fire.pangtong/death.mp3",
+      "selection": "/assets/audio/generals/fire.pangtong/fire.lianhuan-1.mp3"
+    },
+    "fire.wolong": {
+      "skills": {
+        "fire.bazhen": [
+          "/assets/audio/generals/fire.wolong/fire.bazhen-1.mp3",
+          "/assets/audio/generals/fire.wolong/fire.bazhen-2.mp3"
+        ],
+        "fire.huoji": [
+          "/assets/audio/generals/fire.wolong/fire.huoji-1.mp3",
+          "/assets/audio/generals/fire.wolong/fire.huoji-2.mp3"
+        ],
+        "fire.kanpo": [
+          "/assets/audio/generals/fire.wolong/fire.kanpo-1.mp3",
+          "/assets/audio/generals/fire.wolong/fire.kanpo-2.mp3"
+        ]
+      },
+      "aliases": {
+        "fire.huoji": "fire.huoji",
+        "fire.kanpo": "fire.kanpo"
+      },
+      "death": "/assets/audio/generals/fire.wolong/death.mp3",
+      "selection": "/assets/audio/generals/fire.wolong/fire.bazhen-1.mp3"
+    },
+    "fire.taishici": {
+      "skills": {
+        "fire.tianyi": [
+          "/assets/audio/generals/fire.taishici/fire.tianyi-1.mp3",
+          "/assets/audio/generals/fire.taishici/fire.tianyi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/fire.taishici/death.mp3",
+      "selection": "/assets/audio/generals/fire.taishici/fire.tianyi-1.mp3"
+    },
+    "fire.yuanshao": {
+      "skills": {
+        "fire.luanji": [
+          "/assets/audio/generals/fire.yuanshao/fire.luanji-1.mp3",
+          "/assets/audio/generals/fire.yuanshao/fire.luanji-2.mp3"
+        ]
+      },
+      "aliases": {
+        "fire.luanji": "fire.luanji"
+      },
+      "death": "/assets/audio/generals/fire.yuanshao/death.mp3",
+      "selection": "/assets/audio/generals/fire.yuanshao/fire.luanji-1.mp3"
+    },
+    "fire.yanliangwenchou": {
+      "skills": {
+        "fire.shuangxiong": [
+          "/assets/audio/generals/fire.yanliangwenchou/fire.shuangxiong-1.mp3",
+          "/assets/audio/generals/fire.yanliangwenchou/fire.shuangxiong-2.mp3"
+        ]
+      },
+      "aliases": {
+        "fire.shuangxiong": "fire.shuangxiong"
+      },
+      "death": "/assets/audio/generals/fire.yanliangwenchou/death.mp3",
+      "selection": "/assets/audio/generals/fire.yanliangwenchou/fire.shuangxiong-1.mp3"
+    },
+    "fire.pangde": {
+      "skills": {
+        "fire.mengjin": [
+          "/assets/audio/generals/fire.pangde/fire.mengjin-1.mp3",
+          "/assets/audio/generals/fire.pangde/fire.mengjin-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/fire.pangde/death.mp3",
+      "selection": "/assets/audio/generals/fire.pangde/fire.mengjin-1.mp3"
     }
   },
   "systemAudio": {

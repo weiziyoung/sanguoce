@@ -1,7 +1,7 @@
 import { beginAttackUse } from '../../../rules/flows/attack-use-flow.ts';
 import { emitEvent } from '../../../domain/event-journal.ts';
 import { resolutionStack } from "../../../domain/resolution-stack.ts";
-import { cardText, type CardName } from "../../../../catalog.ts";
+import { cardText, type CardName, type CardLike } from "../../../../catalog.ts";
 import { leaf, setPrompt } from "../../../core/decision-manager.ts";
 import { alive, card, person, push, stealable } from "../../../domain/state-access.ts";
 import type { ActionMap, PromptOf, TaskOf, TrickContext, ZoneContext } from "../../../domain/state.ts";
@@ -18,8 +18,8 @@ import type { ContentRuntime } from '../../../rules/content-runtime.ts';
 import { getStandardRuntime } from '../runtime.ts';
 
 export function beginTrick(s: GameState, source: number, cname: CardName, targets: number[], cid: number,
-  second: number | null = null, runtime: ContentRuntime = getStandardRuntime()): void {
-  const frame = resolutionStack.open(s, 'trick', { source, cname, cid, targets, pool: [] });
+  second: number | null = null, runtime: ContentRuntime = getStandardRuntime(), card?: CardLike): void {
+  const frame = resolutionStack.open(s, 'trick', { source, cname, cid, targets, pool: [], ...(card ? { card } : {}) });
   const harvest = runtime.content.card(cname).effect === 'harvest';
   if (harvest) {
     const pool = deckService.takeTop(s, alive(s).length, { kind: 'table' });
@@ -57,6 +57,7 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
   const definition = runtime.content.card(cname);
   if (!runtime.queries.trickEffective(s, target, cname)) return;
   if (definition.trickEffect) { definition.trickEffect(s, task, runtime); return; }
+  const effectiveCard = resolutionStack.get(s, task.trickFrameId, 'trick').data.card;
   const effect = definition.effect;
   if (effect === 'drawTwo') draw(s, target, 2);
   else if (effect === 'recoverOne') {
@@ -67,9 +68,11 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
   } else if (effect === 'requireSha' || effect === 'requireShan') {
     const mode = effect === 'requireSha' ? 'nanman' : 'wanjian';
     promptResponse(s, { mode, actor: target, source, cardId: cid,
+      ...(effectiveCard ? { card: effectiveCard } : {}),
       ...(cname === mode ? {} : { cardName: cname }) });
   } else if (effect === 'duel') {
     promptResponse(s, { mode: 'juedou', actor: target, source, cardId: cid,
+      ...(effectiveCard ? { card: effectiveCard } : {}),
       ...(cname === 'juedou' ? {} : { cardName: cname }) });
   } else if (effect === 'gainZone' || effect === 'discardZone') {
     if (stealable(s, target).length) chooseZoneOptions(s, target, { cname, source, target });

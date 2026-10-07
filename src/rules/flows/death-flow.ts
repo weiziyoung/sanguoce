@@ -24,6 +24,7 @@ export class DeathFlow {
     for (const cid of [...handAndEquip(state, victim.id), ...victim.judge]) {
       discardOwned(state, victim.id, cid);
     }
+    for (const ids of Object.values(victim.piles ?? {})) cardMovement.move(state, [...ids], { kind: 'discard' });
     // Kill rewards belong to the death itself, including a death that ends the game.
     this.effects(state, mode.onDeathWindow(state, task.context, 'afterCleanup'));
     if (outcome.status !== 'ongoing') {

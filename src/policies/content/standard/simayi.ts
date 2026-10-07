@@ -2,6 +2,7 @@ import { cardColor, type Card } from '../../../../catalog.ts';
 import type { SkillEvaluator } from '../../evaluation-registry.ts';
 
 const favorable = (reason: string, card: Card): boolean | undefined => {
+  if (reason === 'wind.leiji') return card.suit !== 'spade';
   if (reason === 'bingliang') return card.suit === 'club';
   if (reason === 'lebu') return card.suit === 'heart';
   if (reason === 'shandian') return !(card.suit === 'spade' && card.rank >= 2 && card.rank <= 9);
@@ -19,8 +20,10 @@ export const guicaiEvaluation: SkillEvaluator = (ctx, decision, _choice, action)
   const current = ctx.card(prompt.currentId);
   const replacement = ctx.card(action.cid);
   if (!current || !replacement) return -10;
-  const before = favorable(prompt.reason, current);
-  const after = favorable(prompt.reason, replacement);
+  const subject = ctx.player(prompt.subject);
+  const effective = (card: Card): Card => subject?.general === 'wind.xiaoqiao' && card.suit === 'spade' ? { ...card, suit: 'heart' } : card;
+  const before = favorable(prompt.reason, effective(current));
+  const after = favorable(prompt.reason, effective(replacement));
   if (before === undefined || after === undefined || before === after) return -10;
   return (after ? 1 : -1) * ctx.relation(prompt.subject) * 8 - 0.35 * ctx.value(action.cid);
 };

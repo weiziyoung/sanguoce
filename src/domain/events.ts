@@ -21,6 +21,11 @@ export interface EventData extends TriggerSignals {
   hpLost: { player: number; amount: number };
   triggerInvoked: { definition: string; owner: number; eventId: number };
   chainChanged: { player: number; chained: boolean };
+  pindianRevealed: { source: number; target: number; sourceCard: number; targetCard: number; won: boolean; ability: string };
+  turnedOver: { player: number; faceDown: boolean };
+  turnSkipped: { player: number };
+  judgementSkipped: { player: number };
+  pileChanged: { player: number; ability: string; cards: number[] };
   wineUsed: { player: number; bonus: number };
   wineCleared: { player: number; reason: 'attack' | 'turnEnd' | 'death' };
   cardRecast: { player: number; card: number };

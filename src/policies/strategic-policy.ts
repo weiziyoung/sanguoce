@@ -4,7 +4,6 @@ import type { Choice, Decision, DecisionPolicy, Observation } from '../../contra
 import { EvaluationContext } from './evaluation-context.ts';
 import { EvaluationRegistry, type ScoredAction } from './evaluation-registry.ts';
 import { standardSkillEvaluations } from './content/standard-skills.ts';
-import { RULE_POLICY_VERSION } from './rule-policy-version.ts';
 import { canCompleteResponse } from './response-plan.ts';
 
 const leaves = (choices: Choice[]): Choice[] => choices.flatMap(choice => choice.children ? leaves(choice.children) : [choice]);
@@ -22,7 +21,6 @@ const stringField = (decision: Decision, key: string): string | undefined => {
 
 /** One policy for duel and identity games; skill-specific logic is supplied by a registry. */
 export class StrategicPolicy implements DecisionPolicy {
-  readonly version = RULE_POLICY_VERSION;
   readonly evaluations: EvaluationRegistry;
   readonly deck: readonly DeckEntry[];
   constructor(evaluations: EvaluationRegistry = standardSkillEvaluations(), deck: readonly DeckEntry[] = STANDARD_DECK) {
@@ -39,8 +37,11 @@ export class StrategicPolicy implements DecisionPolicy {
       const ability = action.ability ?? action.transformation ?? stringField(decision, 'ability') ??
         stringField(decision, 'definition');
       const specialist = this.evaluations.score(ability, context, decision, choice, action);
-      const score = this.evaluations.adjust(context, decision, choice, action,
+      let score = this.evaluations.adjust(context, decision, choice, action,
         specialist ?? this.score(context, decision, choice, action));
+      if (context.renegade && (action.targets ?? (action.target === undefined ? [] : [action.target]))
+        .some(id => context.protectsLord(id)) &&
+        (decision.kind === 'attackRedirect' || ability === 'standard.lijian' || ability === 'standard.fanjian')) score = -100;
       return { id: choice.id, label: choice.label,
         score: canCompleteResponse(context, decision, action, candidates) ? score : -100, index };
     });
@@ -97,11 +98,19 @@ export class StrategicPolicy implements DecisionPolicy {
       const effect = targets.reduce((sum, player) => sum + context.targetEffect(effective, player.id), 0);
       return effect > 0 ? context.order(effective) + effect - 0.2 * cost : -3;
     }
-    if (effective === 'wugu') return context.observation.others.every(p => context.relation(p.id) >= 0) ? 2 : -0.5;
+    if (effective === 'wugu') {
+      if (context.renegade) {
+        const gain = [context.self, ...context.observation.others].filter(player => player.alive)
+          .reduce((sum, player) => sum + context.relation(player.id), 0);
+        return gain > 0 ? 1 + gain * 2 - 0.2 * cost : -0.5;
+      }
+      return context.observation.others.every(p => context.relation(p.id) >= 0) ? 2 : -0.5;
+    }
     const targets = action.targets ?? [];
     let effect = targets.reduce((sum, id) => sum + (effective === 'sha' ?
       context.shaEffect(id, costs, action.type === 'virtualSha' ? 'normal' : undefined) : context.targetEffect(effective, id)), 0);
     if (effective === 'jiedao' && targets.length >= 2) {
+      if (context.protectsLord(targets[1])) return -100;
       effect = -context.relation(targets[0]) * 1.5 + context.targetEffect('sha', targets[1]) * 0.5;
     }
     if (effect <= 0) return -3;
@@ -143,10 +152,14 @@ export class StrategicPolicy implements DecisionPolicy {
         const victim = numberField(decision, 'target');
         const relation = victim === undefined ? -1 : context.relation(victim);
         if (action.type !== 'zone') return 0;
-        if ((action as { zone?: string }).zone === 'hand') return -relation * 2;
+        const stealing = context.renegade && stringField(decision, 'cname') === 'shunshou';
+        if ((action as { zone?: string }).zone === 'hand') return -relation * 2 + (stealing ? 2 : 0);
         const card = context.card(action.cid);
         if (card?.name === 'lebu' || card?.name === 'bingliang') return relation * 5;
-        return -relation * (card ? context.value(card.id) : 2);
+        const acquisition = stealing && card ? cardTypeOf(card) === 'equip' ?
+          Math.max(1, context.value(card.id) - context.value(context.self.equip[equipSlotOf(card)]?.id)) :
+          context.value(card.id) : 0;
+        return -relation * (card ? context.value(card.id) : 2) + acquisition;
       }
       case 'wugu': return context.value(action.cid);
       case 'skillCost': {
@@ -180,7 +193,11 @@ export class StrategicPolicy implements DecisionPolicy {
       }
       case 'judgeReplace': return action.type === 'pass' ? 0 : -0.2 * context.value(action.cid);
       case 'skillFollowup': return 0;
-      case 'jiedao': return action.type === 'jiedaoSha' ? 6 : 0;
+      case 'jiedao': {
+        const victim = numberField(decision, 'target');
+        if (action.type === 'jiedaoSha' && victim !== undefined && context.protectsLord(victim)) return -100;
+        return action.type === 'jiedaoSha' ? 6 : 0;
+      }
       case 'cixiong': return action.type === 'yes' ? 3 : 0;
       case 'cixiongCost': return action.type === 'draw' ? 0 : 5 - context.value(action.cid);
       case 'qinglong': {

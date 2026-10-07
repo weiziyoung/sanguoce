@@ -5,7 +5,7 @@ export interface IdentityGeneralOffer {
   computerPicks: readonly GeneralCandidate[];
 }
 
-/** Pregame draft for five seats. The lord sees the three standard lord generals plus two random generals. */
+/** Pregame draft for five seats. The lord sees the available lord generals plus two random generals. */
 export class IdentityGeneralSelector {
   private readonly selector: DuelGeneralSelector;
   constructor(selector = new DuelGeneralSelector()) { this.selector = selector; }
@@ -14,7 +14,7 @@ export class IdentityGeneralSelector {
     if (!Number.isInteger(seed) || lordSeat < 0 || lordSeat >= 5) throw new Error('五人身份局选将参数无效');
     const all = this.selector.generals;
     const lords = all.filter(general => general.abilities.some(id => this.selector.content.requireSkill(id).lordSkill));
-    if (lords.length !== 3 || all.length < 17) throw new Error('五人身份局需要三名主公武将及至少十七名不同武将');
+    if (lords.length < 3 || all.length < 17) throw new Error('五人身份局需要至少三名主公武将及至少十七名不同武将');
     const nonLords = shuffleGenerals(all.filter(general => !lords.includes(general)), seed ^ 0x517cc1b7);
     const lordPool = [...lords, ...nonLords.slice(0, 2)];
     const remaining = nonLords.slice(2);

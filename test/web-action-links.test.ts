@@ -6,7 +6,7 @@ import { eventSounds } from '../src/web/sound-cues.ts';
 import type { VisibleEvent } from '../src/domain/events.ts';
 import { apply, legalActions, observe } from '../engine.ts';
 import { fixture } from './support/scenario-builder.ts';
-import { EQUIPMENT_ROW, IDENTITY_JUDGE, IDENTITY_SELF, equipmentRowPosition, identityZonePosition, playerPosition } from '../src/web/layout.ts';
+import { EQUIPMENT_ROW, JUDGE_MARKER, IDENTITY_SELF, equipmentRowPosition, identityZonePosition, judgementMarkerPosition, playerPosition } from '../src/web/layout.ts';
 
 const view = { events: [], mode: { id: 'identity' }, turn: 1, phase: 'play', active: 0, actor: 0,
   self: { id: 0, label: '你', sex: 'male', hp: 3, maxHp: 3, alive: true, handCount: 0,
@@ -97,7 +97,7 @@ test('指向牌、借刀、流离、离间和转化杀都标明实际发起人�
   ]);
 });
 
-test('五人装备逐行放在体力数字上方，己方判定牌位于上方牌桌', () => {
+test('五人装备仍在画像内，延迟锦囊紧贴全部角色下方且不越出画面', () => {
   const seats = [0, 1, 2, 3, 4];
   for (const self of seats) for (const id of seats) {
     const portrait = playerPosition(id, seats, self);
@@ -109,8 +109,8 @@ test('五人装备逐行放在体力数字上方，己方判定牌位于上方�
         assert.ok(Math.abs(equipment[a].y - equipment[b].y) >= EQUIPMENT_ROW.height + EQUIPMENT_ROW.gap);
       }
       for (const zone of ['equip', 'judge'] as const) {
-        const size = zone === 'equip' ? { ...EQUIPMENT_ROW, width: id === self ? 152 : 128 } : IDENTITY_JUDGE;
-        const count = zone === 'equip' ? equipmentCount : 2;
+        const size = zone === 'equip' ? { ...EQUIPMENT_ROW, width: id === self ? 152 : 128 } : JUDGE_MARKER;
+        const count = zone === 'equip' ? equipmentCount : 3;
         for (let i = 0; i < count; i++) {
           const pos = identityZonePosition(id, seats, self, zone, i, count);
           if (zone === 'equip') {
@@ -120,8 +120,16 @@ test('五人装备逐行放在体力数字上方，己方判定牌位于上方�
             const portraitWidth = id === self ? IDENTITY_SELF.width : 172;
             assert.equal(size.width, portraitWidth - 44, '装备行覆盖原画可用宽度');
             assert.ok(pos.x - size.width / 2 > portrait.x - portraitWidth / 2 + 36, '避开左侧姓名和阴阳鱼');
-          } else if (id === self) assert.ok(pos.y + size.height / 2 < portrait.y - IDENTITY_SELF.height / 2);
-          else assert.ok(pos.y - size.height / 2 > portrait.y + 107);
+          } else {
+            const bottom = portrait.y + (id === self ? IDENTITY_SELF.height / 2 : 107);
+            assert.equal(pos.y - size.height / 2 - bottom, 4, '标记紧贴画像下方');
+            if (i > 0) {
+              const previous = identityZonePosition(id, seats, self, zone, i - 1, count);
+              assert.ok(pos.x - previous.x > size.width, '多种延迟锦囊不能重叠');
+            }
+            if (id !== self && portrait.y < 300) assert.ok(pos.y + size.height / 2 < 338,
+              '上排标记留在中央提示条上方');
+          }
           assert.ok(pos.x - size.width / 2 > 0 && pos.x + size.width / 2 < 1600);
           assert.ok(pos.y + size.height / 2 < 900);
         }
@@ -130,11 +138,11 @@ test('五人装备逐行放在体力数字上方，己方判定牌位于上方�
   }
 });
 
-test('对决己方和对手满装备时，每行都在画像内且不遮挡体力数字', () => {
+test('对决双方满装备仍在画像内，三枚延迟锦囊紧贴角色下方', () => {
   const seats = [0, 1];
   for (const self of seats) for (const id of seats) {
     const portrait = playerPosition(id, seats, self);
-    const halfHeight = id === self ? 121 : 130;
+    const halfHeight = 107;
     const rows = Array.from({ length: 4 }, (_, i) => equipmentRowPosition(id, seats, self, i, 4));
     for (const row of rows) {
       assert.equal(row.x, portrait.x + 16);
@@ -142,6 +150,13 @@ test('对决己方和对手满装备时，每行都在画像内且不遮挡体�
       assert.ok(row.y - EQUIPMENT_ROW.height / 2 > portrait.y - halfHeight + 60);
       assert.ok(row.y + EQUIPMENT_ROW.height / 2 < portrait.y + halfHeight - 35);
       assert.ok(row.y + EQUIPMENT_ROW.height / 2 < 900);
+    }
+    for (let i = 0; i < 3; i++) {
+      const pos = judgementMarkerPosition(id, seats, self, i, 3);
+      assert.equal(pos.y - JUDGE_MARKER.height / 2, portrait.y + halfHeight + 4);
+      assert.ok(pos.y + JUDGE_MARKER.height / 2 < 900);
+      if (id !== self) assert.ok(pos.y + JUDGE_MARKER.height / 2 < 315, '对手标记避开中央提示条');
+      assert.ok(Math.abs(pos.x - portrait.x) + JUDGE_MARKER.width / 2 < (id === self ? 196 : 204) / 2);
     }
   }
 });

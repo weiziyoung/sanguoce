@@ -28,13 +28,27 @@ export function background(scene: Phaser.Scene): void {
   g.lineStyle(2, COLORS.gold, 0.8).lineBetween(0, 668, 1600, 668);
   g.lineStyle(1, COLORS.gold, 0.25).lineBetween(0, 673, 1600, 673);
 }
-export function portraitArt(scene: Phaser.Scene, x: number, y: number, width: number, height: number, key: string) {
+export function portraitArt(scene: Phaser.Scene, x: number, y: number, width: number, height: number, key: string,
+  fit: 'contain' | 'cover' = 'contain') {
   if (!scene.textures.exists(key)) return scene.add.rectangle(x, y, width, height, 0x263d32);
   const texture = scene.textures.get(key);
   const source = texture.getSourceImage() as HTMLImageElement;
   if (!texture.has('portrait')) texture.add('portrait', 0, Math.round(source.width * 0.24),
     Math.round(source.height * 0.135), Math.round(source.width * 0.625), Math.round(source.height * 0.59));
-  return scene.add.image(x, y, key, 'portrait').setDisplaySize(width, height);
+  const frame = texture.get('portrait');
+  if (fit === 'cover') {
+    // Fill the taller table portrait without stretching the artwork or leaving a footer.
+    const scale = Math.max(width / frame.width, height / frame.height);
+    const cropWidth = Math.min(frame.width, Math.round(width / scale));
+    const cropHeight = Math.min(frame.height, Math.round(height / scale));
+    const coverFrame = `portrait-cover:${cropWidth}:${cropHeight}`;
+    if (!texture.has(coverFrame)) texture.add(coverFrame, 0,
+      frame.cutX + Math.floor((frame.width - cropWidth) / 2),
+      frame.cutY + Math.floor((frame.height - cropHeight) / 2), cropWidth, cropHeight);
+    return scene.add.image(x, y, key, coverFrame).setDisplaySize(width, height);
+  }
+  const scale = Math.min(width / frame.width, height / frame.height);
+  return scene.add.image(x, y, key, 'portrait').setDisplaySize(frame.width * scale, frame.height * scale);
 }
 export function cardView(scene: Phaser.Scene, card: Card, x: number, y: number, width = 120, height = 172) {
   const container = scene.add.container(x, y).setSize(width, height);

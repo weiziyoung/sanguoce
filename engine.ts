@@ -14,6 +14,6 @@ export class GameEngine<State> extends Engine<State> {
     return GameEngine.standard({ ...config, cards: 'junzheng' }, trace);
   }
   static standard(config: GameConfig = {}, trace: TraceRecorder<GameState> | null = null): GameEngine<GameState> {
-    return new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(config.cards)), config, trace);
+    return new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(config.cards, config.generalPacks)), config, trace);
   }
 }

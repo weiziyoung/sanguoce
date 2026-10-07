@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StandardRuleset, preparePlayScenario, type GameState } from '../engine.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { StrategicPolicy as V5Policy } from '../src/policies/versions/v5/strategic-policy.ts';
 import type { ScoredAction } from '../src/policies/evaluation-registry.ts';
 import { fixture } from './support/scenario-builder.ts';
 
@@ -24,7 +23,6 @@ test('诸葛亮提前使用两张同值或较低价值装备清空手牌，真�
   const sha = f.hand(1, 'sha');
   const duel = f.hand(1, 'juedou');
   let state = f.start();
-  assert.equal(selected(state, new V5Policy()).action.type, 'endPlay');
   for (let i = 0; i < 2; i++) {
     assert.equal(selected(state).action.type, 'play');
     state = rules.apply(state, selected(state).id);

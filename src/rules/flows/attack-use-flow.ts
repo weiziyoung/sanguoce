@@ -9,7 +9,9 @@ import { clearWine } from '../operations/wine-state.ts';
 /** Preparation and wine are scoped to one use, shared by all of its targets. */
 export function beginAttackUse(s: GameState, source: number, sha: number | CardLike, targets: number[],
   runtime: ContentRuntime, intent: { ignoreDistance?: boolean; forcedBy?: number } = {}): void {
-  const effective = typeof sha === 'number' ? s.cards[sha] : sha;
+  let effective = typeof sha === 'number' ? s.cards[sha] : sha;
+  const suit = runtime.queries.suit(s, source, effective);
+  if (suit !== effective.suit) { effective = { ...effective, suit } as CardLike; sha = effective; }
   const damageBonus = clearWine(s, source, 'attack');
   const preparations = runtime.abilities.list(s, source).filter(skill => skill.prepareAttack).map(skill => skill.id);
   resolutionStack.open(s, 'attackUse', { source, sha, targets, nature: effective.nature ?? 'normal',

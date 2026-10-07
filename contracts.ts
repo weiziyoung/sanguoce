@@ -22,6 +22,8 @@ export interface GameConfig {
   first?: number;
   /** Standard remains available for reproducible legacy games. */
   cards?: 'standard' | 'junzheng';
+  /** Optional general expansions; standard generals are always included. */
+  generalPacks?: ('wind' | 'fire')[];
   deck?: readonly Omit<Card, "id">[];
 }
 export interface Choice {
@@ -49,7 +51,8 @@ export interface VisiblePlayer {
   maxHp: number;
   alive: boolean;
   handCount: number;
-  chained?: boolean; drunk?: number;
+  chained?: boolean; drunk?: number; faceDown?: boolean; spentLimitedSkills?: string[];
+  piles?: Record<string, Card[]>;
   /** Omitted when the viewer is not entitled to know the role. */
   role?: string;
   equip: Record<string, Card | null>;

@@ -1,0 +1,182 @@
+[
+  {
+    "seed": 1,
+    "choices": "fd6d433de2540254b87e32a0b4a767584988f7c9fa74cd4e3cea401bee2578e6",
+    "state": "cc34f73d7c7fa6754972a472d575a7b91b45d49a287a0b28c1c0e1a35d05127c",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 2,
+    "choices": "2d770cb5e913c66970dbba78d42e9fbf2a6672901efaa97589da8b0baedbdd99",
+    "state": "54e5108077f134dbe9e91b09ab5a4644901174274f9350525b5f3e6261dde2a7",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 3,
+    "choices": "f3ab58d6037b7adc946a4502f15caf9bda4d6a95fa50ae74f585dbefb1e6c76f",
+    "state": "ac722d3045fa485a419e018b3b4d8443ff8b041e2f35b43f8a2158a852b025fa",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 4,
+    "choices": "799e222b80387dcb60f4a00e90296367a7f9126fcd8e85f6bf2782d63290200d",
+    "state": "69e9ed204dab258dce32d264624c3e36e603475c1828bfe92d2e696b17998387",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 5,
+    "choices": "ffedb52ccc14d2536d217b35cc714f30d6e10285d56fbf261e30851e50d78117",
+    "state": "c87fba49dfc574971e1fc80392db0f1b0cd80e8799cf17ce8cdc701c1131e1fd",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 6,
+    "choices": "7c8039845bd8aeee9452fa87554ca35141daf52852bc968a3c7025c20fbbfe5a",
+    "state": "c0e167b22d1a50214ddbb6b92da52ff78ad2d9604ff827510c59f654da80e83e",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 7,
+    "choices": "1924394848e3ab2ec7934bebef22bae444a429953481c15296919238cfcefe1b",
+    "state": "4e13c6d98ba3bce56c0c542968463f6d34fc8d4dcffb41ac882f4475241321cd",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 8,
+    "choices": "f3a2764f259c67e8cdd4ca60e5b426780aae606dba8317cebadf4ef6e25286e0",
+    "state": "9c91c37421a6175b8f0c68686653c7b704d20981aafbfe665c041bf4a8149239",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 9,
+    "choices": "62372bd04be280c5f9550f92d415352613fe2455bf3507beadf4f06c20373afc",
+    "state": "b882da01c7193dea0efcb4913449ef6dc3acc9e2600f400c8be6b29915680019",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 10,
+    "choices": "dd9d359406c7048a7dd77bce13e5d5c5b91daf552e5cdec5fcd453c58c16fee4",
+    "state": "8a8e6311dc0a5e573736c9379d5cf09c24daa487bbc92d74dd4686ece92b62ac",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 11,
+    "choices": "4ef470ef3a48341e9bf4c27605f38553f1a2be3469d3ef01e8ef5314a930a75d",
+    "state": "84a9a16af01cb6f99445c8097ec3804034c83dc05e14f75b5baef325944e38b4",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 12,
+    "choices": "83c0e05363692352b471231a22dd49d9bf6abfa7ffa182b7f18c1b3cd6dd0164",
+    "state": "c486547098f42eb9269947e977aee222ca7c0922c9345023ec66632b79a32011",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 13,
+    "choices": "e570c8bd98167050708735bca104c6411a845fa218647d6d8834890ffa5c761a",
+    "state": "bc68d71d653c4c8d1a5befd52bb27038c61ba4793626613f4a68d7e4b0db43d8",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 14,
+    "choices": "343164cb1a027aed194b698e9c0d616bb23894634732f4c82c0b157b36f61604",
+    "state": "8b222ca8389b699f22ca77c96665ab33fa6ce9c6ff0440704e1e4bc656c624c1",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 15,
+    "choices": "713c7e126610ebe94a71074fe85a04c8c348049e4de049316f75386f14cfa436",
+    "state": "166e9c8f6f92b8773e1865c93dff258a6d4e6af2d549522f50f3da5324ae3e42",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 16,
+    "choices": "9a9443e73d3e2622eb63d99baaba93d0b56b64087c3747180a863a20704f1e0a",
+    "state": "3d5d7287fedd315628094f4d85243196740d312e1f402a2ab0b15c359f126134",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 17,
+    "choices": "65241f83dd0ad62c62862f6c421503baac3decc1158e4d9919a9953c303ebd63",
+    "state": "b8a0abb08fb2c33dc755f647aa61732d6d4a333f89219dfbfb07dfea9049f127",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 18,
+    "choices": "e1efb25ecfca5cded314edda396482e202172b5b6c9c026bc600186319e2cd33",
+    "state": "ba932781b7625e4e5805c02f44fcec69485e09085d1a8dee35f09ab47212c59c",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 19,
+    "choices": "1abc1dce63fd67c46b07889bfb94ab9d483bf17e7503cee6a84b02e3d02d5efc",
+    "state": "6ad38ec84a3afffc326cef38a7e9c6a682b2f74167a2fb36262160552a2c0097",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 20,
+    "choices": "ffcec19a63588348074a3393e6e0f7b617328b5ef57dc50dc8e6d41a4bbf747a",
+    "state": "615a70f407cf67e41874273ab4c19769b62ad8922e347014b7bf30e6f002f454",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 21,
+    "choices": "77ec9ea7a051c5f773d03c8ffe6d7873c239bc34c1e102e8e8ae3815e4e8f462",
+    "state": "8c592d3aadb62114291731e479c8d0aca75aaf6b2b990ec2c90563d76d6664c1",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 22,
+    "choices": "1f8c6b657d89665af29169f225ac73b48712b86a4f7af1f52aea7e86e65f8ee3",
+    "state": "6dd88fb482e354de9688047ff0ff87d518db01bead65e1b99b9e4966a6bbaefb",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 23,
+    "choices": "bfa05e985d950f68dda24e798e2dbfb081bd66f1076f9326018cc5150e9fc7df",
+    "state": "60863f37ce179e8f1e20bfe090e93178e1e3cd89ff79ea77375101ca607f482c",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 24,
+    "choices": "fa7bdbbe42b2f745006cc1d2c9280cb68a255155b26ce49d10ba09c750881ac5",
+    "state": "b83015c703da692893705e5918a3841f5b39541ae8fb888156104c8f092143ca",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 25,
+    "choices": "a30f996a5a3027cba03f449549301469082549972d59238cc36f2b1ac0cf3c31",
+    "state": "69f315f9eefb3e195a9bb845bec79f2e49ed6138623677cc2f1cbf67d254bf3b",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 26,
+    "choices": "971c76e27f1b46ab80e714728decfd243cd1dd4f1dcf8d291496f625f16f6ac4",
+    "state": "725bf12bc816a593ae779b0671dba2b1897bfec46a6a7bf04784e273287e395e",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 27,
+    "choices": "1edd17ab509ed62a100c828a88ca9fd6ba375ae13c68f75599d63c5f34afddbc",
+    "state": "0bc43a6eb4b9754f2137ff2e779405d8a2f6a6be713670d8354d57f3e941271e",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 28,
+    "choices": "f06d08502adedf1704a5cdafb45257220c5480fa1976d4ea49f61f057893d6d0",
+    "state": "98f297ee0f3a17dc2e188971813b59de16ea1166a23cc8a23d653af207298c38",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 29,
+    "choices": "bcc8fac1fc12d87f9e56a0e3665b51ca92d59e4c13e2825d51980848041710d9",
+    "state": "e4f78a10b0390fb2d4525a0761f66590c8e2ba89eb07203d7396ddbb14ccb449",
+    "policy": "RuleBasePolicy"
+  },
+  {
+    "seed": 30,
+    "choices": "4f9600b3d6e9983c233edb92db4a710863a83cd072c97b7dbc040c3c950b7a1b",
+    "state": "6985bb10571e3750cfebf51a41d2ef5e657fa2756d79214b8ceb3a30bd667e1d",
+    "policy": "RuleBasePolicy"
+  }
+]

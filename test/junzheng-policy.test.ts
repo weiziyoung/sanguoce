@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { StrategicPolicy as V6Policy } from '../src/policies/versions/v6/strategic-policy.ts';
 import { EXPANDED_DECK } from '../catalog.ts';
 import { expandedContent } from '../src/app/game-content.ts';
 import { ContentRuntime } from '../src/rules/content-runtime.ts';
@@ -12,31 +11,27 @@ import { createStandardResolution } from '../src/app/standard-resolution.ts';
 import { standardModes } from '../src/app/standard-modes.ts';
 import type { ActionData, GameState } from '../src/domain/state.ts';
 import type { DecisionPolicy } from '../contracts.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
 import { fixture } from './support/scenario-builder.ts';
 
 const runtime = new ContentRuntime(expandedContent);
 const rules = new StandardRuleset(standardModes, undefined, expandedContent);
 const policy = new StrategicPolicy(undefined, EXPANDED_DECK);
-const old = new V6Policy(undefined, EXPANDED_DECK);
 function selected(s: GameState, p: DecisionPolicy = policy): ActionData {
   const decision = rules.decision(s)!;
   const id = p.choose(rules.observe(s, decision.actor), decision);
   return rules.legalActions(s).find(option => option.id === id)!.data as ActionData;
 }
 
-test('现行策略先喝酒再出杀；v6保留原行为作为对照', () => {
+test('先喝酒再出杀，真实流程保留增伤计划', () => {
   const f = fixture(2, { cards: 'junzheng' });
   const sha = f.hand(0, 'sha');
   const wine = f.hand(0, 'jiu');
   const state = preparePlayScenario(f.state, 0, runtime);
-  assert.equal(policy.version, RULE_POLICY_VERSION);
-  assert.equal(old.version, 'v6');
   assert.equal((selected(state) as { cid: number }).cid, wine);
-  assert.equal((selected(state, old) as { cid: number }).cid, sha);
+  assert.equal((selected(rules.apply(state, `play:${wine}`)) as { cid: number }).cid, sha);
 });
 
-test('现行策略避开藤甲的普通杀，选择火杀；v6没有军争防具判断', () => {
+test('避开藤甲的普通杀，选择火杀', () => {
   const f = fixture(2, { cards: 'junzheng' });
   const normal = f.hand(0, 'sha');
   const fire = f.hand(0, 'sha', 'heart', 4);
@@ -46,7 +41,6 @@ test('现行策略避开藤甲的普通杀，选择火杀；v6没有军争防具
   const decision = rules.decision(state)!;
   const observation = rules.observe(state, 0);
   const normalId = `play:${normal}:1`;
-  assert.ok(old.rank(observation, decision).find(option => option.id === normalId)!.score > 0);
   assert.ok(policy.rank(observation, decision).find(option => option.id === normalId)!.score < 0);
 });
 

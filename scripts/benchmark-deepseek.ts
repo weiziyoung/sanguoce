@@ -5,7 +5,7 @@ import { GameEngine } from '../engine.ts';
 import { standardContent } from '../src/content/standard/content.ts';
 import { DeepSeekPolicy, ModelOutputError, type DeepSeekResponseInfo } from '../src/policies/deepseek-policy.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 
 const args = process.argv.slice(2);
 function option(name: string, fallback: string): string {
@@ -50,7 +50,7 @@ interface Report { modelRequested: string; modelObserved: string[]; baseline: st
   usage: { calls: number; promptTokens: number; completionTokens: number; reasoningTokens: number };
   results: Result[]; progress: Progress | null }
 const config = { modelRequested: 'deepseek-flash (thinking=enabled, reasoning_effort=low)',
-  baseline: `StrategicPolicy ${RULE_POLICY_VERSION}`, mode: 'duel', general: { id: general.id, label: general.label },
+  baseline: rulePolicyBaseline, mode: 'duel', general: { id: general.id, label: general.label },
   games, seedStart, stepLimit, rawOutput };
 const report: Report = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')) as Report : {
   ...config, modelObserved: [], startedAt: new Date().toISOString(), completed: 0,

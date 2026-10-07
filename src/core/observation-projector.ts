@@ -22,6 +22,11 @@ export function observe(s: GameState, playerId: number): Observation {
     handCount: p.hand.length,
     ...(p.chained === undefined ? {} : { chained: p.chained }),
     ...(p.drunk ? { drunk: p.drunk } : {}),
+    ...(p.faceDown === undefined ? {} : { faceDown: p.faceDown }),
+    ...(Object.keys(p.skillFlags ?? {}).some(key => key.endsWith('.used') && p.skillFlags?.[key]) ?
+      { spentLimitedSkills: Object.keys(p.skillFlags!).filter(key => key.endsWith('.used') && p.skillFlags![key]).map(key => key.slice(0, -5)) } : {}),
+    ...(p.piles ? { piles: Object.fromEntries(Object.entries(p.piles).map(([ability, ids]) =>
+      [ability, ids.map(id => copy(card(s, id)))])) } : {}),
     ...(s.mode.knownTo[p.id]?.includes(playerId) && s.mode.roles[p.id]
       ? { role: s.mode.roles[p.id] } : {}),
     equip: Object.fromEntries(Object.entries(p.equip).map(([slot, id]) => [slot, id ? copy(card(s, id as number)) : null])),
@@ -40,7 +45,8 @@ export function observe(s: GameState, playerId: number): Observation {
           case 'cardRevealed': case 'cardRecast': case 'cardUsed': case 'discarded': case 'equipped': case 'judged':
           case 'delayPlaced': case 'harvestTaken': case 'harvestLeftover': case 'duelResponded':
           case 'nullificationUsed': return [event.data.card];
-          case 'harvestRevealed': return event.data.cards;
+          case 'harvestRevealed': case 'pileChanged': return event.data.cards;
+          case 'pindianRevealed': return [event.data.sourceCard, event.data.targetCard];
           case 'judgementReplaced': return [event.data.oldCard, event.data.newCard];
           case 'gained': return event.data.card === null ? [] : [event.data.card];
           default: return [];

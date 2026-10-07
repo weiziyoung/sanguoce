@@ -1,5 +1,6 @@
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import { nullificationProtectsTarget } from '../domain/action-intent.ts';
+import { renegadeRelations } from './renegade-plan.ts';
 
 const harmfulCards = new Set(['juedou', 'guohe', 'shunshou', 'jiedao', 'huogong']);
 const helpfulSkills = new Set(['standard.qingnang', 'standard.jieyin']);
@@ -64,19 +65,6 @@ export class RelationshipModel {
     return { alignment: clamp(alignment, -1, 1), personal: clamp(personal, -0.8, 0) };
   }
 
-  private renegadeRelation(target: VisiblePlayer, alignment: number, personal: number): number {
-    const living = [this.observation.self, ...this.observation.others].filter(player => player.alive);
-    const lord = living.find(player => player.role === 'lord');
-    if (living.length <= 2) return target.role === 'lord' ? -1 : -0.6;
-    const lordWeak = Boolean(lord && lord.hp <= 2);
-    if (target.role === 'lord') return lordWeak ? 0.85 : 0.2;
-    // With only one third party left, the renegade must remove them before dueling the lord.
-    if (living.length === 3) return clamp(-0.8 + personal, -1, -0.8);
-    if (target.role === 'rebel') return lordWeak ? -0.85 : -0.3;
-    if (target.role === 'loyalist') return lordWeak ? 0.2 : -0.55;
-    return clamp((lordWeak ? alignment * 0.7 : -alignment * 0.4) + personal, -0.9, 0.7);
-  }
-
   /** Revealed deaths constrain remaining roles without assigning a hidden role to a seat. */
   private remainingRoleRelation(): number {
     const players = [this.observation.self, ...this.observation.others];
@@ -103,8 +91,8 @@ export class RelationshipModel {
     if (this.observation.mode.id !== 'identity') return -1;
     const own = this.observation.self.role;
     const role = target.role;
+    if (own === 'renegade') return renegadeRelations(this.observation).get(id) ?? 0;
     const { alignment, personal } = this.evidence(id);
-    if (own === 'renegade') return this.renegadeRelation(target, alignment, personal);
     if (role) {
       if (own === 'rebel') return role === 'rebel' ? 1 : role === 'renegade' ? -0.2 : -1;
       if (own === 'lord' || own === 'loyalist') return role === 'lord' || role === 'loyalist' ? 1 :

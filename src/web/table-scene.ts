@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { NAMES, type Card } from '../../catalog.ts';
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import type { BrowserSession } from '../app/browser-session.ts';
-import { expandedContent } from '../app/game-content.ts';
+import { allContent } from '../app/game-content.ts';
 import { STANDARD_SKILL_HELP } from '../content/standard/skill-help.ts';
 import { EQUIPMENT_HELP } from '../presentation/equipment-help.ts';
 import type { ActionChoice } from '../presentation/choice-view.ts';
@@ -11,23 +11,25 @@ import { TableAssets } from './assets.ts';
 import type { GameAudio } from './audio.ts';
 import { TableHud, node, type SkillTile } from './hud.ts';
 import { TableEffects } from './effects.ts';
-import { HAND, PLAY_AREA, IDENTITY_SELF, EQUIPMENT_ROW, IDENTITY_JUDGE, equipmentRowPosition, deckPosition, handPosition, handCardPosition, hiddenHandSlot, playerPosition, identityZonePosition, inside, type Point } from './layout.ts';
+import { HAND, PLAY_AREA, EQUIPMENT_ROW, equipmentRowPosition, deckPosition, handPosition, handCardPosition, zonePickerPosition, playerPosition, playerPortraitSize, judgementMarkerPosition, inside, type Point } from './layout.ts';
 import { background, panel, portraitArt, cardView, cardBack, equipmentIcon, text, COLORS } from './visuals.ts';
 import { zoneCardEffect } from './zone-card-effect.ts';
 import { discardTableCard } from './discard-table-card.ts';
 import { roleLabel } from '../../chinese-view.ts';
 import { showSettlement } from './settlement.ts';
 import { zonePickerChoices, type ZonePick } from './zone-picker.ts';
+import { pendingJudgementCard } from './judgement-card.ts';
+import { tablePreviewCards } from './table-preview.ts';
 import { PlayerVitalsPresenter, type PlayerVitalsState } from './player-vitals.ts';
 import { HEALTH_PIP_STATES, healthPips, healthPipTexture, healthPipSourceTexture, healthPipLayout } from './health-pips.ts';
 import { bindSceneSettings, type GameSettings } from './settings.ts';
 import { unavailableSkillDetail } from './skill-availability.ts';
-import { factionBanner, identityToken } from './portrait-badges.ts';
+import { factionBanner, identityToken, delayedTrickMarker } from './portrait-badges.ts';
 import { portraitChain, portraitChainUpdate } from './portrait-chain.ts';
 import { AiController } from './ai-controller.ts';
 import { applyWinePortraitTint, portraitStatus, winePortraitUpdate, type WinePortraitArt } from './portrait-wine.ts';
 
-interface CardSprite { card: Card; view: Phaser.GameObjects.Container; border: Phaser.GameObjects.Rectangle; home: Point; order: number; }
+interface CardSprite { card: Card; view: Phaser.GameObjects.Container; border: Phaser.GameObjects.Rectangle; home: Point; order: number; caption?: Phaser.GameObjects.Text; }
 const REORDER = { top: { x: 1175, y: 442, width: 180, height: 85 }, bottom: { x: 1175, y: 548, width: 180, height: 85 } };
 
 export class TableScene extends Phaser.Scene {
@@ -40,6 +42,7 @@ export class TableScene extends Phaser.Scene {
   private objects: Phaser.GameObjects.GameObject[] = [];
   private cards: CardSprite[] = [];
   private tablePreviewCards: CardSprite[] = [];
+  private judgeMarkers = new Map<number, Phaser.GameObjects.Container>();
   private hiddenBacks = new Map<number, Phaser.GameObjects.Container>();
   private chainViews = new Map<number, Phaser.GameObjects.Graphics>();
   private wineViews = new Map<number, { art: WinePortraitArt; status: Phaser.GameObjects.Text; drunk: boolean; chained: boolean }>();
@@ -109,11 +112,11 @@ export class TableScene extends Phaser.Scene {
   private skills(): SkillTile[] {
     const general = this.session.observation.self.general;
     if (!general) return [];
-    const definitions = expandedContent.general(general).abilities.map(id => expandedContent.requireSkill(id));
+    const definitions = allContent.general(general).abilities.map(id => allContent.requireSkill(id));
     // Equipment conversions use the same legal-action projection as general skills.
     const abilityIds = [...new Set(this.model?.leaves.map(c => c.ability).filter((id): id is string => Boolean(id)))];
     for (const id of abilityIds) {
-      const definition = expandedContent.skills().find(s => s.id === id || s.transformations?.some(t => t.id === id));
+      const definition = allContent.skills().find(s => s.id === id || s.transformations?.some(t => t.id === id));
       if (definition && !definitions.includes(definition)) definitions.push(definition);
     }
     return definitions.map(skill => {
@@ -121,13 +124,13 @@ export class TableScene extends Phaser.Scene {
       const context = this.model?.decision.context as { ability?: string } | undefined;
       const resolving = context?.ability === skill.id;
       const selected = resolving || Boolean(this.model?.focus && matches.some(c => c.id === this.model?.focus?.id || this.model?.focus?.children.some(child => child.id === c.id)));
-      const automatic = skill.drawPhase?.optional === false || skill.trigger?.optional === false;
+      const automatic = skill.drawPhase?.optional === false || skill.trigger?.optional === false || Boolean(skill.afterDamage);
       const conversion = Boolean(skill.transformation || skill.transformations);
       return { id: skill.id, label: skill.label ?? skill.id, active: matches.length > 0, selected,
         seal: skill.lordSkill ? '主公' : skill.active ? '主动' : conversion ? '转化' : automatic ? '自动' : skill.modifier ? '常驻' : '触发',
         passive: !skill.active && !conversion,
         help: STANDARD_SKILL_HELP[skill.id] ?? EQUIPMENT_HELP[skill.id.replace(/^(standard|junzheng)\./, '')] ?? '',
-        detail: resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || conversion ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : skill.modifier ? '常驻生效' : '等待触发时机',
+        detail: this.session.observation.self.spentLimitedSkills?.includes(skill.id) ? '限定技 · 已使用' : resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || conversion ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : skill.modifier ? '常驻生效' : '等待触发时机',
         choose: () => {
           if (!this.ready || !matches.length) return;
           if (selected) { this.clear(); return; }
@@ -150,7 +153,9 @@ export class TableScene extends Phaser.Scene {
     const events = obs.events.filter(e => e.id > this.lastEvent);
     this.lastEvent = Math.max(this.lastEvent, ...events.map(e => e.id));
     // The previous static preview must not remain beneath a new animated card.
-    if (events.length) for (const card of this.tablePreviewCards) card.view.setVisible(false);
+    if (events.length) for (const card of this.tablePreviewCards) {
+      card.view.setVisible(false); card.caption?.setVisible(false);
+    }
     for (const event of events) {
       await this.settings.whenClosed();
       const chain = portraitChainUpdate(event);
@@ -169,25 +174,37 @@ export class TableScene extends Phaser.Scene {
         }
       }
       if (event.kind === 'skillActivated' && event.data.owner === obs.self.id) this.hud.flashSkill(event.data.ability);
+      if (event.kind === 'discarded' || event.kind === 'gained') {
+        if (event.data.card !== null) this.judgeMarkers.get(event.data.card)?.setVisible(false);
+      }
       const transfer = zoneCardEffect(event, obs);
       const discarded = discardTableCard(event, obs);
       let origin: Point | undefined;
       if (discarded) {
         const sprite = this.cards.find(item => item.card.id === discarded.card.id);
         if (sprite) { origin = { x: sprite.view.x, y: sprite.view.y }; sprite.view.setVisible(false); }
+        else {
+          const marker = this.judgeMarkers.get(discarded.card.id);
+          if (marker) origin = { x: marker.x, y: marker.y };
+        }
       }
-      if (event.kind === 'judged' || event.kind === 'harvestTaken') {
-        const preview = this.tablePreviewCards.find(item => item.card.id === event.data.card);
+      if (event.kind === 'judged' || event.kind === 'harvestTaken' || event.kind === 'judgementReplaced') {
+        const id = event.kind === 'judgementReplaced' ? event.data.oldCard : event.data.card;
+        const preview = this.tablePreviewCards.find(item => item.card.id === id);
         if (preview) origin = { x: preview.view.x, y: preview.view.y };
       }
       if (transfer) {
         if (transfer.selection.fromZone === 'hand' && this.pendingHandOrigin) origin = this.pendingHandOrigin;
         else if (transfer.cardId !== null) {
           const sprite = this.cards.find(item => item.card.id === transfer.cardId);
+          const marker = this.judgeMarkers.get(transfer.cardId);
           if (sprite) {
             origin = { x: sprite.view.x, y: sprite.view.y };
             sprite.view.setVisible(false);
+          } else {
+            if (marker) origin = { x: marker.x, y: marker.y };
           }
+          marker?.setVisible(false);
         }
       }
       if ((event.kind === 'drawn' || event.kind === 'harvestTaken') && event.data.player === obs.self.id ||
@@ -275,6 +292,7 @@ export class TableScene extends Phaser.Scene {
   private redraw(obs: Observation) {
     this.effects.clearHandFlights();
     this.objects.forEach(o => o.destroy()); this.objects = []; this.cards = []; this.tablePreviewCards = []; this.hiddenBacks.clear();
+    this.judgeMarkers.clear();
     this.vitalsViews.clear();
     this.chainViews.clear();
     this.wineViews.clear();
@@ -285,25 +303,23 @@ export class TableScene extends Phaser.Scene {
     this.track(text(this, deck.x, deck.y + 67, `牌堆 ${obs.deckCount}`, 18));
     [obs.self, ...obs.others].forEach(p => this.portrait(p, obs));
     const picks = zonePickerChoices(obs, this.model);
-    this.effects.setZonePickerActive(picks.length > 0);
-    this.zonePicker(picks);
+    const pendingJudgement = pendingJudgementCard(obs, this.session.decision);
+    this.effects.setZonePickerActive(picks.length > 0, pendingJudgement ? picks.length : 0);
+    this.zonePicker(picks, Boolean(pendingJudgement));
     const hand = obs.self.hand;
     hand.forEach((card, index) => {
       const position = handCardPosition(index, hand.length);
       this.makeCard(card, position.x, position.y, HAND.cardWidth, HAND.cardHeight, 20 + index);
     });
-    const choosingZone = picks.length > 0;
-    const table = (choosingZone || this.effects.hasActiveJudgementCard() ? [] :
-      this.session.decision?.kind === 'judgeReplace' ? obs.table.slice(-1) : obs.table)
-      .filter(card => !this.effects.hasTableCard(card.id));
-    const relevant = table.filter(c => this.model?.selectableCards.includes(c.id));
-    const shown = relevant.length ? relevant : table.slice(-3);
-    const centerX = this.model?.decision.kind === 'deckReorder' ? 755 : 790;
-    const spacing = Math.min(128, 570 / Math.max(1, shown.length));
-    shown.forEach((card, index) => {
-      const sprite = this.makeCard(card, centerX + (index - (shown.length - 1) / 2) * spacing, 483, 108, 154, 10 + index);
+    const previews = tablePreviewCards(obs, this.session.decision, this.model?.selectableCards ?? [], {
+      zonePickerCount: picks.length, activeJudgement: this.effects.hasActiveJudgementCard(),
+      hasTableCard: id => this.effects.hasTableCard(id),
+    });
+    previews.forEach(({ card, position, label, selectable }, index) => {
+      const sprite = this.makeCard(card, position.x, position.y, 108, 154, 10 + index, selectable);
       this.tablePreviewCards.push(sprite);
-      if (!relevant.length) sprite.view.setAlpha(0.66);
+      if (label) sprite.caption = this.track(text(this, position.x, position.y + 94, label, 18, '#f6dfa8'));
+      if (!selectable && !label) sprite.view.setAlpha(0.66);
     });
     if (this.model?.decision.kind === 'deckReorder') for (const side of ['top', 'bottom'] as const) {
       const area = REORDER[side];
@@ -316,11 +332,26 @@ export class TableScene extends Phaser.Scene {
     const { x, y } = this.position(player.id);
     const self = player.id === obs.self.id;
     const identity = obs.mode.id === 'identity';
-    const w = self && identity ? IDENTITY_SELF.width : self ? 196 : identity ? 172 : 204;
-    const h = self && identity ? IDENTITY_SELF.height : self ? 242 : identity ? 214 : 260;
+    const seats = [obs.self, ...obs.others].map(p => p.id);
+    const { width: w, height: h } = playerPortraitSize(player.id, seats, obs.self.id);
     this.track(this.add.rectangle(x, y, w, h, 0x0d1c19, 0.85));
-    const art = this.track(portraitArt(this, x + 10, y - 10, w - 36, h - 34, player.general ?? ''));
+    const art = this.track(portraitArt(this, x + 10, y, w - 36, h - 12, player.general ?? '', 'cover'));
     applyWinePortraitTint(art, Boolean(player.alive && player.drunk));
+    if (player.faceDown) {
+      art.setAlpha(0.4);
+      this.track(text(this, x, y, '背面朝上', 22, '#e7d5af').setDepth(4));
+    }
+    const buqu = player.piles?.['wind.buqu'] ?? [];
+    if (buqu.length) {
+      const buquY = self ? y - h / 2 - 18 : y + h / 2 + (player.judge.length ? 44 : 14);
+      const label = this.track(text(this, x, buquY, `不屈 ${player.hp}体力 · ${buqu.map(c => c.rank).join(' / ')}`, 14, '#e6c27c').setDepth(9));
+      label.setWordWrapWidth(w + 30);
+      if (self && this.model?.decision.kind === 'contentChoice' &&
+        (this.model.decision.context as { timing?: string }).timing === 'remove') {
+        const gap = Math.min(82, 1000 / buqu.length);
+        buqu.forEach((card, i) => this.makeCard(card, 800 + (i - (buqu.length - 1) / 2) * gap, 475, 76, 106, 50 + i, false));
+      }
+    }
     this.track(this.add.rectangle(x - w / 2 + 19, y, 34, h - 12, 0x102422, 0.96));
     const nameX = x - w / 2 + 19;
     const name = this.track(text(this, nameX, y - h / 2 + 43, player.label.split('').join('\n'),
@@ -370,30 +401,34 @@ export class TableScene extends Phaser.Scene {
     hit.on('pointerup', (p: Phaser.Input.Pointer) => { if (p.leftButtonReleased() && this.ready && this.model?.selectTarget(player.id)) this.updateSelection(); });
     hit.on('pointerover', () => {
       if (this.dragging || this.model?.nextTargets.includes(player.id)) return;
-      const abilities = player.general ? expandedContent.general(player.general).abilities : [];
+      const abilities = player.general ? allContent.general(player.general).abilities : [];
       this.hud.preview(this.assets.manifest.generals[player.general ?? ''],
-        `${player.label} · ${player.general ? expandedContent.general(player.general).label : '武将'}`,
-        abilities.map(id => ({ title: expandedContent.requireSkill(id).label ?? id,
+        `${player.label} · ${player.general ? allContent.general(player.general).label : '武将'}`,
+        abilities.map(id => ({ title: allContent.requireSkill(id).label ?? id,
           body: STANDARD_SKILL_HELP[id] ?? '技能详情暂缺' })));
     });
     hit.on('pointerout', () => this.hud.preview());
     const equipment = Object.entries(player.equip).filter((entry): entry is [string, Card] => Boolean(entry[1]));
-    const seats = [obs.self, ...obs.others].map(p => p.id);
     equipment.forEach(([slot, card], i) => {
       this.equipmentLabel(card, slot, equipmentRowPosition(player.id, seats, obs.self.id, i, equipment.length));
     });
-    if (identity) {
-      player.judge.forEach((card, i) => {
-        const pos = identityZonePosition(player.id, seats, obs.self.id, 'judge', i, player.judge.length);
-        this.makeCard(card, pos.x, pos.y, IDENTITY_JUDGE.width, IDENTITY_JUDGE.height, 8 + i);
+    player.judge.forEach((card, i) => {
+      const pos = judgementMarkerPosition(player.id, seats, obs.self.id, i, player.judge.length);
+      const marker = this.track(delayedTrickMarker(this, pos.x, pos.y, card).setDepth(9)
+        .setInteractive({ useHandCursor: true }));
+      this.judgeMarkers.set(card.id, marker);
+      marker.on('pointerover', () => {
+        if (this.dragging) return;
+        marker.setScale(1.12);
+        this.hud.preview(this.assets.manifest.cards[card.name], `${NAMES[card.name] ?? card.name} · ${card.rank}`);
       });
-    } else {
-      player.judge.forEach((card, i) => {
-        const pos = self ? { x: 290 + i * 82, y: 603 } : { x: x - 190 - i * 79, y: y + 44 };
-        this.makeCard(card, pos.x, pos.y, 69, 99, 8 + i);
-        this.track(text(this, pos.x, pos.y + 65, '判定', 15));
+      marker.on('pointerout', () => { marker.setScale(1); this.hud.preview(); });
+      marker.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+        if (!pointer.leftButtonReleased() || !this.ready) return;
+        const choice = this.model?.leaves.find(item => item.zone === 'judge' && item.cardIds.includes(card.id));
+        if (choice) void this.submit(choice);
       });
-    }
+    });
   }
   private renderVitals(id: number, state: PlayerVitalsState): void {
     const view = this.vitalsViews.get(id);
@@ -432,12 +467,12 @@ export class TableScene extends Phaser.Scene {
       if (!pointer.leftButtonReleased() || !this.ready) return;
       const choice = this.model?.leaves.find(item => item.zone === 'equip' && item.cardIds.includes(card.id));
       if (choice) void this.submit(choice);
-      else if (this.model?.decision.kind === 'guanshi' && this.model.selectCard(card.id)) this.updateSelection();
+      else if (this.model?.selectableCards.includes(card.id) && this.model.selectCard(card.id)) this.updateSelection();
     });
   }
-  private zonePicker(picks: readonly ZonePick[]) {
+  private zonePicker(picks: readonly ZonePick[], withJudgement = false) {
     picks.forEach((pick, index) => {
-      const { x, y, width, height } = hiddenHandSlot(index, picks.length);
+      const { x, y, width, height } = zonePickerPosition(index, picks.length, withJudgement);
       if (pick.card) {
         this.makeCard(pick.card, x, y, width, height, 50 + index, false);
         this.track(text(this, x, y + height / 2 + (picks.length > 10 ? 4 : 16),

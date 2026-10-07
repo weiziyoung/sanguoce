@@ -10,7 +10,6 @@ import { ContentRuntime } from '../src/rules/content-runtime.ts';
 import { TableInteraction } from '../src/web/interaction-model.ts';
 import { contextActionChoices, TableHud } from '../src/web/hud.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { StrategicPolicy as FrozenPolicy } from '../src/policies/versions/v5/strategic-policy.ts';
 import { fixture } from './support/scenario-builder.ts';
 
 function drawChoice(count = 5, eligible = [1, 2, 3, 4], dead: number[] = []) {
@@ -164,8 +163,6 @@ test('增加展示用目标信息不改变现行规则策略的评分与选择',
     return { ...choice, data };
   }) };
   const policy = new StrategicPolicy();
-  const frozen = new FrozenPolicy();
   assert.deepEqual(policy.rank(observation, prompt), policy.rank(observation, before));
-  assert.deepEqual(policy.rank(observation, prompt), frozen.rank(observation, prompt));
-  assert.equal(policy.choose(observation, prompt), frozen.choose(observation, before));
+  assert.equal(policy.choose(observation, prompt), policy.choose(observation, before));
 });

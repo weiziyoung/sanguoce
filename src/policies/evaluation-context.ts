@@ -1,8 +1,11 @@
+import { fireAttackAdjustment } from './content/fire.ts';
+import { liegongAvailable, windAttackAdjustment, leijiRisk } from './content/wind.ts';
 import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import { CARD_AI_PROFILE } from '../../card-ai-profile.ts';
 import { RelationshipModel } from './relationship-model.ts';
 import { lightningPlan, type LightningPlan } from './lightning-plan.ts';
+import { renegadeRelations } from './renegade-plan.ts';
 
 /** All estimates are made from the acting player's public observation. */
 export class EvaluationContext {
@@ -12,11 +15,13 @@ export class EvaluationContext {
   readonly lightningRate: number;
   readonly deck: readonly DeckEntry[];
   private lightningPlans = new Map<string, LightningPlan>();
+  private readonly renegadeRelationships?: Map<number, number>;
   constructor(observation: Observation, deck: readonly DeckEntry[] = STANDARD_DECK) {
     if (!deck.length) throw new Error('AI 牌堆统计不能为空');
     this.observation = observation;
     this.deck = deck;
     this.relationships = new RelationshipModel(observation);
+    if (this.renegade) this.renegadeRelationships = renegadeRelations(observation);
     this.responseRates = {
       sha: deck.filter(card => card.name === 'sha').length / deck.length,
       shan: deck.filter(card => card.name === 'shan').length / deck.length,
@@ -40,7 +45,7 @@ export class EvaluationContext {
     return id === this.self.id ? this.self : this.observation.others.find(player => player.id === id);
   }
   card(id: number | undefined): Card | undefined {
-    return this.self.hand.find(card => card.id === id) ?? this.observation.table.find(card => card.id === id) ??
+    return this.self.hand.find(card => card.id === id) ?? this.observation.table.find(card => card.id === id) ?? this.observation.eventCards?.[id!] ??
       Object.values(this.self.equip).find(card => card?.id === id) ??
       this.observation.others.flatMap(player => [...Object.values(player.equip), ...player.judge])
         .find(card => card?.id === id) ?? undefined;
@@ -75,7 +80,20 @@ export class EvaluationContext {
   order(name: CardName): number { return CARD_AI_PROFILE[name]?.order ?? 2; }
 
   /** Positive means helping the target advances our side. Hidden roles remain uncertain. */
-  relation(id: number): number { return this.relationships.relation(id); }
+  relation(id: number): number { return this.renegadeRelationships ?
+    this.renegadeRelationships.get(id) ?? 0 : this.relationships.relation(id); }
+
+  get renegade(): boolean { return this.observation.mode.id === 'identity' && this.self.role === 'renegade'; }
+  protectsLord(id: number): boolean {
+    return this.renegade && this.player(id)?.role === 'lord' &&
+      this.observation.others.filter(player => player.alive).length > 1;
+  }
+  private damageUtility(player: VisiblePlayer, amount: number, base: number): number {
+    const resilience = player.hp <= amount && (player.general === 'wind.zhoutai' || player.general === 'fire.pangtong' && !player.spentLimitedSkills?.includes('fire.niepan')) ? 0.6 : 1;
+    const utility = -this.relation(player.id) * base * resilience;
+    // Losing the lord before the duel loses the game, even if an area effect kills several enemies.
+    return utility - (this.protectsLord(player.id) ? player.hp <= amount ? 80 : player.hp <= 2 ? 12 : 0 : 0);
+  }
 
   /** Physical and transformed Sha share the engine's all-black cost rule. */
   shaEffect(id: number, costs: readonly number[], nature?: DamageNature,
@@ -84,7 +102,7 @@ export class EvaluationContext {
     const ignoresArmor = weapon?.name === 'qinggang' && !costs.includes(weapon.id);
     const black = costs.length > 0 && costs.every(cid => {
       const card = this.card(cid);
-      return card !== undefined && cardColor(card) === 'black';
+      return card !== undefined && cardColor(card) === 'black' && !(this.self.general === 'wind.xiaoqiao' && card.suit === 'spade');
     });
     if (this.player(id)?.equip.armor?.name === 'renwang' && black && !ignoresArmor) return 0;
     const attribute = nature ?? (costs.length === 1 ? this.card(costs[0])?.nature : undefined) ?? 'normal';
@@ -93,10 +111,18 @@ export class EvaluationContext {
     if (armor === 'tengjia' && attribute === 'normal' && !ignoresArmor && !fan) return 0;
     const bonus = (this.self.drunk ?? 0) + (plan.extraWine ?? 0) +
       (weapon?.name === 'guding' && !costs.includes(weapon.id) && this.player(id)?.handCount === 0 ? 1 : 0);
-    if (attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
-      const success = Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
+    const target = this.player(id);
+    if (!target) return 0;
+    const bypass = liegongAvailable(this, target);
+    const wind = target.general?.startsWith('wind.') || this.self.general?.startsWith('wind.');
+    const fire = target.general?.startsWith('fire.') || this.self.general?.startsWith('fire.');
+    let hit = bypass ? 1 : Math.pow(1 - this.responseRates.shan, target.handCount);
+    if (!bypass && (target.general === 'wind.zhangjiao' && armor === 'bagua' || target.general === 'fire.wolong' && (!armor || armor === 'bagua')) && !ignoresArmor) hit *= 0.5;
+    const extra = (wind ? windAttackAdjustment(this, target, hit, costs) : 0) + (fire ? fireAttackAdjustment(this, target, hit) : 0);
+    if (wind || fire || attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
+      const success = wind || fire ? hit : Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
       const direct = this.elementalUtility(id, 1 + bonus, attribute, ignoresArmor, plan.linked);
-      return (fan ? Math.max(direct, this.elementalUtility(id, 1 + bonus, 'fire', false, plan.linked)) : direct) * success;
+      return (fan ? Math.max(direct, this.elementalUtility(id, 1 + bonus, 'fire', false, plan.linked)) : direct) * success + extra;
     }
     return this.targetEffect('sha', id);
   }
@@ -124,8 +150,8 @@ export class EvaluationContext {
       player.equip.armor?.name === 'baiyin' ? Math.min(1, base) :
         player.equip.armor?.name === 'tengjia' && nature === 'fire' ? base + 1 : base;
     const first = adjusted(target, amount, ignoresArmor);
-    const utility = (player: VisiblePlayer, value: number) => -this.relation(player.id) *
-      (3.5 * value + (player.hp <= value ? 3 : 0));
+    const utility = (player: VisiblePlayer, value: number) => this.damageUtility(player, value,
+      3.5 * value + (player.hp <= value ? 3 : 0));
     let result = utility(target, first);
     if (nature !== 'normal' && (linked ? linked.includes(id) : target.chained)) for (const player of [this.self, ...this.observation.others]) {
       if (player.id !== id && player.alive && (linked ? linked.includes(player.id) : player.chained))
@@ -142,19 +168,30 @@ export class EvaluationContext {
     const enemy = -relation;
     const missing = player.maxHp - player.hp;
     const response = (kind: 'sha' | 'shan') => 1 - Math.pow(1 - this.responseRates[kind], player.handCount);
-    if (name === 'sha') return enemy * (3.5 + (player.hp <= 1 ? 3 : 0)) * (1 - response('shan'));
-    if (name === 'juedou') return enemy * (3 + (player.hp <= 1 ? 2 : 0)) * (1 - response('sha') * 0.5);
+    if (name === 'sha' && (player.general?.startsWith('wind.') || this.self.general?.startsWith('wind.') || player.general?.startsWith('fire.') || this.self.general?.startsWith('fire.'))) return this.shaEffect(id, []);
+    if (name === 'sha') return this.damageUtility(player, 1, 3.5 + (player.hp <= 1 ? 3 : 0)) * (1 - response('shan'));
+    if (name === 'juedou') return this.damageUtility(player, 1, 3 + (player.hp <= 1 ? 2 : 0)) * (1 - response('sha') * 0.5);
     if (name === 'tao' || name === 'taoyuan') return missing > 0 ? relation * (player.hp <= 1 ? 8 : 4) : 0;
     if (name === 'wuzhong') return relation * 5;
-    if (name === 'guohe' || name === 'shunshou') return enemy * (player.handCount + Object.values(player.equip).filter(Boolean).length + player.judge.length > 0 ? 3 : 0);
+    if (name === 'guohe' || name === 'shunshou') {
+      const removable = player.handCount + Object.values(player.equip).filter(Boolean).length + player.judge.length > 0;
+      if (name === 'shunshou' && this.renegade && removable) {
+        const helps = relation > 0 && player.judge.some(card => card.name === 'lebu' || card.name === 'bingliang');
+        return (helps ? relation : enemy) * 3 + (this.protectsLord(id) && !helps ? 0 : 3);
+      }
+      return enemy * (removable ? 3 : 0);
+    }
     if (name === 'huogong') return this.elementalUtility(id, 1, 'fire');
     if (name === 'tiesuo') return this.chainUtility(id);
     if (name === 'bingliang') return enemy * 3;
     if (name === 'lebu') return enemy * (2 + Math.min(2, player.handCount * 0.4));
     if (name === 'shandian') return enemy * 2;
     if ((name === 'nanman' || name === 'wanjian') && player.equip.armor?.name === 'tengjia') return 0;
-    if (name === 'nanman') return enemy * 3 * (1 - response('sha'));
-    if (name === 'wanjian') return enemy * 3 * (1 - response('shan'));
+    if (name === 'nanman') return this.damageUtility(player, 1, 3) * (1 - response('sha'));
+    if (name === 'wanjian') {
+      const dodge = player.general === 'fire.wolong' && (!player.equip.armor || player.equip.armor.name === 'bagua') ? 0.5 : 1;
+      return this.damageUtility(player, 1, 3) * (1 - response('shan')) * dodge - leijiRisk(this, player, response('shan'));
+    }
     return 0;
   }
   bestOpponent(): VisiblePlayer | undefined {

@@ -16,6 +16,9 @@ export class CardMovementService {
       for (const kind of ['hand', 'judge'] as const) {
         for (const found of p[kind]) if (found === id) zones.push({ kind, owner: p.id });
       }
+      for (const [ability, ids] of Object.entries(p.piles ?? {})) {
+        for (const found of ids) if (found === id) zones.push({ kind: 'pile', owner: p.id, ability });
+      }
       for (const slot of Object.keys(p.equip) as EquipSlot[]) {
         if (p.equip[slot] === id) zones.push({ kind: 'equip', owner: p.id, slot });
       }
@@ -55,6 +58,9 @@ export class CardMovementService {
     s.deck = [...ordered];
   }
   private array(s: GameState, zone: Exclude<CardZone, { kind: 'equip' }>): number[] {
+    if (zone.kind === 'pile') {
+      const p = s.players[zone.owner]; p.piles ??= {}; return p.piles[zone.ability] ??= [];
+    }
     return 'owner' in zone ? s.players[zone.owner][zone.kind] : s[zone.kind];
   }
 }

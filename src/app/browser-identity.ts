@@ -1,6 +1,8 @@
-import { contentForCards, type CardSet } from './game-content.ts';
+import { contentForCards, type GeneralPack, type CardSet } from './game-content.ts';
 import { GameEngine } from '../core/game-engine.ts';
 import { StandardRuleset } from './standard-game.ts';
+import { DuelGeneralSelector } from './duel-general-selector.ts';
+import { IdentityGeneralSelector } from './identity-general-selector.ts';
 import { IdentityPregame } from './identity-pregame.ts';
 import { StrategicPolicy } from '../policies/strategic-policy.ts';
 import type { GameState } from '../domain/state.ts';
@@ -19,15 +21,17 @@ export class BrowserIdentity implements BrowserSession {
   readonly pregame: IdentityPregame;
   readonly policy: StrategicPolicy;
   readonly cards: CardSet;
+  readonly generalPacks: readonly GeneralPack[];
   game: GameEngine<GameState> | null = null;
   record: WebGameRecord | null = null;
 
-  constructor(seed: number, cards: CardSet = 'standard') {
+  constructor(seed: number, cards: CardSet = 'standard', generalPacks: readonly GeneralPack[] = []) {
     if (!Number.isInteger(seed)) throw new Error('随机种子必须为整数');
     this.seed = seed;
     this.cards = cards;
-    this.policy = new StrategicPolicy(undefined, contentForCards(cards).deck);
-    this.pregame = new IdentityPregame(seed);
+    this.generalPacks = [...generalPacks];
+    this.policy = new StrategicPolicy(undefined, contentForCards(cards, generalPacks).deck);
+    this.pregame = new IdentityPregame(seed, new IdentityGeneralSelector(new DuelGeneralSelector(contentForCards(cards, generalPacks).generals(), contentForCards(cards, generalPacks))));
     this.humanSeat = this.pregame.humanSeat;
     this.role = this.pregame.role;
     this.lordSeat = this.pregame.lordSeat;
@@ -40,14 +44,14 @@ export class BrowserIdentity implements BrowserSession {
     const player = this.candidates.find(general => general.id === generalId);
     if (!player) throw new Error('武将不在本局候选中');
     const generals = this.pregame.generals(player);
-    const config = { cards: this.cards, mode: 'identity', seed: this.seed,
+    const config = { cards: this.cards, generalPacks: [...this.generalPacks], mode: 'identity', seed: this.seed,
       players: generals.map((general, seat) => ({
         label: seat === this.humanSeat ? '你' : `电脑${seat + 1}`,
         sex: general.sex, general: general.id,
       })),
     };
     this.record = new WebGameRecord(config, this.humanSeat);
-    this.game = new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(this.cards)), config, this.record);
+    this.game = new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(this.cards, this.generalPacks)), config, this.record);
   }
 
   get decision(): Decision | null { return this.requireGame().getDecision(); }

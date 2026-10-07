@@ -41,7 +41,8 @@ export class JudgementFlow {
       const skill = this.runtime.content.requireSkill(candidate.ability);
       const ids = skill.judgement?.cards(state, candidate.owner) ?? [];
       if (!ids.length) continue;
-      if (ids.some(id => !state.players[candidate.owner].hand.includes(id))) throw new Error('改判候选必须在当前手牌中');
+      if (ids.some(id => !state.players[candidate.owner].hand.includes(id) &&
+        !(skill.judgement?.allowEquipment && Object.values(state.players[candidate.owner].equip).includes(id)))) throw new Error('改判候选必须在当前手牌中');
       setPrompt(state, candidate.owner, 'judgeReplace',
         `${state.players[data.owner].label}的【${data.label}】判定牌为${cardText(state.cards[data.currentId])}；是否发动【${skill.label ?? skill.id}】？`,
         [...ids.map(id => leaf(`judge-replace:${candidate.ability}:${id}`, `打出${cardText(state.cards[id])}改判`,
@@ -64,7 +65,8 @@ export class JudgementFlow {
         skill.judgement?.cards(state, candidate.owner).includes(action.cid);
       if (!allowed || data.currentId === null || !state.table.includes(data.currentId)) throw new Error('改判牌或能力已失效');
       const oldCard = data.currentId;
-      cardMovement.move(state, [oldCard], { kind: 'discard' });
+      cardMovement.move(state, [oldCard], skill.judgement?.gainReplaced ? { kind: 'hand', owner: candidate.owner } : { kind: 'discard' });
+      if (skill.judgement?.gainReplaced) emitEvent(state, 'gained', { from: data.owner, to: candidate.owner, card: oldCard, hidden: false, cause: candidate.ability });
       cardMovement.move(state, [action.cid], { kind: 'table' }, candidate.owner);
       data.currentId = action.cid;
       emitEvent(state, 'judgementReplaced', { player: data.owner, owner: candidate.owner, reason: data.reason,

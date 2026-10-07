@@ -11,7 +11,7 @@ export class IdentityPregame {
   readonly role: string;
   readonly offer: IdentityGeneralOffer;
 
-  constructor(seed: number) {
+  constructor(seed: number, selector = new IdentityGeneralSelector()) {
     if (!Number.isInteger(seed)) throw new Error('随机种子必须为整数');
     this.seed = seed;
     this.humanSeat = (seed >>> 0) % 5;
@@ -20,7 +20,7 @@ export class IdentityPregame {
     const visible = preview.getObservation(this.humanSeat);
     this.role = visible.self.role!;
     this.lordSeat = [visible.self, ...visible.others].find(player => player.role === 'lord')!.id;
-    this.offer = new IdentityGeneralSelector().offer(seed, this.lordSeat);
+    this.offer = selector.offer(seed, this.lordSeat);
   }
 
   get candidates(): readonly GeneralCandidate[] { return this.offer.candidates[this.humanSeat]; }

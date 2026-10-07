@@ -11,6 +11,13 @@ import { getStandardRuntime } from '../runtime.ts';
 import { clearWine } from '../../../rules/operations/wine-state.ts';
 
 export function startTurn(s: GameState): void {
+  if (person(s, s.active).faceDown) {
+    person(s, s.active).faceDown = false;
+    emitEvent(s, 'turnedOver', { player: s.active, faceDown: false });
+    emitEvent(s, 'turnSkipped', { player: s.active });
+    push(s, { kind: 'phaseEndAdvance' });
+    return;
+  }
   s.turn++;
   s.shaUsed = 0;
   if (s.jiuUsed !== undefined) s.jiuUsed = 0;
@@ -20,8 +27,8 @@ export function startTurn(s: GameState): void {
   if (s.skillProgress) s.skillProgress = [];
   emitEvent(s, 'turnStarted', { player: s.active, turn: s.turn });
   push(s,
-    { kind: "phaseStart" }, { kind: "phaseJudge" }, { kind: "phaseDraw" },
-    { kind: "phasePlay" }, { kind: "phaseDiscard" }, { kind: "phaseEnd" },
+    { kind: "phaseStart" }, { kind: "phaseBefore", phase: "judge" }, { kind: "phaseJudge" }, { kind: "phaseDraw" },
+    { kind: "phaseBefore", phase: "play" }, { kind: "phasePlay" }, { kind: "phaseDiscard" }, { kind: "phaseEnd" },
   );
 }
 
@@ -30,6 +37,7 @@ export function handlePhaseStartTask(s: GameState, task: TaskOf<"phaseStart">,
   if (!person(s, s.active).alive) return;
   s.phase = "start";
   s.skipPlay = false;
+  if (s.skipJudge !== undefined) s.skipJudge = false;
   if (s.skipDraw !== undefined) s.skipDraw = false;
   push(s, ...runtime.abilities.list(s, s.active).filter(skill => skill.startPhase)
     .map(skill => ({ kind: 'phaseStartOffer' as const, ability: skill.id, owner: s.active })));
@@ -40,6 +48,7 @@ export function handlePhaseJudgeTask(s: GameState, task: TaskOf<"phaseJudge">): 
   if (!person(s, s.active).alive) return;
 
   s.phase = "judge";
+  if (s.skipJudge) { emitEvent(s, 'judgementSkipped', { player: s.active }); return; }
   const cards = [...person(s, s.active).judge];
   push(s, ...cards.map(cid => ({ kind: "judgeCard" as const, owner: s.active, cid })));
 
@@ -83,7 +92,7 @@ function resolveDrawSkill(s: GameState, owner: number, ability: string, choice: 
   if (!skill || !option) throw new Error('摸牌阶段技能已失效');
   emitEvent(s, 'skillActivated', { ability: skill.id, label: skill.label ?? skill.id,
     owner, targets: [...option.targets] });
-  skill.drawPhase!.execute(s, owner, option.targets);
+  skill.drawPhase!.execute(s, owner, option.targets, runtime);
 }
 
 export function handlePhasePlayTask(s: GameState, task: TaskOf<"phasePlay">, runtime: ContentRuntime = getStandardRuntime()): void {

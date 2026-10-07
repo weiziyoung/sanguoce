@@ -1,3 +1,4 @@
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 import { GameEngine } from '../engine.ts';
 import { RuleBasePolicy } from '../rule-base-policy.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
@@ -36,4 +37,4 @@ for (let seed = 1; seed <= seeds; seed++) {
     else results.baselineWins++;
   }
 }
-process.stdout.write(JSON.stringify({ general, policyVersion: strategic.version, seeds, games: seeds * 2, ...results }, null, 2) + '\n');
+process.stdout.write(JSON.stringify({ general, policySource: rulePolicyBaseline, seeds, games: seeds * 2, ...results }, null, 2) + '\n');

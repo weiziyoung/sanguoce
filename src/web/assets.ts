@@ -49,7 +49,7 @@ export class TableAssets {
     const players = [observation.self, ...observation.others];
     const cards = [...observation.self.hand, ...observation.table, ...Object.values(observation.eventCards ?? {}),
       ...(observation.discardTop ? [observation.discardTop] : []), ...players.flatMap(player =>
-        [...Object.values(player.equip).filter((card): card is Card => card !== null), ...player.judge])];
+        [...Object.values(player.equip).filter((card): card is Card => card !== null), ...player.judge, ...Object.values(player.piles ?? {}).flat()])];
     const files = new Map<string, string>();
     for (const player of players) if (player.general && this.manifest.generals[player.general])
       files.set(player.general, this.manifest.generals[player.general]);

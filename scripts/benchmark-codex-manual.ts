@@ -7,7 +7,7 @@ import { ChineseView } from '../chinese-view.ts';
 import { GameEngine } from '../engine.ts';
 import { forcedActionId } from '../src/domain/forced-choice.ts';
 import { StrategicPolicy } from '../src/policies/strategic-policy.ts';
-import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
+import { rulePolicyBaseline } from './rule-policy-source.ts';
 
 const output = resolve(process.argv[2] ?? './datasets/codex-ganning-2026-09-27/results.json');
 const general = 'standard.ganning';
@@ -20,7 +20,7 @@ type GameRecord = { seed: number; codexSeat: number; optionIds: string[]; ownDec
 type Report = { method: string; general: string; baseline: string; stepLimit: number;
   startedAt: string; games: GameRecord[] };
 const config = { method: 'Codex manual public-observation decisions; paired seed and swapped seat',
-  general, baseline: `StrategicPolicy ${RULE_POLICY_VERSION}`, stepLimit };
+  general, baseline: rulePolicyBaseline, stepLimit };
 const report: Report = existsSync(output) ? JSON.parse(readFileSync(output, 'utf8')) as Report : {
   ...config, startedAt: new Date().toISOString(),
   games: Array.from({ length: 5 }, (_, offset) => [0, 1].map(codexSeat => ({

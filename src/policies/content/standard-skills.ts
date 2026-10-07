@@ -1,3 +1,5 @@
+import { registerFireEvaluations } from './fire.ts';
+import { registerWindEvaluations } from './wind.ts';
 import { fanPreparationEvaluation } from './junzheng.ts';
 import { EvaluationRegistry } from '../evaluation-registry.ts';
 import { usefulOptionalSkill } from './standard/common.ts';
@@ -37,5 +39,7 @@ export function standardSkillEvaluations(): EvaluationRegistry {
     .registerGeneral('standard.zhugeliang', zhugeliangEvaluation)
     .registerGeneral('standard.huanggai', huanggaiEvaluation);
   registry.register('junzheng.zhuque', fanPreparationEvaluation);
+  registerWindEvaluations(registry);
+  registerFireEvaluations(registry);
   return registry;
 }

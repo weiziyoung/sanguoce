@@ -65,7 +65,10 @@ export function handleResolveCardUseTask(s: GameState, task: TaskOf<'resolveCard
 
 export function handleResolveVirtualTrickTask(s: GameState, task: TaskOf<'resolveVirtualTrick'>,
   runtime: ContentRuntime = getStandardRuntime()): void {
-  beginTrick(s, task.source, task.cname, task.targets, task.cid, null, runtime);
+  const scope = runtime.content.card(task.cname).play.scope;
+  const targets = scope === 'others' ? seatOrder(s, task.source).filter(id => id !== task.source) :
+    scope === 'all' ? seatOrder(s, task.source) : scope === 'self' ? [task.source] : task.targets;
+  beginTrick(s, task.source, task.cname, targets, task.cid, null, runtime, task.card);
 }
 
 export function handleFinishCardTask(s: GameState, task: TaskOf<"finishCard">): void {
@@ -81,7 +84,12 @@ export function beginCardUse(s: GameState, source: number, action: Exclude<Actio
 export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = getStandardRuntime()): void {
   const { source, action } = resolutionStack.require(s, 'cardUse').data;
   if (!person(s, source).alive) return;
-  if (action.type === 'recast') {
+  if (action.type === 'virtualRecast') {
+    if (!runtime.content.card(action.cname).play.recast) throw new Error('转化牌不能重铸');
+    spendCard(s, source, action.ids, action.cname, 'discard', runtime, action.transformation);
+    emitEvent(s, 'transformationUsed', { ability: action.transformation, label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation, owner: source, produces: action.cname });
+    emitEvent(s, 'cardRecast', { player: source, card: action.ids[0] }); draw(s, source, 1);
+  } else if (action.type === 'recast') {
     if (!runtime.content.card(name(s, action.cid)).play.recast) throw new Error('此牌不能重铸');
     discardOwned(s, source, action.cid);
     emitEvent(s, 'cardRecast', { player: source, card: action.cid });
@@ -122,10 +130,16 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
     emitEvent(s, 'delayPlaced', { source, target, card: cid, effectiveName: action.cname });
   } else if (action.type === 'virtualTrick') {
     const definition = runtime.content.card(action.cname);
-    if (definition.kind !== 'trick' || definition.play.targeting !== 'single' || action.ids.length !== 1 ||
-      action.targets.length !== 1 ||
-      !runtime.queries.canTarget(s, source, action.targets[0], action.cname)) throw new Error('转化锦囊目标已失效');
-    spendCard(s, source, action.ids, action.cname, 'use', runtime, action.transformation);
+    if (definition.kind !== 'trick' || !['single', 'multiple', 'none'].includes(definition.play.targeting) ||
+      (definition.play.targeting === 'single' && action.targets.length !== 1) ||
+      (definition.play.targeting === 'multiple' && (action.targets.length < 1 || action.targets.length > (definition.play.maxTargets ?? 1))) ||
+      (definition.play.targeting === 'none' && action.targets.length !== 0) ||
+      new Set(action.targets).size !== action.targets.length ||
+      action.targets.some(target => !runtime.queries.canTarget(s, source, target, action.cname, definition.play.allowSelf))) throw new Error('转化锦囊目标已失效');
+    const used = spendCard(s, source, action.ids, action.cname, 'use', runtime, action.transformation);
+    const card = { ...used, virtual: true as const, subcards: [...action.ids] };
+    cardMovement.move(s, action.ids, { kind: 'table' });
+    push(s, ...action.ids.map(cid => ({ kind: 'finishCard' as const, cid })));
     const cid = action.ids[0];
     emitEvent(s, 'transformationUsed', { ability: action.transformation,
       label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation,
@@ -135,9 +149,9 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
     if (!runtime.triggers.forEvent('cardUsed').length) {
       emitEvent(s, signal.kind, signal.data);
       handleResolveVirtualTrickTask(s, { kind: 'resolveVirtualTrick', source, cid,
-        cname: action.cname, targets: action.targets }, runtime);
+        cname: action.cname, targets: action.targets, card }, runtime);
     } else push(s, { kind: 'openTriggers', signal,
-      then: [{ kind: 'resolveVirtualTrick', source, cid, cname: action.cname, targets: action.targets }] });
+      then: [{ kind: 'resolveVirtualTrick', source, cid, cname: action.cname, targets: action.targets, card }] });
   } else if (action.type === 'play') playCard(s, source, action, runtime);
   else throw new Error('主动技能不能作为卡牌使用');
 }

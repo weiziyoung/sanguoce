@@ -1,6 +1,6 @@
 import { emitEvent } from '../../../domain/event-journal.ts';
 import { resolutionStack } from "../../../domain/resolution-stack.ts";
-import { NAMES, cardColor } from "../../../../catalog.ts";
+import { NAMES } from "../../../../catalog.ts";
 import { leaf, setPrompt } from "../../../core/decision-manager.ts";
 import { person, push } from "../../../domain/state-access.ts";
 import type { ActionMap, PromptOf, ResponseContext, Task } from "../../../domain/state.ts";
@@ -28,7 +28,7 @@ export function handleResponsePollTask(s: GameState, runtime: ContentRuntime = g
   }
   const need = ["sha", "wanjian"].includes(mode) ? "shan" : "sha";
   const baguaAllowed = need === "shan" && !context.baguaTried &&
-    runtime.abilities.has(s, actor, 'standard.bagua') &&
+    runtime.queries.autoShan(s, actor) &&
     !(mode === "sha" && (context.ignoreArmor || runtime.abilities.has(s, context.source, 'standard.qinggang')));
   const options = responseOptions(s, actor, need, baguaAllowed, runtime);
   if ((mode === 'sha' || mode === 'juedou' || mode === 'nanman') && !context.proxyTried &&
@@ -78,7 +78,7 @@ export function responseFailure(s: GameState, context: ResponseContext): void {
     push(s, { ...attack, kind: 'shaHit', target: actor });
   } else {
     if (mode === 'juedou') emitEvent(s, 'duelEnded', { loser: actor });
-    damage(s, actor, source, 1, null, context.cardId ?? null);
+    damage(s, actor, source, 1, null, context.card ?? context.cardId ?? null);
   }
 }
 
@@ -87,6 +87,9 @@ export function handleRespondChoice(s: GameState, prompt: PromptOf<"respond">, d
 
   const context = prompt.context;
   if (data.type === "bagua") {
+    const ability = runtime.abilities.instances(s, actor).find(instance => instance.definition.modifier?.autoShan?.(s, actor));
+    if (ability && ability.source.kind !== 'equipment') emitEvent(s, 'skillActivated', { ability: ability.definition.id,
+      label: ability.definition.label ?? ability.definition.id, owner: actor, targets: [] });
     new JudgementFlow(runtime).begin(s, actor, 'bagua', { kind: 'applyBaguaJudgement' });
   } else if (data.type === 'proxy') {
     const need = ['sha', 'wanjian'].includes(context.mode) ? 'shan' : 'sha';
@@ -108,18 +111,21 @@ export function handleRespondChoice(s: GameState, prompt: PromptOf<"respond">, d
       player: actor, card: data.ids[0], effectiveName: effective.name,
     });
     responseSuccess(s, context);
+    for (const skill of runtime.abilities.list(s, actor)) skill.responseUsed?.(s, actor, need, runtime);
   } else responseFailure(s, context);
 
 }
 
-export function handleApplyBaguaJudgementTask(s: GameState): void {
+export function handleApplyBaguaJudgementTask(s: GameState, runtime: ContentRuntime = getStandardRuntime()): void {
   const frame = resolutionStack.require(s, 'judgement');
   const parent = resolutionStack.get(s, frame.parentId!, 'response');
   const context = parent.data.context;
   const final = frame.data.finalId === null ? null : s.cards[frame.data.finalId];
-  if (final && cardColor(final) === 'red') {
+  const suit = final ? runtime.queries.suit(s, frame.data.owner, final) : null;
+  if (suit === 'heart' || suit === 'diamond') {
     emitEvent(s, 'abilityActivated', { ability: 'bagua', owner: null, effect: 'autoShan' });
     responseSuccess(s, context);
+    for (const skill of runtime.abilities.list(s, context.actor)) skill.responseUsed?.(s, context.actor, 'shan', runtime);
   } else {
     parent.data.context = { ...context, baguaTried: true };
     resolutionStack.enqueueParent(s, { kind: 'responsePoll' });

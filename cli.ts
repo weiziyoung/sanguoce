@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { contentForCards, type CardSet } from './src/app/game-content.ts';
+import { GENERAL_PACKS, generalPackLabel, contentForCards, type GeneralPack, type CardSet } from './src/app/game-content.ts';
 import readline from "node:readline/promises";
 import { randomInt } from "node:crypto";
 import { stdin, stdout } from "node:process";
@@ -13,6 +13,7 @@ import { LayaPolicy } from "./src/policies/laya-policy.ts";
 import { GameTrace } from "./trace.ts";
 import { outcomeLabel } from "./src/presentation/outcome-label.ts";
 import { DuelGeneralSelector, type GeneralCandidate } from "./src/app/duel-general-selector.ts";
+import { IdentityGeneralSelector } from './src/app/identity-general-selector.ts';
 import { IdentityPregame } from "./src/app/identity-pregame.ts";
 import { renderGeneralSelection } from "./src/presentation/general-selection-view.ts";
 import { GAME_NAME } from "./src/presentation/brand.ts";
@@ -24,6 +25,13 @@ const cardsPosition = args.indexOf('--cards');
 const requestedCards = cardsPosition >= 0 ? args[cardsPosition + 1] : 'standard';
 if (!['standard', 'junzheng'].includes(requestedCards ?? '')) { console.error('请在 --cards 后指定 standard 或 junzheng'); process.exit(2); }
 const cards = requestedCards as CardSet;
+const generalsPosition = args.indexOf('--generals');
+const requestedGenerals = generalsPosition >= 0 ? args[generalsPosition + 1] : 'standard';
+const names = requestedGenerals === 'standard' ? [] : requestedGenerals?.split(',');
+if (!names || names.some(pack => !GENERAL_PACKS.includes(pack as GeneralPack)) || new Set(names).size !== names.length) { console.error('请在 --generals 后指定 standard、wind、fire 或 wind,fire'); process.exit(2); }
+const generalPacks: GeneralPack[] = GENERAL_PACKS.filter(pack => names.includes(pack));
+const content = contentForCards(cards, generalPacks);
+const selector = new DuelGeneralSelector(content.generals(), content);
 const demo = args.includes("--demo");
 const modePosition = args.indexOf('--mode');
 const requestedMode = modePosition >= 0 ? args[modePosition + 1] : undefined;
@@ -54,8 +62,8 @@ const input = rl?.[Symbol.asyncIterator]();
 const view = new ChineseView();
 const terminal = new TerminalView(view);
 const policy = requestedAi === 'jev' ? new JevPolicy() :
-  requestedAi === 'laya' ? new LayaPolicy() : new StrategicPolicy(undefined, contentForCards(cards).deck);
-const aiLabel = requestedAi === 'jev' ? 'Jev' : requestedAi === 'laya' ? 'Laya' : `规则策略 ${policy instanceof StrategicPolicy ? policy.version : ""}`;
+  requestedAi === 'laya' ? new LayaPolicy() : new StrategicPolicy(undefined, content.deck);
+const aiLabel = requestedAi === 'jev' ? 'Jev' : requestedAi === 'laya' ? 'Laya' : '规则策略';
 let steps = 0;
 let trace: GameTrace<GameState> | null = null;
 let humanSeat = 0;
@@ -163,7 +171,7 @@ try {
     let config: GameConfig | null = null;
     let summary = '';
     if (mode === 'identity') {
-      const pregame = new IdentityPregame(seed);
+      const pregame = new IdentityPregame(seed, new IdentityGeneralSelector(selector));
       humanSeat = pregame.humanSeat;
       const identity = { role: roleLabel(pregame.role), lord: `座${pregame.lordSeat + 1}` };
       chosen = demo ? pregame.offer.computerPicks[humanSeat] : await selectGeneral(pregame.candidates, identity);
@@ -178,7 +186,7 @@ try {
           generals.flatMap((general, id) => id === humanSeat ? [] : [`座${id + 1}电脑选中【${general.label}】`]).join('；');
       }
     } else {
-      const offer = new DuelGeneralSelector().offer(seed);
+      const offer = selector.offer(seed);
       chosen = demo ? offer.demoPick : await selectGeneral(offer.player);
       if (!chosen) {
         stdout.write('已退出选将。\n');
@@ -194,12 +202,13 @@ try {
     }
     if (chosen && config) {
       config.cards = cards;
+      if (generalPacks.length) config.generalPacks = generalPacks;
       trace = dumpPath ? new GameTrace<GameState>(config, {
         我方: demo ? aiLabel : "人工决策",
         对手: aiLabel,
       }) : null;
       const game = GameEngine.standard(config, trace);
-      if (demo) stdout.write(`${GAME_NAME} ${mode === 'identity' ? '标准五人身份局' : '1v1'} · ${cards === 'junzheng' ? '标准＋军争牌包' : '标准牌包'} · 随机种子 ${seed}\n${summary}\n`);
+      if (demo) stdout.write(`${GAME_NAME} ${mode === 'identity' ? '标准五人身份局' : '1v1'} · ${cards === 'junzheng' ? '标准＋军争牌包' : '标准牌包'}${generalPacks.length ? ' · ' + generalPackLabel(generalPacks) : ''} · 随机种子 ${seed}\n${summary}\n`);
       else openingSummary = summary;
       while (!game.finished && steps < 5000) {
         const current = game.getDecision();

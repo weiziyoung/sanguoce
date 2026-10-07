@@ -1,3 +1,5 @@
+import { offerContentChoice, chooseContent } from '../rules/flows/content-choice-flow.ts';
+import { prepareDamage } from '../rules/flows/damage-flow.ts';
 import { prepareAttack, launchAttack, chooseAttackPreparation } from '../rules/flows/attack-use-flow.ts';
 import { handleDamagePropagationTask } from '../rules/flows/damage-flow.ts';
 import { chooseFireReveal, offerFirePayment, chooseFirePayment } from '../content/junzheng/effects.ts';
@@ -30,6 +32,7 @@ import { JudgementFlow } from '../rules/flows/judgement-flow.ts';
 import { DistributionFlow } from '../rules/flows/distribution-flow.ts';
 import { DeckReorderFlow } from '../rules/flows/deck-reorder-flow.ts';
 import { ProxyResponseFlow } from '../content/standard/flows/proxy-response-flow.ts';
+import { PindianFlow } from '../rules/flows/pindian-flow.ts';
 import { responseSuccess } from '../content/standard/flows/response-flow.ts';
 import { AttackRedirectFlow } from '../rules/flows/attack-redirect-flow.ts';
 
@@ -41,6 +44,7 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
   const judgements = new JudgementFlow(runtime);
   const distributions = new DistributionFlow();
   const deckReorders = new DeckReorderFlow();
+  const pindian = new PindianFlow(runtime);
   const proxies = new ProxyResponseFlow(runtime);
   const redirects = new AttackRedirectFlow(runtime);
   const scheduler = new ResolutionScheduler({
@@ -52,7 +56,7 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     attackPrepare: s => prepareAttack(s, runtime),
     attackLaunch: s => launchAttack(s, runtime),
     damagePropagate: handleDamagePropagationTask,
-    fireAttackPay: offerFirePayment,
+    fireAttackPay: (s, task) => offerFirePayment(s, task, runtime),
     equipmentLeft: (s, task) => runtime.content.card(s.cards[task.cid].name).leaveEquipment?.(s, task.owner, task.cid),
     cardUseStart: s => handleCardUseStartTask(s, runtime),
     resolveCardUse: (s, task) => handleResolveCardUseTask(s, task, runtime),
@@ -76,15 +80,26 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     distributionPoll: s => distributions.poll(s),
     deckReorderPoll: s => deckReorders.poll(s),
     applyDelayedJudgement: (s, task) => handleApplyDelayedJudgementTask(s, task, runtime),
-    applyBaguaJudgement: handleApplyBaguaJudgementTask,
+    applyBaguaJudgement: s => handleApplyBaguaJudgementTask(s, runtime),
     applyAttackJudgement: (s, task) => skills.applyAttackJudgement(s, task),
     applySkillJudgement: (s, task) => skills.applySkillJudgement(s, task),
     responsePoll: s => handleResponsePollTask(s, runtime),
     proxyResponsePoll: s => proxies.poll(s),
     proxyResponseSuccess: s => responseSuccess(s, resolutionStack.require(s, 'response').data.context),
+    pindianOffer: s => pindian.offer(s),
+    pindianResolve: s => pindian.resolve(s),
+    contentChoiceOffer: s => offerContentChoice(s, runtime),
+    contentCallback: (s, task) => runtime.content.requireSkill(task.ability).callback?.(s, task.owner, task.context, runtime),
+    contentHpChanged: (s, task) => {
+      for (const skill of runtime.abilities.list(s, task.player)) skill.hpChanged?.(s, task.player, task.before, task.after, runtime);
+    },
+    phaseBefore: (s, task) => {
+      for (const skill of runtime.abilities.list(s, s.active)) if (skill.phaseBefore?.phases.includes(task.phase)) skill.phaseBefore.execute(s, s.active, task.phase, runtime);
+    },
+    damagePrepare: s => prepareDamage(s, runtime),
     damageApply: s => handleDamageApplyTask(s, runtime),
     dyingPoll: s => promptDying(s, runtime),
-    nullifyPoll: promptNullify,
+    nullifyPoll: s => promptNullify(s, runtime),
     death: (state, task) => deaths.resolve(state, task),
     phaseStart: (s, task) => handlePhaseStartTask(s, task, runtime),
     phaseJudge: handlePhaseJudgeTask,
@@ -107,6 +122,10 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     hanbingPick: handleHanbingPickTask,
   }, (state, beforeEventCount) => {
     if (state.outcome.status !== 'ongoing' || !state.resolution.stack.length) return;
+    for (const event of state.events.slice(beforeEventCount).filter(event => event.kind === 'hpChanged').reverse()) {
+      if (event.kind === 'hpChanged' && runtime.abilities.list(state, event.data.player).some(skill => skill.hpChanged))
+        resolutionStack.enqueue(state, { kind: 'contentHpChanged', ...event.data });
+    }
     const hasLossTriggers = runtime.triggers.forEvent('cardsLost').length > 0;
     const movements = state.events.slice(beforeEventCount).filter(event => event.kind === 'cardsMoved').reverse();
     for (const event of movements) {
@@ -134,9 +153,11 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     }
   });
   const choices = new ChoiceExecutor({
+    pindian: (s, prompt, data) => pindian.choose(s, prompt, data),
+    contentChoice: (s, prompt, data) => chooseContent(s, prompt, data, runtime),
     attackPrepare: (s, prompt, data) => chooseAttackPreparation(s, prompt, data, runtime),
-    fireAttackReveal: chooseFireReveal,
-    fireAttackPay: chooseFirePayment,
+    fireAttackReveal: (s, prompt, data) => chooseFireReveal(s, prompt, data, runtime),
+    fireAttackPay: (s, prompt, data) => chooseFirePayment(s, prompt, data, runtime),
     play: (s, prompt, data) => handlePlayChoice(s, prompt, data, runtime),
     skillCost: (s, prompt, data) => skills.costChoice(s, prompt, data),
     skillTarget: (s, prompt, data) => skills.targetChoice(s, prompt, data),
@@ -151,7 +172,7 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     deckReorder: (s, prompt, data) => deckReorders.choice(s, prompt, data),
     triggerConfirm: (s, prompt, data) => resolver.confirm(s, prompt, data),
     discard: handleDiscardChoice,
-    nullify: handleNullifyChoice,
+    nullify: (s, prompt, data) => handleNullifyChoice(s, prompt, data, runtime),
     dying: (s, prompt, data) => handleDyingChoice(s, prompt, data, runtime),
     respond: (s, prompt, data) => handleRespondChoice(s, prompt, data, runtime),
     proxyResponse: (s, prompt, data) => proxies.choice(s, prompt, data),

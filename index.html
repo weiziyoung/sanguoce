@@ -38,12 +38,21 @@
     <button id="outside-settings" class="small-control outside-settings" aria-haspopup="dialog">设置</button>
     <p id="music-unlock" class="music-unlock hidden" role="status">点击任意位置开启音乐</p>
     <section id="mode-select" class="screen-overlay mode-screen hidden" aria-labelledby="mode-title">
+      <nav class="home-links" aria-label="项目链接">
+        <a class="small-control" href="https://github.com/weiziyoung/sanguoce" target="_blank" rel="noopener noreferrer" title="查看 GitHub 仓库（在新标签页打开）">GitHub ↗</a>
+      </nav>
       <div class="screen-panel mode-panel">
         <h1 id="mode-title" class="sr-only">三国策 · 选择玩法</h1>
         <fieldset class="card-set-options">
           <legend class="sr-only">选择牌包</legend>
           <label><input id="cards-standard" name="cards" type="radio" value="standard" checked />标准 <small>108 张</small></label>
           <label><input id="cards-junzheng" name="cards" type="radio" value="junzheng" />标准＋军争 <small>160 张</small></label>
+        </fieldset>
+        <fieldset class="card-set-options general-pack-options">
+          <legend>武将扩展</legend>
+          <label><input type="checkbox" checked disabled />标准包 <small>25 将</small></label>
+          <label><input id="generals-wind" type="checkbox" value="wind" />风包 <small>7 将</small></label>
+          <label><input id="generals-fire" type="checkbox" value="fire" />火包 <small>8 将</small></label>
         </fieldset>
         <div class="mode-options">
           <button id="mode-duel" class="mode-option"><strong>对决</strong><small>一对一</small></button>
@@ -58,7 +67,7 @@
     <div id="hud" class="hidden">
       <header class="topbar">
         <div class="brand"><span id="brand-mode">对决</span></div>
-        <div class="topright"><span id="seed"></span><button id="fullscreen" class="small-control">全屏</button><button id="mute" class="small-control">声音</button><button id="settings" class="small-control" aria-haspopup="dialog">设置</button><button id="restart" class="small-control">重开</button></div>
+        <div class="topright"><span id="seed"></span><button id="fullscreen" class="small-control">全屏</button><button id="mute" class="small-control">声音</button><button id="settings" class="small-control" aria-haspopup="dialog">设置</button><button id="restart" class="small-control">重开</button><button id="return-home" class="small-control" title="结束当前对局，返回玩法选择页">返回主页</button></div>
       </header>
       <div class="turnbox" aria-label="当前回合与牌堆"><strong id="turn"></strong><span id="phase"></span><small id="pile"></small></div>
       <aside class="battle-log"><div class="panel-title">战斗记录 <span>◇</span></div><div id="log"></div></aside>

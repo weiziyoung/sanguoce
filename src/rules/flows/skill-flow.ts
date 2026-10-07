@@ -81,7 +81,7 @@ export class SkillFlow {
       const choices = costs.flatMap(ids => {
         if (new Set(ids).size !== ids.length || ids.some(id => !state.players[owner].hand.includes(id) &&
           !Object.values(state.players[owner].equip).includes(id))) throw new Error(`主动技能成本不合法：${skill.id}`);
-        const targets = active.targets(state, owner, ids);
+        const targets = active.targets(state, owner, ids, this.runtime);
         return targets.map((selected, index) => leaf(`skill:${skill.id}:${ids.join(':')}:${index}`,
           `${ids.length ? ids.map(id => cardText(state.cards[id])).join('＋') : '无牌'} → ${selected.map(id => state.players[id].label).join('、') || '自身'}`,
           { type: 'activeSkill', ability: skill.id, ids: [...ids], targets: [...selected] }));
@@ -133,7 +133,7 @@ export class SkillFlow {
     const frame = resolutionStack.require(state, 'skill');
     const { owner, ability, ids } = frame.data;
     const skill = this.runtime.content.requireSkill(ability);
-    const targets = skill.active?.targets(state, owner, ids) ?? [];
+    const targets = skill.active?.targets(state, owner, ids, this.runtime) ?? [];
     if (!targets.length) throw new Error(`技能目标已失效：${ability}`);
     if (targets.length === 1) {
       frame.data.targets = [...targets[0]];
@@ -160,7 +160,7 @@ export class SkillFlow {
     }
     const validCost = active.selection ? validSelection(state, owner, ids, active.selection) :
       active.costs!(state, owner).some(candidate => same(candidate, ids));
-    const validTarget = active.targets(state, owner, ids).some(candidate => same(candidate, targets));
+    const validTarget = active.targets(state, owner, ids, this.runtime).some(candidate => same(candidate, targets));
     if (!validCost || !validTarget || ((active.cost === 'none' || active.cost === 'loseHp') && ids.length)) {
       throw new Error(`主动技能费用或目标已失效：${ability}`);
     }
@@ -179,7 +179,7 @@ export class SkillFlow {
       resolutionStack.enqueue(state, { kind: 'skillDying' }, { kind: 'skillEffect' });
       return;
     }
-    active.execute?.(state, owner, ids, targets);
+    active.execute?.(state, owner, ids, targets, this.runtime);
     if (active.followup) {
       const actor = active.followup.actor(state, owner, targets);
       const options = active.followup.options(state, owner, targets);
@@ -192,7 +192,7 @@ export class SkillFlow {
   effect(state: GameState): void {
     const { owner, ability, ids, targets } = resolutionStack.require(state, 'skill').data;
     if (!state.players[owner].alive) return;
-    this.runtime.content.requireSkill(ability).active?.execute?.(state, owner, ids, targets);
+    this.runtime.content.requireSkill(ability).active?.execute?.(state, owner, ids, targets, this.runtime);
   }
   applyAttackJudgement(state: GameState, task: TaskOf<'applyAttackJudgement'>): void {
     const frame = resolutionStack.require(state, 'judgement');

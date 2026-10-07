@@ -40,12 +40,12 @@ export function applyDelayedJudgement(s: GameState, owner: number, cid: number, 
   const result = finalId === null ? null : s.cards[finalId];
   if (cname === "lebu") {
     discardOwned(s, owner, cid);
-    if (!result || result.suit !== "heart") {
+    if (!result || runtime.queries.suit(s, owner, result) !== "heart") {
       s.skipPlay = true;
       emitEvent(s, 'playSkipped', { player: owner, announced: true });
     }
   } else if (cname === "shandian") {
-    if (result && result.suit === "spade" && result.rank >= 2 && result.rank <= 9) {
+    if (result && runtime.queries.suit(s, owner, result) === "spade" && result.rank >= 2 && result.rank <= 9) {
       discardOwned(s, owner, cid);
       damage(s, owner, null, 3, null, cid, { nature: 'thunder' });
     } else {

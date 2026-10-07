@@ -20,7 +20,8 @@ export function trickTableCue(event: VisibleEvent, obs: Observation): TrickTable
   }
   if (event.kind === 'nullificationUsed') {
     const card = obs.eventCards?.[event.data.card];
-    return card ? { kind: 'append', player: event.data.player, card, cname: event.data.cname,
+    return card ? { kind: 'append', player: event.data.player,
+      card: card.name === 'wuxie' ? card : { ...card, name: 'wuxie', nature: undefined, label: undefined }, cname: event.data.cname,
       targets: [event.data.target], parityBefore: event.data.parityBefore } : null;
   }
   if (event.kind === 'turnStarted' || event.kind === 'equipped' || event.kind === 'delayPlaced')
