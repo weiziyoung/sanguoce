@@ -23,6 +23,7 @@ import { HEALTH_PIP_STATES, healthPips, healthPipTexture, healthPipSourceTexture
 import { bindSceneSettings, type GameSettings } from './settings.ts';
 import { unavailableSkillDetail } from './skill-availability.ts';
 import { factionBanner, identityToken } from './portrait-badges.ts';
+import { portraitChain, portraitChainUpdate } from './portrait-chain.ts';
 import { AiController } from './ai-controller.ts';
 
 interface CardSprite { card: Card; view: Phaser.GameObjects.Container; border: Phaser.GameObjects.Rectangle; home: Point; order: number; }
@@ -39,6 +40,7 @@ export class TableScene extends Phaser.Scene {
   private cards: CardSprite[] = [];
   private tablePreviewCards: CardSprite[] = [];
   private hiddenBacks = new Map<number, Phaser.GameObjects.Container>();
+  private chainViews = new Map<number, Phaser.GameObjects.Graphics>();
   private vitalsViews = new Map<number, { label: Phaser.GameObjects.Text;
     pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text }>();
   private vitals = new PlayerVitalsPresenter((id, state) => this.renderVitals(id, state));
@@ -150,6 +152,8 @@ export class TableScene extends Phaser.Scene {
     if (events.length) for (const card of this.tablePreviewCards) card.view.setVisible(false);
     for (const event of events) {
       await this.settings.whenClosed();
+      const chain = portraitChainUpdate(event);
+      if (chain) this.chainViews.get(chain.player)?.setVisible(chain.visible);
       if (event.kind === 'skillActivated' && event.data.owner === obs.self.id) this.hud.flashSkill(event.data.ability);
       const transfer = zoneCardEffect(event, obs);
       const discarded = discardTableCard(event, obs);
@@ -179,7 +183,7 @@ export class TableScene extends Phaser.Scene {
     await this.settings.whenClosed();
     this.pendingHandOrigin = null;
     const decision = this.session.decision;
-    this.model = decision?.actor === obs.self.id ? new TableInteraction(decision) : null;
+    this.model = decision?.actor === obs.self.id ? new TableInteraction(decision, obs.self.hand) : null;
     this.redraw(obs);
     this.renderHud();
     if (!this.endAnnounced && obs.outcome.status !== 'ongoing') {
@@ -258,6 +262,7 @@ export class TableScene extends Phaser.Scene {
     this.effects.clearHandFlights();
     this.objects.forEach(o => o.destroy()); this.objects = []; this.cards = []; this.tablePreviewCards = []; this.hiddenBacks.clear();
     this.vitalsViews.clear();
+    this.chainViews.clear();
     this.vitals.reset([obs.self, ...obs.others]);
     this.track(text(this, 795, 626, '牌 桌', 18, '#b6a787').setAlpha(0.7));
     const deck = deckPosition(obs.others.length + 1);
@@ -313,6 +318,8 @@ export class TableScene extends Phaser.Scene {
         .setDisplaySize(pipLayout[i].size, pipLayout[i].size)));
     const death = this.track(text(this, x, y, '阵 亡', 40, '#c78c7b').setDepth(75).setVisible(!player.alive));
     this.vitalsViews.set(player.id, { label, pips, death });
+    const chain = this.track(portraitChain(this, x, y, w, h).setDepth(6).setVisible(Boolean(player.alive && player.chained)));
+    this.chainViews.set(player.id, chain);
     const status = [player.chained ? '连环' : '', player.drunk ? '酒＋1' : ''].filter(Boolean).join(' · ');
     if (status) this.track(text(this, x + 15, y - h / 2 + 48, status, 18, '#f3d394').setDepth(76));
     if (!self) {

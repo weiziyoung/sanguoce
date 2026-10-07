@@ -56,6 +56,8 @@ export class TableHud {
       else if (ganglieDiscarding) prompt = `刚烈：选择两张手牌（已选 ${model.cards.length}/2）`;
       else if (qilinSelecting) prompt = '麒麟弓：点击下方坐骑牌弃置，或选择不发动';
       else if (guanshiSelecting) prompt = `贯石斧：选择手牌或桌面装备弃置（已选 ${model.cards.length}/2）`;
+      else if (model.unorderedTargets && model.targetLimit > 1 && model.cards.length)
+        prompt = `选择至多 ${model.targetLimit} 个目标（已选 ${model.targets.length}/${model.targetLimit}） · 可确认当前目标`;
       else if (model.nextTargets.length && (model.cards.length || model.focus || model.decision.kind === 'skillTarget'))
         prompt = model.targets.length ? `选择第 ${model.targets.length + 1} 个目标，或确认当前目标` : '拖至亮起的武将 · 选择目标';
       else if (model.decision.kind === 'discard' && model.batchDiscard.length)

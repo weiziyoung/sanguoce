@@ -1,4 +1,6 @@
 import type { Decision } from '../../contracts.ts';
+import type { Card } from '../../catalog.ts';
+import { expandedContent } from '../app/game-content.ts';
 import { choiceLeaves, projectChoices, type ActionChoice } from '../presentation/choice-view.ts';
 
 const sameCards = (a: readonly number[], b: readonly number[]) => a.length === b.length && a.every(id => b.includes(id));
@@ -11,11 +13,17 @@ export class TableInteraction {
   cards: number[] = [];
   targets: number[] = [];
   focus: ActionChoice | null = null;
+  private unorderedTargetCards: Set<number>;
 
-  constructor(decision: Decision) {
+  constructor(decision: Decision, hand: readonly Card[] = []) {
     this.decision = decision;
     this.roots = projectChoices(decision);
     this.leaves = choiceLeaves(this.roots);
+    // Targeting metadata controls click order; legal leaves still decide every allowed combination.
+    this.unorderedTargetCards = new Set(hand.filter(card => {
+      const targeting = expandedContent.card(card.name).play.targeting;
+      return targeting === 'attack' || targeting === 'multiple';
+    }).map(card => card.id));
   }
 
   clear(): void { this.cards = []; this.targets = []; this.focus = null; }
@@ -28,6 +36,14 @@ export class TableInteraction {
       cardIds: [], targetIds: [], children } : null;
   }
   get tuxiActive(): boolean { return this.focus?.id === 'ui:standard.tuxi'; }
+  get unorderedTargets(): boolean {
+    return this.tuxiActive || this.decision.kind === 'play' && this.cards.length === 1 &&
+      this.unorderedTargetCards.has(this.cards[0]);
+  }
+  get targetLimit(): number {
+    return Math.max(0, ...this.scoped.filter(choice => sameCards(choice.cardIds, this.cards))
+      .map(choice => choice.targetIds.length));
+  }
   get normalDrawChoice(): ActionChoice | undefined {
     return this.decision.kind === 'phaseDrawChoice' ? this.leaves.find(choice => choice.actionType === 'normal') : undefined;
   }
@@ -53,7 +69,7 @@ export class TableInteraction {
 
   get candidates(): ActionChoice[] {
     return this.scoped.filter(choice => this.cards.every(id => choice.cardIds.includes(id)) &&
-      this.targets.every((id, index) => this.tuxiActive ? choice.targetIds.includes(id) : choice.targetIds[index] === id));
+      this.targets.every((id, index) => this.unorderedTargets ? choice.targetIds.includes(id) : choice.targetIds[index] === id));
   }
 
   get selectableCards(): number[] {
@@ -63,7 +79,7 @@ export class TableInteraction {
   get nextTargets(): number[] {
     return [...new Set(this.candidates.filter(choice => sameCards(choice.cardIds, this.cards))
       .flatMap(choice => choice.targetIds.length > this.targets.length ?
-        this.tuxiActive ? choice.targetIds.filter(id => !this.targets.includes(id)) : [choice.targetIds[this.targets.length]] : []))];
+        this.unorderedTargets ? choice.targetIds.filter(id => !this.targets.includes(id)) : [choice.targetIds[this.targets.length]] : []))];
   }
   get exact(): ActionChoice[] {
     return this.candidates.filter(choice => sameCards(choice.cardIds, this.cards) && choice.targetIds.length === this.targets.length);
@@ -104,7 +120,7 @@ export class TableInteraction {
   }
 
   selectTarget(id: number): boolean {
-    if (this.tuxiActive && this.targets.includes(id)) {
+    if (this.unorderedTargets && this.targets.includes(id)) {
       this.targets = this.targets.filter(target => target !== id);
       return true;
     }
