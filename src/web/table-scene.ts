@@ -43,8 +43,7 @@ export class TableScene extends Phaser.Scene {
   private hiddenBacks = new Map<number, Phaser.GameObjects.Container>();
   private chainViews = new Map<number, Phaser.GameObjects.Graphics>();
   private wineViews = new Map<number, { art: WinePortraitArt; status: Phaser.GameObjects.Text; drunk: boolean; chained: boolean }>();
-  private vitalsViews = new Map<number, { label: Phaser.GameObjects.Text;
-    pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text }>();
+  private vitalsViews = new Map<number, { pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text }>();
   private vitals = new PlayerVitalsPresenter((id, state) => this.renderVitals(id, state));
   private pendingHandOrigin: Point | null = null;
   private highlights!: Phaser.GameObjects.Graphics;
@@ -327,14 +326,12 @@ export class TableScene extends Phaser.Scene {
     const name = this.track(text(this, nameX, y - h / 2 + 43, player.label.split('').join('\n'),
       player.label.length > 2 ? 22 : 24).setOrigin(0.5, 0).setLineSpacing(0));
     this.track(factionBanner(this, nameX, y - h / 2 + 13, player.group));
-    this.track(this.add.rectangle(x + 16, y + h / 2 - 20, w - 47, 31, 0x091714, 0.94));
-    const label = this.track(text(this, x + 16, y + h / 2 - 20, `${player.hp} / ${player.maxHp}`, 21));
     const pipLayout = healthPipLayout(name.y + name.height, y + h / 2, player.maxHp);
     const pips = healthPips(player).map((state, i) =>
       this.track(this.add.image(nameX, pipLayout[i].y, healthPipTexture(state))
         .setDisplaySize(pipLayout[i].size, pipLayout[i].size)));
     const death = this.track(text(this, x, y, '阵 亡', 40, '#c78c7b').setDepth(75).setVisible(!player.alive));
-    this.vitalsViews.set(player.id, { label, pips, death });
+    this.vitalsViews.set(player.id, { pips, death });
     const chain = this.track(portraitChain(this, x, y, w, h).setDepth(6).setVisible(Boolean(player.alive && player.chained)));
     this.chainViews.set(player.id, chain);
     const status = this.track(text(this, x + 15, y - h / 2 + 48,
@@ -401,7 +398,6 @@ export class TableScene extends Phaser.Scene {
   private renderVitals(id: number, state: PlayerVitalsState): void {
     const view = this.vitalsViews.get(id);
     if (!view) return;
-    view.label.setText(`${state.hp} / ${state.maxHp}`);
     const pips = healthPips(state);
     view.pips.forEach((pip, index) => pip.setTexture(healthPipTexture(pips[index] ?? 'empty')));
     view.death.setVisible(!state.alive);

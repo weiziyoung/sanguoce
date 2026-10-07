@@ -74,6 +74,8 @@ export interface Observation {
   table: Card[];
   shaUsed: number;
   jiuUsed?: number;
+  /** Viewing player's current-turn skill progress, without other players' private state. */
+  skillProgress?: { ability: string; count: number }[];
   nullify: { source: PlayerId; target: PlayerId; cname: string; parity: number; cardLabel?: string } | null;
   log: string[];
   outcome: GameOutcome;

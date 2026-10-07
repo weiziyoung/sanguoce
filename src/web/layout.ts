@@ -37,7 +37,7 @@ export function playerPosition(id: number, seatIds: readonly number[], selfId: n
   const angle = Math.PI + Math.PI * (index + 0.5) / others.length;
   return { x: 862 + Math.cos(angle) * 494, y: 452 + Math.sin(angle) * 248 };
 }
-/** Stack one equipment per row above the portrait's numeric health strip. */
+/** Stack one equipment per row inside the portrait, clear of the name and health pips. */
 export function equipmentRowPosition(id: number, seatIds: readonly number[], selfId: number,
   index: number, count: number): Point & { width: number } {
   const portrait = playerPosition(id, seatIds, selfId);
@@ -59,7 +59,9 @@ export function identityZonePosition(id: number, seatIds: readonly number[], sel
 export function handPosition(id: number, seatIds: readonly number[], selfId: number): Point {
   if (id === selfId) return { x: HAND.x, y: HAND.y };
   const portrait = playerPosition(id, seatIds, selfId);
-  return { x: portrait.x + 139, y: portrait.y + 70 };
+  // Upper-row hand counts need room above the identity prompt at 42% board height.
+  const offsetY = seatIds.length === 5 && portrait.y < 300 ? 10 : 70;
+  return { x: portrait.x + 139, y: portrait.y + offsetY };
 }
 
 export function hiddenHandSlot(slot: number, count: number): Point & { width: number; height: number } {

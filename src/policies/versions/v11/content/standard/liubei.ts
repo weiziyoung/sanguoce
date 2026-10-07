@@ -1,5 +1,5 @@
-import { cardTypeOf, equipSlotOf, type Card } from '../../../../catalog.ts';
-import type { VisiblePlayer } from '../../../../contracts.ts';
+import { cardTypeOf, equipSlotOf, type Card } from '../../../../../../catalog.ts';
+import type { VisiblePlayer } from '../../../../../../contracts.ts';
 import type { EvaluationContext } from '../../evaluation-context.ts';
 import type { SkillEvaluator } from '../../evaluation-registry.ts';
 import { publicRelationships } from '../../public-relationships.ts';

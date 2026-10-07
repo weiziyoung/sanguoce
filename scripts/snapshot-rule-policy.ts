@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { dirname, relative, resolve } from 'node:path';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RULE_POLICY_VERSION } from '../src/policies/rule-policy-version.ts';
 
@@ -10,7 +10,8 @@ const destination = resolve(policies, 'versions', RULE_POLICY_VERSION);
 if (existsSync(destination)) throw new Error(`${RULE_POLICY_VERSION} 快照已存在，禁止覆盖`);
 const files: string[] = [];
 const pending = [resolve(policies, 'strategic-policy.ts')];
-const extra = new Set([resolve(root, 'card-ai-profile.ts'), resolve(root, 'src/domain/action-intent.ts')]);
+const extra = new Set([resolve(root, 'card-ai-profile.ts'), resolve(root, 'src/domain/action-intent.ts'),
+  resolve(root, 'src/domain/public-interactions.ts')]);
 while (pending.length) {
   const source = pending.pop()!;
   if (files.includes(source)) continue;
@@ -22,8 +23,7 @@ while (pending.length) {
   }
 }
 const destinations = new Map(files.map(source => [source, resolve(destination,
-  source.startsWith(policies + '/') ? relative(policies, source) : source.endsWith('card-ai-profile.ts') ?
-    'card-ai-profile.ts' : 'action-intent.ts')]));
+  source.startsWith(policies + '/') ? relative(policies, source) : basename(source))]));
 const entries = files.map(source => {
   const output = destinations.get(source)!;
   const content = readFileSync(source, 'utf8').replace(/(from\s+['"])(\.[^'"]+)(['"])/g,

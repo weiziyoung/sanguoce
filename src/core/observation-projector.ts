@@ -12,6 +12,8 @@ export function observe(s: GameState, playerId: number): Observation {
   const frame = resolutionStack.current(s);
   const nullify = frame?.kind === 'nullification' && frame.data.result === null ? frame.data : null;
   const own = person(s, playerId);
+  const skillProgress = s.skillProgress?.filter(item => item.owner === playerId && item.turn === s.turn)
+    .map(({ ability, count }) => ({ ability, count })) ?? [];
   const others = s.players.filter(p => p.id !== playerId);
   const visible = (p: PlayerState) => ({
     id: p.id, label: p.label, sex: p.sex, ...(p.general ? { general: p.general } : {}),
@@ -64,6 +66,7 @@ export function observe(s: GameState, playerId: number): Observation {
     others: others.map(visible), deckCount: s.deck.length,
     discardCount: s.discard.length, discardTop: s.discard.length ? copy(card(s, s.discard.at(-1)!)) : null,
     ...(s.jiuUsed === undefined ? {} : { jiuUsed: s.jiuUsed }),
+    ...(skillProgress.length ? { skillProgress } : {}),
     table: s.table.map(id => copy(card(s, id))), shaUsed: s.shaUsed,
     nullify: nullify ? {
       source: nullify.source, target: nullify.target,

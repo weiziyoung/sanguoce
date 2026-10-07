@@ -198,6 +198,7 @@ export class ChineseView {
       '【当前状态】',
       `- 你：${named(self)}，${identity(self)}，体力${self.hp}/${self.maxHp}，手牌${self.hand.length}张：${cardList(self.hand)}；装备${equipment(self)}；判定区${delayed(self)}；公开状态${publicStatus(self)}。`,
       ...others,
+      ...(self.general === 'standard.liubei' ? [`仁德本回合已赠牌${observation.skillProgress?.find(item => item.ability === 'standard.rende')?.count ?? 0}张；累计达到2张时回复1点体力，每回合仅回复一次。`] : []),
       ...modelIdentityContext(observation, named),
       '【技能说明】',
       ...skills,
