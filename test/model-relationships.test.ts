@@ -146,3 +146,13 @@ test('Chat 和 Jev 的实际请求共享逐坐席仇恨和身份目标，候选�
   assert.match(jevState, /玩家3（角色3）：仇恨-1/);
   assert.match(jevState, /你是反贼：击杀主公/);
 });
+
+test('伤害与救援相抵的零仇恨保留矛盾证据，对未知目标的行为也供模型判断', () => {
+  const f = scenario();
+  emitEvent(f.state, 'damaged', { source: 2, target: 0, amount: 1, hp: 3, maxHp: 5, card: null });
+  emitEvent(f.state, 'recovered', { source: 2, player: 0, amount: 1 });
+  emitEvent(f.state, 'damaged', { source: 4, target: 3, amount: 1, hp: 3, maxHp: 4, card: null });
+  const state = new ChineseView().stateForDecision(observe(f.state, 1), prompt(1));
+  assert.match(state, /玩家3（角色3）：仇恨0.*主要依据：.*造成1点伤害、回复1点体力/);
+  assert.match(state, /玩家5（角色5）：仇恨0.*主要依据：.*对玩家4（角色4）造成1点伤害/);
+});

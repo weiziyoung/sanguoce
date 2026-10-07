@@ -71,7 +71,7 @@ export function modelIdentityContext(observation: Observation, named: (player: V
     ...modelRelationships(observation).map(row => {
       if (row.player.id === observation.self.id) return `- ${named(row.player)}：你自己，仇恨0。`;
       if (!row.player.alive) return `- ${named(row.player)}：已阵亡，不参与当前目标选择。`;
-      const evidence = row.evidence.filter(item => item.contribution !== 0)
+      const evidence = row.evidence.filter(item => facts(item.interaction).length > 0)
         .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)).slice(0, 3).map(item => {
           const target = players.find(player => player.id === item.interaction.target);
           return target ? `对${named(target)}${facts(item.interaction)}，对你的仇恨贡献${signed(item.contribution)}` : '';
