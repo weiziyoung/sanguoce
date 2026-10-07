@@ -1,6 +1,6 @@
-import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
-import type { Observation, VisiblePlayer } from '../../contracts.ts';
-import { CARD_AI_PROFILE } from '../../card-ai-profile.ts';
+import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../../../catalog.ts';
+import type { Observation, VisiblePlayer } from '../../../../contracts.ts';
+import { CARD_AI_PROFILE } from './card-ai-profile.ts';
 import { RelationshipModel } from './relationship-model.ts';
 import { lightningPlan, type LightningPlan } from './lightning-plan.ts';
 

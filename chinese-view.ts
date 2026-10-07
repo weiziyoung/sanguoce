@@ -67,6 +67,10 @@ function delayed(player: VisiblePlayer): string {
 function hearts(player: VisiblePlayer): string {
   return "♥".repeat(Math.max(0, player.hp)) + "♡".repeat(Math.max(0, player.maxHp - player.hp));
 }
+function publicStatus(player: VisiblePlayer): string {
+  return [player.chained ? '连环' : '', player.drunk ? '已饮酒：本回合下一张【杀】伤害+1，使用该杀即消耗' : '']
+    .filter(Boolean).join('；') || '无';
+}
 function cellWidth(character: string): number {
   return /[\u1100-\u11ff\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff01-\uff60\uffe0-\uffe6]/u.test(character) ? 2 : 1;
 }
@@ -177,7 +181,7 @@ export class ChineseView {
       return description ? `${named(player)}的技能：${description}。` : '';
     }).filter(Boolean);
     const others = observation.others.map(other =>
-      `- ${named(other)}，${identity(other)}：${other.alive ? `体力${other.hp}/${other.maxHp}` : "已阵亡"}，手牌${other.handCount}张（内容未知），装备${equipment(other)}，判定区${delayed(other)}。`);
+      `- ${named(other)}，${identity(other)}：${other.alive ? `体力${other.hp}/${other.maxHp}` : "已阵亡"}，手牌${other.handCount}张（内容未知），装备${equipment(other)}，判定区${delayed(other)}，公开状态${publicStatus(other)}。`);
     const shown = observation.table.length
       ? `场上亮出的牌：${observation.table.map(cardText).join("、")}。` : "";
     const phase = PHASES[observation.phase];
@@ -192,7 +196,7 @@ export class ChineseView {
       `${observation.mode.id === 'identity' ? `${players.length}人身份局` : '1v1对决'}；第${observation.turn}回合；${phase}阶段。`,
       `当前行动者：${named(active)}。本次决策：${decision.title}。本回合已使用【杀】${observation.shaUsed}次。`,
       '【当前状态】',
-      `- 你：${named(self)}，${identity(self)}，体力${self.hp}/${self.maxHp}，手牌${self.hand.length}张：${cardList(self.hand)}；装备${equipment(self)}；判定区${delayed(self)}。`,
+      `- 你：${named(self)}，${identity(self)}，体力${self.hp}/${self.maxHp}，手牌${self.hand.length}张：${cardList(self.hand)}；装备${equipment(self)}；判定区${delayed(self)}；公开状态${publicStatus(self)}。`,
       ...others,
       ...modelIdentityContext(observation, named),
       '【技能说明】',

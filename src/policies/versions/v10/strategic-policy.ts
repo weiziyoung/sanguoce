@@ -1,6 +1,6 @@
 import { militaryPlayScore, militaryChoiceScore } from './content/junzheng.ts';
-import { STANDARD_DECK, cardTypeOf, equipSlotOf, type CardName, type DeckEntry } from '../../catalog.ts';
-import type { Choice, Decision, DecisionPolicy, Observation } from '../../contracts.ts';
+import { STANDARD_DECK, cardTypeOf, equipSlotOf, type CardName, type DeckEntry } from '../../../../catalog.ts';
+import type { Choice, Decision, DecisionPolicy, Observation } from '../../../../contracts.ts';
 import { EvaluationContext } from './evaluation-context.ts';
 import { EvaluationRegistry, type ScoredAction } from './evaluation-registry.ts';
 import { standardSkillEvaluations } from './content/standard-skills.ts';

@@ -22,6 +22,7 @@ export interface EventData extends TriggerSignals {
   triggerInvoked: { definition: string; owner: number; eventId: number };
   chainChanged: { player: number; chained: boolean };
   wineUsed: { player: number; bonus: number };
+  wineCleared: { player: number; reason: 'attack' | 'turnEnd' | 'death' };
   cardRecast: { player: number; card: number };
   cardRevealed: { player: number; card: number; cause: CardName };
   drawSkipped: { player: number };

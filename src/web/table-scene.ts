@@ -25,6 +25,7 @@ import { unavailableSkillDetail } from './skill-availability.ts';
 import { factionBanner, identityToken } from './portrait-badges.ts';
 import { portraitChain, portraitChainUpdate } from './portrait-chain.ts';
 import { AiController } from './ai-controller.ts';
+import { applyWinePortraitTint, portraitStatus, winePortraitUpdate, type WinePortraitArt } from './portrait-wine.ts';
 
 interface CardSprite { card: Card; view: Phaser.GameObjects.Container; border: Phaser.GameObjects.Rectangle; home: Point; order: number; }
 const REORDER = { top: { x: 1175, y: 442, width: 180, height: 85 }, bottom: { x: 1175, y: 548, width: 180, height: 85 } };
@@ -41,6 +42,7 @@ export class TableScene extends Phaser.Scene {
   private tablePreviewCards: CardSprite[] = [];
   private hiddenBacks = new Map<number, Phaser.GameObjects.Container>();
   private chainViews = new Map<number, Phaser.GameObjects.Graphics>();
+  private wineViews = new Map<number, { art: WinePortraitArt; status: Phaser.GameObjects.Text; drunk: boolean; chained: boolean }>();
   private vitalsViews = new Map<number, { label: Phaser.GameObjects.Text;
     pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text }>();
   private vitals = new PlayerVitalsPresenter((id, state) => this.renderVitals(id, state));
@@ -153,7 +155,20 @@ export class TableScene extends Phaser.Scene {
     for (const event of events) {
       await this.settings.whenClosed();
       const chain = portraitChainUpdate(event);
-      if (chain) this.chainViews.get(chain.player)?.setVisible(chain.visible);
+      if (chain) {
+        this.chainViews.get(chain.player)?.setVisible(chain.visible);
+        const view = this.wineViews.get(chain.player);
+        if (view) { view.chained = chain.visible; view.status.setText(portraitStatus(view.chained, view.drunk)); }
+      }
+      const wine = winePortraitUpdate(event);
+      if (wine) {
+        const view = this.wineViews.get(wine.player);
+        if (view) {
+          view.drunk = wine.active;
+          applyWinePortraitTint(view.art, wine.active);
+          view.status.setText(portraitStatus(view.chained, view.drunk));
+        }
+      }
       if (event.kind === 'skillActivated' && event.data.owner === obs.self.id) this.hud.flashSkill(event.data.ability);
       const transfer = zoneCardEffect(event, obs);
       const discarded = discardTableCard(event, obs);
@@ -263,6 +278,7 @@ export class TableScene extends Phaser.Scene {
     this.objects.forEach(o => o.destroy()); this.objects = []; this.cards = []; this.tablePreviewCards = []; this.hiddenBacks.clear();
     this.vitalsViews.clear();
     this.chainViews.clear();
+    this.wineViews.clear();
     this.vitals.reset([obs.self, ...obs.others]);
     this.track(text(this, 795, 626, '牌 桌', 18, '#b6a787').setAlpha(0.7));
     const deck = deckPosition(obs.others.length + 1);
@@ -304,7 +320,8 @@ export class TableScene extends Phaser.Scene {
     const w = self && identity ? IDENTITY_SELF.width : self ? 196 : identity ? 172 : 204;
     const h = self && identity ? IDENTITY_SELF.height : self ? 242 : identity ? 214 : 260;
     this.track(this.add.rectangle(x, y, w, h, 0x0d1c19, 0.85));
-    this.track(portraitArt(this, x + 10, y - 10, w - 36, h - 34, player.general ?? ''));
+    const art = this.track(portraitArt(this, x + 10, y - 10, w - 36, h - 34, player.general ?? ''));
+    applyWinePortraitTint(art, Boolean(player.alive && player.drunk));
     this.track(this.add.rectangle(x - w / 2 + 19, y, 34, h - 12, 0x102422, 0.96));
     const nameX = x - w / 2 + 19;
     const name = this.track(text(this, nameX, y - h / 2 + 43, player.label.split('').join('\n'),
@@ -320,8 +337,9 @@ export class TableScene extends Phaser.Scene {
     this.vitalsViews.set(player.id, { label, pips, death });
     const chain = this.track(portraitChain(this, x, y, w, h).setDepth(6).setVisible(Boolean(player.alive && player.chained)));
     this.chainViews.set(player.id, chain);
-    const status = [player.chained ? '连环' : '', player.drunk ? '酒＋1' : ''].filter(Boolean).join(' · ');
-    if (status) this.track(text(this, x + 15, y - h / 2 + 48, status, 18, '#f3d394').setDepth(76));
+    const status = this.track(text(this, x + 15, y - h / 2 + 48,
+      portraitStatus(Boolean(player.alive && player.chained), Boolean(player.alive && player.drunk)), 18, '#f3d394').setDepth(76));
+    this.wineViews.set(player.id, { art, status, chained: Boolean(player.alive && player.chained), drunk: Boolean(player.alive && player.drunk) });
     if (!self) {
       const pocket = handPosition(player.id, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
       this.track(cardBack(this, pocket.x, pocket.y, 54, 76).setDepth(2));

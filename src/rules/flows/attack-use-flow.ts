@@ -4,13 +4,13 @@ import { emitEvent } from '../../domain/event-journal.ts';
 import { resolutionStack } from '../../domain/resolution-stack.ts';
 import type { ActionMap, GameState, PromptOf } from '../../domain/state.ts';
 import type { ContentRuntime } from '../content-runtime.ts';
+import { clearWine } from '../operations/wine-state.ts';
 
 /** Preparation and wine are scoped to one use, shared by all of its targets. */
 export function beginAttackUse(s: GameState, source: number, sha: number | CardLike, targets: number[],
   runtime: ContentRuntime, intent: { ignoreDistance?: boolean; forcedBy?: number } = {}): void {
   const effective = typeof sha === 'number' ? s.cards[sha] : sha;
-  const damageBonus = s.players[source].drunk ?? 0;
-  delete s.players[source].drunk;
+  const damageBonus = clearWine(s, source, 'attack');
   const preparations = runtime.abilities.list(s, source).filter(skill => skill.prepareAttack).map(skill => skill.id);
   resolutionStack.open(s, 'attackUse', { source, sha, targets, nature: effective.nature ?? 'normal',
     damageBonus, preparations, cursor: 0, ...intent }, [{ kind: 'attackPrepare' }, { kind: 'attackLaunch' }]);

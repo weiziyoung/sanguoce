@@ -1,4 +1,4 @@
-import type { Choice, Decision } from '../../../contracts.ts';
+import type { Choice, Decision } from '../../../../../contracts.ts';
 import type { EvaluationContext } from '../evaluation-context.ts';
 import type { ScoredAction, SkillEvaluator } from '../evaluation-registry.ts';
 

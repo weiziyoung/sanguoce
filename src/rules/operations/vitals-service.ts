@@ -1,6 +1,7 @@
 import { emitEvent } from '../../domain/event-journal.ts';
 import { person } from '../../domain/state-access.ts';
 import type { GameState } from '../../domain/state.ts';
+import { clearWine } from './wine-state.ts';
 
 /** Low-level HP writes. Damage prevention and dying belong to the calling flow. */
 export class VitalsService {
@@ -21,6 +22,7 @@ export class VitalsService {
     emitEvent(s, 'hpChanged', { player: target, before, after: person(s, target).hp });
   }
   markDead(s: GameState, target: number, source: number | null = null): void {
+    clearWine(s, target, 'death');
     person(s, target).alive = false;
     emitEvent(s, 'died', { target, source });
   }

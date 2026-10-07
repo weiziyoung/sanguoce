@@ -8,12 +8,13 @@ import { discardOwned, draw } from "../../../rules/operations/cards.ts";
 import { playOptions } from "../action-generator.ts";
 import type { ContentRuntime } from '../../../rules/content-runtime.ts';
 import { getStandardRuntime } from '../runtime.ts';
+import { clearWine } from '../../../rules/operations/wine-state.ts';
 
 export function startTurn(s: GameState): void {
   s.turn++;
   s.shaUsed = 0;
   if (s.jiuUsed !== undefined) s.jiuUsed = 0;
-  for (const player of s.players) delete player.drunk;
+  for (const player of s.players) clearWine(s, player.id, 'turnEnd');
   delete s.shaPlayedOrRespondedInPlay;
   if (s.turnMarks) s.turnMarks = [];
   if (s.skillProgress) s.skillProgress = [];
@@ -143,6 +144,7 @@ export function handlePhaseEndTask(s: GameState, task: TaskOf<"phaseEnd">,
 }
 
 export function handlePhaseEndAdvanceTask(s: GameState): void {
+  clearWine(s, s.active, 'turnEnd');
   s.active = nextAlive(s, s.active);
   startTurn(s);
 }
