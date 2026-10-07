@@ -6,6 +6,7 @@ import { type Observation } from "../../contracts.ts";
 import type { Card } from '../../catalog.ts';
 import { card, copy, person } from "../domain/state-access.ts";
 import { type GameState, type PlayerState } from "../domain/state.ts";
+import { publicInteractions, PUBLIC_INTERACTION_KINDS } from '../domain/public-interactions.ts';
 
 export function observe(s: GameState, playerId: number): Observation {
   const frame = resolutionStack.current(s);
@@ -50,6 +51,12 @@ export function observe(s: GameState, playerId: number): Observation {
   }
   return {
     events,
+    ...(s.mode.id === 'identity' ? { publicInteractions: publicInteractions((function* () {
+      for (const event of s.events) if (PUBLIC_INTERACTION_KINDS.has(event.kind)) {
+        const visible = projectEvent(event, playerId);
+        if (visible) yield visible;
+      }
+    })(), id => s.cards[id]?.name) } : {}),
     eventCards,
     mode: { id: s.mode.id },
     turn: s.turn, phase: s.phase, active: s.active, actor: frame?.prompt?.actor ?? null,

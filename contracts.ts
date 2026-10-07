@@ -57,6 +57,8 @@ export interface VisiblePlayer {
 }
 export interface Observation {
   events: import("./src/domain/events.ts").VisibleEvent[];
+  /** Whole-game public behavior totals, independent of the recent event window. */
+  publicInteractions?: import('./src/domain/public-interactions.ts').PublicInteraction[];
   /** Public cards referenced by visible events, for presentation and replay. */
   eventCards?: Record<number, Card>;
   mode: { id: string };

@@ -2,6 +2,7 @@ import { NAMES, cardText, type Card } from "./catalog.ts";
 import type { Choice, Decision, Observation, VisiblePlayer } from "./contracts.ts";
 import { STANDARD_SKILL_HELP } from './src/content/standard/skill-help.ts';
 import { STANDARD_MODEL_GENERALS, STANDARD_MODEL_SKILL_NAMES } from './src/presentation/standard-model-metadata.ts';
+import { modelIdentityContext } from './src/presentation/model-relationships.ts';
 
 const PHASES: Record<string, string> = {
   setup: "准备", start: "开始", judge: "判定", draw: "摸牌",
@@ -193,6 +194,7 @@ export class ChineseView {
       '【当前状态】',
       `- 你：${named(self)}，${identity(self)}，体力${self.hp}/${self.maxHp}，手牌${self.hand.length}张：${cardList(self.hand)}；装备${equipment(self)}；判定区${delayed(self)}。`,
       ...others,
+      ...modelIdentityContext(observation, named),
       '【技能说明】',
       ...skills,
       `【牌堆】剩余${observation.deckCount}张；弃牌堆${observation.discardCount}张。`,
