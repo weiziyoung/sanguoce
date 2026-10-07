@@ -50,8 +50,8 @@ test('转化杀与青囊按真实费用、目标收益评分', () => {
   ])), 'friend');
 });
 
-test('制衡优先选低价值牌，选好后确认；苦肉不在一血发动', () => {
-  const obs = observation([card(10, 'shandian'), card(11, 'tao')]);
+test('优势局制衡优先选低价值闪电，选好后确认；苦肉不在一血发动', () => {
+  const obs = observation([card(10, 'shandian'), card(11, 'tao')], 'identity');
   const policy = new StrategicPolicy();
   const options = [
     { id: 'low', label: '选择闪电', data: { type: 'toggle', cid: 10 } },
@@ -111,8 +111,8 @@ test('鬼才只在改判对己方有利时支付手牌', () => {
     { ability: 'standard.guicai', subject: 2, reason: 'lebu', currentId: 20 })), 'pass');
 });
 
-test('观星沉底闪电，受伤时保留桃并按低到高压入牌堆顶', () => {
-  const obs = observation();
+test('优势局观星沉底闪电，受伤时保留桃并按低到高压入牌堆顶', () => {
+  const obs = observation([], 'identity');
   obs.self.hp = 2;
   obs.table = [card(10, 'shandian'), card(11, 'sha'), card(12, 'tao')];
   const options = (ids: number[]): Choice[] => ids.flatMap(id => [

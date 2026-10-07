@@ -141,3 +141,40 @@ test('偷牌、群体锦囊与无目标技能不凭空推断忠反，指向性�
   } });
   assert.ok(new RelationshipModel(obs).relation(1) < 0);
 });
+
+test('公开死亡身份约束剩余阵营，反贼不会把剩下的对手永久当成中立', () => {
+  const obs = observation('rebel');
+  obs.others[3].alive = false;
+  obs.others[3].role = 'rebel';
+  const model = new RelationshipModel(obs);
+  assert.equal(model.relation(2), -0.6, '已知主公、自己和死亡反贼，剩余为忠臣与内奸');
+  assert.equal(model.relation(2), model.relation(3), '相同公开信息的未知座位得到相同先验');
+  const choices: Decision = { actor: 0, kind: 'play', title: '出牌', options: [
+    { id: 'attack', label: '杀', data: { type: 'play', cid: 10, targets: [2] } },
+    { id: 'end', label: '结束', data: { type: 'endPlay' } },
+  ] };
+  assert.equal(new StrategicPolicy().choose(obs, choices), 'attack');
+  delete obs.others[3].role;
+  assert.equal(model.relation(2), 0, '尚未公开的死亡身份不能参与排除');
+});
+
+test('主忠在队友公开死亡后有敌对先验，近期救主证据仍可推翻先验', () => {
+  const obs = observation('lord');
+  obs.others[0] = person(1);
+  obs.others[3].alive = false;
+  obs.others[3].role = 'loyalist';
+  const model = new RelationshipModel(obs);
+  assert.ok(model.relation(1) < -0.7);
+  obs.events = [{ id: 1, kind: 'rescued', data: { source: 1, target: 0 } }];
+  assert.ok(model.relation(1) > 0);
+  obs.events = [];
+  assert.ok(model.relation(1) < 0);
+});
+
+test('八人局排除公开身份时使用八人身份数量，不误用五人分布', () => {
+  const obs = observation('rebel');
+  obs.others.push(person(5), person(6), person(7));
+  obs.others[3].alive = false;
+  obs.others[3].role = 'rebel';
+  assert.ok(Math.abs(new RelationshipModel(obs).relation(2) + 0.04) < 1e-10);
+});

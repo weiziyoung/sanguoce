@@ -1,4 +1,4 @@
-import { cardColor, cardTypeOf, equipSlotOf, type Card } from '../../../../catalog.ts';
+import { cardColor, cardTypeOf, equipSlotOf, type Card } from '../../../../../../catalog.ts';
 import type { EvaluationContext } from '../../evaluation-context.ts';
 import type { GeneralEvaluator, SkillEvaluator } from '../../evaluation-registry.ts';
 import { costsOf, effectiveName, hasCrossbow, inAttackReach, usefulOptionalSkill, visibleDistance } from './common.ts';

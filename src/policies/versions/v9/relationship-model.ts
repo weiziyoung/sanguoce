@@ -1,5 +1,5 @@
-import type { Observation, VisiblePlayer } from '../../contracts.ts';
-import { nullificationProtectsTarget } from '../domain/action-intent.ts';
+import type { Observation, VisiblePlayer } from '../../../../contracts.ts';
+import { nullificationProtectsTarget } from './action-intent.ts';
 
 const harmfulCards = new Set(['juedou', 'guohe', 'shunshou', 'jiedao', 'huogong']);
 const helpfulSkills = new Set(['standard.qingnang', 'standard.jieyin']);
