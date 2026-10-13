@@ -30,7 +30,7 @@ function playCard(s: GameState, source: number, data: Extract<ActionMap["play"],
     return;
   }
   cardMovement.move(s, [cid], { kind: "table" }, source);
-  push(s, { kind: "finishCard", cid });
+  push(s, { kind: "finishCard", cid, source });
   if (!runtime.triggers.forEvent('cardUsed').length) {
     emitEvent(s, 'cardUsed', { source, card: cid, targets });
     handleResolveCardUseTask(s, { kind: 'resolveCardUse', source, cid, targets }, runtime);
@@ -71,7 +71,9 @@ export function handleResolveVirtualTrickTask(s: GameState, task: TaskOf<'resolv
   beginTrick(s, task.source, task.cname, targets, task.cid, null, runtime, task.card);
 }
 
-export function handleFinishCardTask(s: GameState, task: TaskOf<"finishCard">): void {
+export function handleFinishCardTask(s: GameState, task: TaskOf<"finishCard">, runtime: ContentRuntime = getStandardRuntime()): void {
+  for (const p of s.players.filter(p => p.alive)) for (const skill of runtime.abilities.list(s, p.id))
+    skill.cardFinished?.(s, p.id, task.cid, task.source ?? -1, runtime);
   if (s.table.includes(task.cid)) cardMovement.move(s, [task.cid], { kind: "discard" });
 
 }
@@ -113,13 +115,21 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
       throw new Error('激将目标或能力已失效');
     }
     new ProxyResponseFlow(runtime).begin(s, source, action.ability, 'sha', action.targets[0]);
+  } else if (action.type === 'virtualBasic') {
+    const definition = runtime.content.card(action.cname);
+    if (definition.kind !== 'basic' || definition.play.availability !== 'drink' || (s.jiuUsed ?? 0) >= 1 || action.targets.length)
+      throw new Error('转化酒使用已失效');
+    spendCard(s, source, action.ids, action.cname, 'use', runtime, action.transformation);
+    emitEvent(s, 'transformationUsed', { ability: action.transformation, label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation, owner: source, produces: action.cname });
+    emitEvent(s, 'cardUsed', { source, card: action.ids[0], effectiveName: action.cname, targets: [] });
+    definition.useEffect!(s, source, action.ids[0], runtime);
   } else if (action.type === 'virtualDelay') {
     const definition = runtime.content.card(action.cname);
     const target = action.targets[0];
+    const effective = effectiveCard(s, source, action.ids, action.cname, runtime, action.transformation);
     if (definition.kind !== 'delay' || definition.play.targeting !== 'single' || action.ids.length !== 1 ||
-      action.targets.length !== 1 || !runtime.queries.canTarget(s, source, target, action.cname) ||
+      action.targets.length !== 1 || !runtime.queries.canTarget(s, source, target, action.cname, false, effective) ||
       s.players[target].judge.some(id => name(s, id) === action.cname)) throw new Error('转化延时锦囊目标已失效');
-    effectiveCard(s, source, action.ids, action.cname, runtime, action.transformation);
     const cid = action.ids[0];
     cardMovement.move(s, [cid], { kind: 'judge', owner: target }, source);
     s.virtualJudgeNames ??= [];
@@ -130,16 +140,17 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
     emitEvent(s, 'delayPlaced', { source, target, card: cid, effectiveName: action.cname });
   } else if (action.type === 'virtualTrick') {
     const definition = runtime.content.card(action.cname);
+    const effective = effectiveCard(s, source, action.ids, action.cname, runtime, action.transformation);
     if (definition.kind !== 'trick' || !['single', 'multiple', 'none'].includes(definition.play.targeting) ||
       (definition.play.targeting === 'single' && action.targets.length !== 1) ||
       (definition.play.targeting === 'multiple' && (action.targets.length < 1 || action.targets.length > (definition.play.maxTargets ?? 1))) ||
       (definition.play.targeting === 'none' && action.targets.length !== 0) ||
       new Set(action.targets).size !== action.targets.length ||
-      action.targets.some(target => !runtime.queries.canTarget(s, source, target, action.cname, definition.play.allowSelf))) throw new Error('转化锦囊目标已失效');
+      action.targets.some(target => !runtime.queries.canTarget(s, source, target, action.cname, definition.play.allowSelf, effective))) throw new Error('转化锦囊目标已失效');
     const used = spendCard(s, source, action.ids, action.cname, 'use', runtime, action.transformation);
     const card = { ...used, virtual: true as const, subcards: [...action.ids] };
     cardMovement.move(s, action.ids, { kind: 'table' });
-    push(s, ...action.ids.map(cid => ({ kind: 'finishCard' as const, cid })));
+    push(s, ...action.ids.map(cid => ({ kind: 'finishCard' as const, cid, source })));
     const cid = action.ids[0];
     emitEvent(s, 'transformationUsed', { ability: action.transformation,
       label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation,

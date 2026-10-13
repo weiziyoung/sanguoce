@@ -13,7 +13,15 @@ export function beginNullify(s: GameState, effect: Task | null, cancel: Task | n
   source: number, target: number, cname: CardName): void {
   resolutionStack.open(s, 'nullification', {
     effect, cancel, source, target, cname, parity: 0, passed: [], cursor: target, result: null,
+    ...(effect?.kind === 'resolveTrick' ? { trickFrameId: effect.trickFrameId } : {}),
   }, [{ kind: 'nullifyPoll' }]);
+}
+
+// Share the preference across this use's target windows; delayed judgements
+// have no trick frame and keep it local to their counter-nullification chain.
+function nullifyScope(s: GameState) {
+  const n = resolutionStack.require(s, 'nullification').data;
+  return n.trickFrameId === undefined ? n : resolutionStack.get(s, n.trickFrameId, 'trick').data;
 }
 
 export function promptNullify(s: GameState, runtime: ContentRuntime = getStandardRuntime()): void {
@@ -23,13 +31,14 @@ export function promptNullify(s: GameState, runtime: ContentRuntime = getStandar
   while (!living.every(id => n.passed.includes(id))) {
     const actor = n.cursor;
     if (person(s, actor).alive && !n.passed.includes(actor)) {
-      const cards = runtime.transforms.candidates(s, actor, 'wuxie');
+      const cards = nullifyScope(s).ignoredNullifiers?.includes(actor) ? [] : runtime.transforms.candidates(s, actor, 'wuxie');
       if (cards.length) {
         setPrompt(s, actor, 'nullify',
           `【${displayName(n.cname, s.cards)}】即将对${person(s, n.target).label}生效：使用【无懈可击】？`,
           [...cards.map(({ids, transformation}) => leaf(transformation ? `nullify:transform:${transformation}:${ids[0]}` : `nullify:${ids[0]}`,
             `使用${cardText(card(s, ids[0]))}${transformation ? '当【无懈可击】' : ''}`, { type: 'nullify', cid: ids[0], ...(transformation ? { transformation } : {}) })),
-          leaf('nullify-pass', '不使用【无懈可击】', { type: 'pass' })]);
+          leaf('nullify-pass', '不使用【无懈可击】', { type: 'pass' }),
+          leaf('nullify-ignore', '本次用牌不再询问无懈', { type: 'ignoreNullify' })]);
         return;
       }
       n.passed.push(actor);
@@ -57,7 +66,13 @@ export function handleNullifyChoice(s: GameState, prompt: PromptOf<'nullify'>, d
     n.passed = [];
     emitEvent(s, 'nullificationUsed', { player: actor, card: data.cid, cname: n.cname,
       target: n.target, parityBefore });
-  } else n.passed.push(actor);
+  } else {
+    if (data.type === 'ignoreNullify') {
+      const scope = nullifyScope(s);
+      (scope.ignoredNullifiers ??= []).push(actor);
+    }
+    n.passed.push(actor);
+  }
   n.cursor = nextAlive(s, actor);
   push(s, { kind: 'nullifyPoll' });
 }

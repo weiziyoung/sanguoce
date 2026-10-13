@@ -22,7 +22,7 @@ export class EvaluationRegistry {
   }
   adjust(context: EvaluationContext, decision: Decision, choice: Choice,
     action: ScoredAction, baseScore: number): number {
-    const evaluator = context.self.general ? this.generals.get(context.self.general) : undefined;
+    const evaluator = !context.self.generalSkillsDisabled && context.self.general ? this.generals.get(context.self.general) : undefined;
     return evaluator?.(context, decision, choice, action, baseScore) ?? baseScore;
   }
   register(id: string, evaluator: SkillEvaluator): this {

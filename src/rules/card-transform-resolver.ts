@@ -7,6 +7,8 @@ export interface CardTransformation {
   readonly produces: CardName;
   readonly grantedBy?: string;
   readonly allowedZones?: readonly ('hand' | 'equip')[];
+  readonly allowedPiles?: readonly string[];
+  readonly preserveSuit?: boolean;
   costs(s: ReadonlyGameState, actor: number): readonly (readonly number[])[];
 }
 export interface CardCandidate { ids: number[]; virtual: boolean; effective: CardLike; transformation?: string; }
@@ -29,14 +31,15 @@ export class CardTransformResolver {
       if (transformation.produces !== need) continue;
       if (transformation.grantedBy && !this.#abilities?.has(s, actor, transformation.grantedBy)) continue;
       const allowed = [...hand, ...(transformation.allowedZones?.includes('equip') ?
-        Object.values(s.players[actor].equip).filter((id): id is number => id !== null) : [])];
+        Object.values(s.players[actor].equip).filter((id): id is number => id !== null) : []),
+        ...(transformation.allowedPiles ?? []).flatMap(key => s.players[actor].piles?.[key] ?? [])];
       for (const cost of transformation.costs(s, actor)) {
         if (new Set(cost).size !== cost.length || cost.some(id => !allowed.includes(id))) {
           throw new Error('转化成本必须是互不重复的当前己方牌');
         }
         direct.push({
           ids: [...cost], virtual: true, transformation: transformation.id,
-          effective: this.virtualCard(s, cost, need)
+          effective: transformation.preserveSuit && cost.length === 1 ? { ...s.cards[cost[0]], name: need, virtual: true, subcards: [...cost] } : this.virtualCard(s, cost, need)
         });
       }
     }

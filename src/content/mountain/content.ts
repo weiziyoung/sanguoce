@@ -1,0 +1,12 @@
+import type { ContentPack } from '../../rules/content-registry.ts';
+import { DengAiGeneral } from './generals/dengai.ts';
+import { ZhangHeGeneral } from './generals/zhanghe.ts';
+import { JiangWeiGeneral } from './generals/jiangwei.ts';
+import { LiuShanGeneral } from './generals/liushan.ts';
+import { SunCeGeneral, zhibaOffer } from './generals/sunce.ts';
+import { ZhangZhaoZhangHongGeneral } from './generals/zhangzhaozhanghong.ts';
+import { CaiWenJiGeneral } from './generals/caiwenji.ts';
+import { ZuoCiGeneral } from './generals/zuoci.ts';
+const modules = [new DengAiGeneral(), new ZhangHeGeneral(), new JiangWeiGeneral(), new LiuShanGeneral(), new SunCeGeneral(), new ZhangZhaoZhangHongGeneral(), new CaiWenJiGeneral(), new ZuoCiGeneral()];
+export const mountainGeneralDefinitions = modules.map(m => m.general);
+export const mountainPack: ContentPack = { id: 'mountain', cards: [], deck: [], generals: mountainGeneralDefinitions, skills: [...modules.flatMap(m => [...m.skills]), zhibaOffer] };

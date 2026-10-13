@@ -1,3 +1,6 @@
+import { mountainAttackAdjustment } from './content/mountain.ts';
+import { hasPublicAbility, publicAbilities } from './ability-view.ts';
+import { forestAttackAdjustment } from './content/forest.ts';
 import { fireAttackAdjustment } from './content/fire.ts';
 import { liegongAvailable, windAttackAdjustment, leijiRisk } from './content/wind.ts';
 import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
@@ -6,6 +9,8 @@ import { CARD_AI_PROFILE } from '../../card-ai-profile.ts';
 import { RelationshipModel } from './relationship-model.ts';
 import { lightningPlan, type LightningPlan } from './lightning-plan.ts';
 import { renegadeRelations } from './renegade-plan.ts';
+import { allContent } from '../app/game-content.ts';
+import { fieldBenefit } from './content/mountain-plan.ts';
 
 /** All estimates are made from the acting player's public observation. */
 export class EvaluationContext {
@@ -30,6 +35,17 @@ export class EvaluationContext {
   }
 
   get self() { return this.observation.self; }
+  afterSpending(ids: readonly number[]): EvaluationContext {
+    const hand = this.self.hand.filter(c => !ids.includes(c.id));
+    const equip = Object.fromEntries(Object.entries(this.self.equip).map(([slot, c]) => [slot, c && ids.includes(c.id) ? null : c])) as typeof this.self.equip;
+    const piles = this.self.piles ? Object.fromEntries(Object.entries(this.self.piles).map(([ability, cards]) => [ability, cards.filter(c => !ids.includes(c.id))])) : undefined;
+    return new EvaluationContext({ ...this.observation, self: { ...this.self, hand, handCount: hand.length, equip, ...(piles ? { piles } : {}) } }, this.deck);
+  }
+  asAvatar(general: string, ability: string): EvaluationContext {
+    const avatar = allContent.general(general);
+    return new EvaluationContext({ ...this.observation, self: { ...this.self, group: avatar.group, sex: avatar.sex ?? 'male',
+      gainedAbilities: [...(this.self.gainedAbilities ?? []).filter(a => a !== this.self.huashen?.ability), ability] } }, this.deck);
+  }
   afterWine(id: number): EvaluationContext {
     const hand = this.self.hand.filter(card => card.id !== id);
     return new EvaluationContext({ ...this.observation, jiuUsed: (this.observation.jiuUsed ?? 0) + 1,
@@ -44,8 +60,18 @@ export class EvaluationContext {
   player(id: number): VisiblePlayer | undefined {
     return id === this.self.id ? this.self : this.observation.others.find(player => player.id === id);
   }
+  distance(from: number, to: number): number {
+    if (from === to) return 0;
+    const seats = [this.self, ...this.observation.others].filter(p => p.alive).sort((a, b) => a.id - b.id);
+    const a = seats.findIndex(p => p.id === from), b = seats.findIndex(p => p.id === to);
+    if (a < 0 || b < 0) return Infinity;
+    const source = seats[a], target = seats[b];
+    return Math.max(1, Math.min(Math.abs(a - b), seats.length - Math.abs(a - b)) +
+      (target.equip.plusHorse ? 1 : 0) - (source.equip.minusHorse ? 1 : 0) -
+      ((hasPublicAbility(source, 'standard.mashu') || hasPublicAbility(source, 'fire.mashu')) ? 1 : 0) - (hasPublicAbility(source, 'mountain.tuntian') ? source.piles?.['mountain.tuntian']?.length ?? 0 : 0));
+  }
   card(id: number | undefined): Card | undefined {
-    return this.self.hand.find(card => card.id === id) ?? this.observation.table.find(card => card.id === id) ?? this.observation.eventCards?.[id!] ??
+    return Object.values(this.self.piles ?? {}).flat().find(card => card.id === id) ?? this.self.judge.find(card => card.id === id) ?? this.self.hand.find(card => card.id === id) ?? this.observation.table.find(card => card.id === id) ?? this.observation.eventCards?.[id!] ??
       Object.values(this.self.equip).find(card => card?.id === id) ??
       this.observation.others.flatMap(player => [...Object.values(player.equip), ...player.judge])
         .find(card => card?.id === id) ?? undefined;
@@ -89,7 +115,7 @@ export class EvaluationContext {
       this.observation.others.filter(player => player.alive).length > 1;
   }
   private damageUtility(player: VisiblePlayer, amount: number, base: number): number {
-    const resilience = player.hp <= amount && (player.general === 'wind.zhoutai' || player.general === 'fire.pangtong' && !player.spentLimitedSkills?.includes('fire.niepan')) ? 0.6 : 1;
+    const resilience = player.hp <= amount && (hasPublicAbility(player, 'wind.buqu') || hasPublicAbility(player, 'fire.niepan') && !player.spentLimitedSkills?.includes('fire.niepan')) ? 0.6 : 1;
     const utility = -this.relation(player.id) * base * resilience;
     // Losing the lord before the duel loses the game, even if an area effect kills several enemies.
     return utility - (this.protectsLord(player.id) ? player.hp <= amount ? 80 : player.hp <= 2 ? 12 : 0 : 0);
@@ -97,12 +123,12 @@ export class EvaluationContext {
 
   /** Physical and transformed Sha share the engine's all-black cost rule. */
   shaEffect(id: number, costs: readonly number[], nature?: DamageNature,
-    plan: { extraWine?: number; linked?: readonly number[] } = {}): number {
+    plan: { extraWine?: number; linked?: readonly number[]; xianglePaid?: boolean; ignoreArmor?: boolean } = {}): number {
     const weapon = this.self.equip.weapon;
-    const ignoresArmor = weapon?.name === 'qinggang' && !costs.includes(weapon.id);
+    const ignoresArmor = plan.ignoreArmor ?? (weapon?.name === 'qinggang' && !costs.includes(weapon.id));
     const black = costs.length > 0 && costs.every(cid => {
       const card = this.card(cid);
-      return card !== undefined && cardColor(card) === 'black' && !(this.self.general === 'wind.xiaoqiao' && card.suit === 'spade');
+      return card !== undefined && cardColor(card) === 'black' && !(hasPublicAbility(this.self, 'wind.hongyan') && card.suit === 'spade');
     });
     if (this.player(id)?.equip.armor?.name === 'renwang' && black && !ignoresArmor) return 0;
     const attribute = nature ?? (costs.length === 1 ? this.card(costs[0])?.nature : undefined) ?? 'normal';
@@ -114,13 +140,19 @@ export class EvaluationContext {
     const target = this.player(id);
     if (!target) return 0;
     const bypass = liegongAvailable(this, target);
-    const wind = target.general?.startsWith('wind.') || this.self.general?.startsWith('wind.');
-    const fire = target.general?.startsWith('fire.') || this.self.general?.startsWith('fire.');
+    const wind = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('wind.'));
+    const fire = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('fire.'));
+    const forest = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('forest.'));
+    const mountain = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('mountain.'));
+    const doubled = hasPublicAbility(this.self, 'forest.roulin') && target.sex === 'female' || hasPublicAbility(target, 'forest.roulin') && this.self.sex === 'female';
     let hit = bypass ? 1 : Math.pow(1 - this.responseRates.shan, target.handCount);
-    if (!bypass && (target.general === 'wind.zhangjiao' && armor === 'bagua' || target.general === 'fire.wolong' && (!armor || armor === 'bagua')) && !ignoresArmor) hit *= 0.5;
-    const extra = (wind ? windAttackAdjustment(this, target, hit, costs) : 0) + (fire ? fireAttackAdjustment(this, target, hit) : 0);
-    if (wind || fire || attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
-      const success = wind || fire ? hit : Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
+    if (!bypass && doubled) { const response = this.responseRates.shan; hit = Math.pow(1-response, target.handCount) + target.handCount * response * Math.pow(1-response, Math.max(0,target.handCount-1)); }
+    if (!bypass && (hasPublicAbility(target, 'wind.leiji') && armor === 'bagua' || hasPublicAbility(target, 'fire.bazhen') && (!armor || armor === 'bagua')) && !ignoresArmor) hit *= 0.5;
+    const extra = mountainAttackAdjustment(this, target, hit, costs, plan.xianglePaid) +
+      this.relation(id) * fieldBenefit(this, target) * (1 - hit) +
+      (forest ? forestAttackAdjustment(this, target, hit) : 0) + (wind ? windAttackAdjustment(this, target, hit, costs) : 0) + (fire ? fireAttackAdjustment(this, target, hit) : 0);
+    if (wind || fire || forest || mountain || attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
+      const success = wind || fire || forest || mountain ? hit : Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
       const direct = this.elementalUtility(id, 1 + bonus, attribute, ignoresArmor, plan.linked);
       return (fan ? Math.max(direct, this.elementalUtility(id, 1 + bonus, 'fire', false, plan.linked)) : direct) * success + extra;
     }
@@ -168,7 +200,7 @@ export class EvaluationContext {
     const enemy = -relation;
     const missing = player.maxHp - player.hp;
     const response = (kind: 'sha' | 'shan') => 1 - Math.pow(1 - this.responseRates[kind], player.handCount);
-    if (name === 'sha' && (player.general?.startsWith('wind.') || this.self.general?.startsWith('wind.') || player.general?.startsWith('fire.') || this.self.general?.startsWith('fire.'))) return this.shaEffect(id, []);
+    if (name === 'sha' && [...publicAbilities(player), ...publicAbilities(this.self)].some(ability => /^(wind|fire|forest|mountain)\./.test(ability))) return this.shaEffect(id, []);
     if (name === 'sha') return this.damageUtility(player, 1, 3.5 + (player.hp <= 1 ? 3 : 0)) * (1 - response('shan'));
     if (name === 'juedou') return this.damageUtility(player, 1, 3 + (player.hp <= 1 ? 2 : 0)) * (1 - response('sha') * 0.5);
     if (name === 'tao' || name === 'taoyuan') return missing > 0 ? relation * (player.hp <= 1 ? 8 : 4) : 0;
@@ -179,7 +211,7 @@ export class EvaluationContext {
         const helps = relation > 0 && player.judge.some(card => card.name === 'lebu' || card.name === 'bingliang');
         return (helps ? relation : enemy) * 3 + (this.protectsLord(id) && !helps ? 0 : 3);
       }
-      return enemy * (removable ? 3 : 0);
+      return enemy * (removable ? 3 : 0) + relation * (removable && (player.handCount || Object.values(player.equip).some(Boolean)) ? fieldBenefit(this, player) : 0);
     }
     if (name === 'huogong') return this.elementalUtility(id, 1, 'fire');
     if (name === 'tiesuo') return this.chainUtility(id);
@@ -187,9 +219,11 @@ export class EvaluationContext {
     if (name === 'lebu') return enemy * (2 + Math.min(2, player.handCount * 0.4));
     if (name === 'shandian') return enemy * 2;
     if ((name === 'nanman' || name === 'wanjian') && player.equip.armor?.name === 'tengjia') return 0;
+    if (name === 'nanman' && hasPublicAbility(player, 'forest.juxiang')) return id === this.self.id ? 0 : relation * 2;
+    if (name === 'nanman' && (hasPublicAbility(player, 'forest.huoshou') || hasPublicAbility(player, 'forest.weimu'))) return 0;
     if (name === 'nanman') return this.damageUtility(player, 1, 3) * (1 - response('sha'));
     if (name === 'wanjian') {
-      const dodge = player.general === 'fire.wolong' && (!player.equip.armor || player.equip.armor.name === 'bagua') ? 0.5 : 1;
+      const dodge = hasPublicAbility(player, 'fire.bazhen') && (!player.equip.armor || player.equip.armor.name === 'bagua') ? 0.5 : 1;
       return this.damageUtility(player, 1, 3) * (1 - response('shan')) * dodge - leijiRisk(this, player, response('shan'));
     }
     return 0;

@@ -19,8 +19,9 @@ export interface FrameData {
     candidates: { owner: number; ability: string }[] | null; cursor: number };
   response: { context: ResponseContext };
   proxyResponse: { requester: number; ability: string; need: 'sha' | 'shan'; target?: number;
-    candidates: number[]; cursor: number; current: number | null };
-  trick: { source: number; cname: CardName; cid: number; targets: number[]; pool: number[]; card?: CardLike };
+    candidates: number[]; cursor: number; current: number | null; baguaTried?: boolean };
+  trick: { source: number; cname: CardName; cid: number; targets: number[]; pool: number[]; card?: CardLike; damageSource?: number | null;
+    ignoredNullifiers?: number[] };
   nullification: NullificationState;
   damage: { target: number; source: number | null; amount: number; card: number | CardLike | null;
     redirectedBy?: number; forcedBy?: number; nature?: DamageNature; ignoreArmor?: boolean; propagated?: boolean; sourceModified?: boolean; cancelled?: boolean };

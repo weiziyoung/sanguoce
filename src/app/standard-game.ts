@@ -65,6 +65,8 @@ export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameS
   deckService.shuffle(s);
   for (const p of s.players) draw(s, p.id, 4);
   startTurn(s);
+  resolutionStack.enqueue(s, ...s.players.flatMap(p => runtime.abilities.list(s, p.id).filter(skill => skill.gameStart)
+    .map(skill => ({ kind: 'gameStartSkill' as const, owner: p.id, ability: skill.id }))));
   trace?.({ type: "setup" }, copy(s));
   createStandardResolution(modes, runtime.triggers, runtime).scheduler.advance(s, trace);
   return s;

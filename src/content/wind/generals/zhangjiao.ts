@@ -35,10 +35,10 @@ export class ZhangJiaoGeneral implements StandardGeneralModule {
 export const huangtianGift: SkillDefinition = {
   id: 'wind.huangtian.gift', label: '黄天献牌',
   grantedTo: (s, owner) => s.mode.id === 'identity' && s.players[owner].group === 'qun' &&
-    s.players.some(p => p.alive && p.id !== owner && s.mode.roles[p.id] === 'lord' && p.general === 'wind.zhangjiao'),
+    s.players.some(p => p.alive && !p.generalSkillsDisabled && p.id !== owner && s.mode.roles[p.id] === 'lord' && p.general === 'wind.zhangjiao'),
   active: { limit: 'oncePerTurn', cost: 'transfer',
     costs: (s, owner) => s.players[owner].hand.filter(id => ['shan', 'shandian'].includes(s.cards[id].name)).map(id => [id]),
-    targets: s => s.players.filter(p => p.alive && s.mode.roles[p.id] === 'lord' && p.general === 'wind.zhangjiao').map(p => [p.id]),
+    targets: s => s.players.filter(p => p.alive && !p.generalSkillsDisabled && s.mode.roles[p.id] === 'lord' && p.general === 'wind.zhangjiao').map(p => [p.id]),
     execute: (s, owner, ids, targets) => {
       cardMovement.move(s, ids, { kind: 'hand', owner: targets[0] }, owner);
       for (const card of ids) emitEvent(s, 'gained', { from: owner, to: targets[0], card, hidden: false, cause: 'wind.huangtian' });

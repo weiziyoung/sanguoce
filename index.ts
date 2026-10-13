@@ -44,3 +44,5 @@ export { expandedContent, contentForCards, type CardSet, type GeneralPack } from
 export { windPack, windGeneralDefinitions } from './src/content/wind/content.ts';
 
 export { firePack, fireGeneralDefinitions } from './src/content/fire/content.ts';
+
+export { forestPack, forestGeneralDefinitions } from './src/content/forest/content.ts';

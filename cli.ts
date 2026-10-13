@@ -28,7 +28,7 @@ const cards = requestedCards as CardSet;
 const generalsPosition = args.indexOf('--generals');
 const requestedGenerals = generalsPosition >= 0 ? args[generalsPosition + 1] : 'standard';
 const names = requestedGenerals === 'standard' ? [] : requestedGenerals?.split(',');
-if (!names || names.some(pack => !GENERAL_PACKS.includes(pack as GeneralPack)) || new Set(names).size !== names.length) { console.error('请在 --generals 后指定 standard、wind、fire 或 wind,fire'); process.exit(2); }
+if (!names || names.some(pack => !GENERAL_PACKS.includes(pack as GeneralPack)) || new Set(names).size !== names.length) { console.error('请在 --generals 后指定 standard、wind、fire、forest、mountain 或用逗号组合'); process.exit(2); }
 const generalPacks: GeneralPack[] = GENERAL_PACKS.filter(pack => names.includes(pack));
 const content = contentForCards(cards, generalPacks);
 const selector = new DuelGeneralSelector(content.generals(), content);

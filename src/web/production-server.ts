@@ -2,8 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
-import { saveWebGame } from './web-game-upload.ts';
 import { forwardJev } from './jev-proxy.ts';
+import { PlayerService } from './player-service.ts';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -17,10 +17,14 @@ export interface ProductionServerOptions {
   traceDirectory: string;
   origin?: string;
   jevFetcher?: typeof fetch;
+  basePath?: string;
+  authApiUrl?: string;
+  authFetcher?: typeof fetch;
 }
 
 export function createProductionServer(options: ProductionServerOptions) {
   const root = resolve(options.directory);
+  let players: PlayerService | undefined;
   const server = createServer((request, response) => {
     void handle(request, response).catch(() => {
       if (!response.headersSent) response.writeHead(500);
@@ -28,19 +32,24 @@ export function createProductionServer(options: ProductionServerOptions) {
     });
   });
   server.requestTimeout = 60_000;
+  server.on('close', () => players?.close());
 
   async function handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     let pathname: string;
     try { pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname); }
     catch { response.writeHead(400).end(); return; }
-    if (pathname === '/api/web-games' || pathname === '/api/ai/jev') {
+    if (pathname.startsWith('/api/player/') || pathname === '/api/web-games') {
+      players ??= new PlayerService(options);
+      await players.handle(request, response, pathname);
+      return;
+    }
+    if (pathname === '/api/ai/jev') {
       response.setHeader('Cache-Control', 'no-store');
       if (options.origin && request.headers.origin && request.headers.origin !== options.origin) {
         response.writeHead(403).end(); return;
       }
-      if (pathname === '/api/ai/jev') await forwardJev(request, response, options.jevFetcher);
-      else await saveWebGame(request, response, options.traceDirectory);
+      await forwardJev(request, response, options.jevFetcher);
       return;
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {

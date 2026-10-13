@@ -16,6 +16,11 @@ export class SkillFlow {
     if (!this.runtime.abilities.has(state, owner, ability)) return;
     const skill = this.runtime.content.requireSkill(ability);
     if (!skill.startPhase?.available(state, owner)) return;
+    if (skill.startPhase.optional === false) {
+      emitEvent(state, 'skillActivated', { ability, label: skill.label ?? ability, owner, targets: [] });
+      skill.startPhase.activate(state, owner, this.runtime);
+      return;
+    }
     setPrompt(state, owner, 'phaseStartChoice', `是否发动【${skill.label ?? ability}】？`, [
       leaf(`start-skill:${ability}:yes`, '发动', { type: 'yes' }),
       leaf(`start-skill:${ability}:no`, '不发动', { type: 'no' }),
@@ -38,7 +43,7 @@ export class SkillFlow {
     if (!skill.endPhase?.available(state, owner)) return;
     if (skill.endPhase.optional === false) {
       emitEvent(state, 'skillActivated', { ability, label: skill.label ?? ability, owner, targets: [] });
-      skill.endPhase.execute(state, owner);
+      skill.endPhase.execute(state, owner, this.runtime);
       return;
     }
     setPrompt(state, owner, 'phaseEndChoice', `是否发动【${skill.label ?? ability}】？`, [
@@ -54,7 +59,7 @@ export class SkillFlow {
     if (prompt.actor !== owner || !this.runtime.abilities.has(state, owner, ability) ||
       !skill.endPhase?.available(state, owner)) throw new Error('结束阶段技能已失效');
     emitEvent(state, 'skillActivated', { ability, label: skill.label ?? ability, owner, targets: [] });
-    skill.endPhase.execute(state, owner);
+    skill.endPhase.execute(state, owner, this.runtime);
   }
   applyStartSkillJudgement(state: GameState, task: TaskOf<'applyStartSkillJudgement'>): void {
     const frame = resolutionStack.require(state, 'judgement');
@@ -71,7 +76,7 @@ export class SkillFlow {
   options(state: GameState, owner: number): InternalOption[] {
     return this.runtime.abilities.list(state, owner).flatMap(skill => {
       const active = skill.active;
-      if (!active || (active.limit === 'oncePerTurn' && this.used(state, owner, skill.id))) return [];
+      if (!active || active.available?.(state, owner, this.runtime) === false || (active.limit === 'oncePerTurn' && this.used(state, owner, skill.id))) return [];
       if (active.selection) {
         const selectable = active.selection.selectable(state, owner);
         return selectable.length >= active.selection.min ? [leaf(`skill:${skill.id}:begin`,
@@ -108,7 +113,7 @@ export class SkillFlow {
     const options = candidates.filter(id => ids.includes(id) || ids.length < (selection.max ?? Infinity))
       .map(id => leaf(`skill-cost:${ability}:${id}`, `${ids.includes(id) ? '取消' : '选择'}${cardText(state.cards[id])}`,
         { type: 'toggle', cid: id }));
-    if (ids.length >= selection.min) options.push(leaf(`skill-cost:${ability}:confirm`,
+    if (ids.length >= selection.min && skill.active!.targets(state, owner, ids, this.runtime).length) options.push(leaf(`skill-cost:${ability}:confirm`,
       `${skill.active?.cost === 'transfer' ? '确认交给目标' : '确认弃置'}${ids.length}张牌`, { type: 'confirm' }));
     options.push(leaf(`skill-cost:${ability}:cancel`, '取消发动', { type: 'cancel' }));
     setPrompt(state, owner, 'skillCost', `【${skill.label ?? ability}】：逐张选择${skill.active?.cost === 'transfer' ? '赠牌' : '费用'}（已选${ids.length}张）`, options, { ability, selectedIds: [...ids] });

@@ -14,8 +14,8 @@ export class AbilityResolver {
     const player = state.players[playerId];
     if (!player?.alive) return [];
     const instances: AbilityInstance[] = [];
-    if (player.general) for (const id of this.#content.general(player.general).abilities) {
-      instances.push({ definition: this.#content.requireSkill(id), source: { kind: 'general', id: player.general } });
+    if (!player.generalSkillsDisabled) for (const id of [...(player.general ? this.#content.general(player.general).abilities : []), ...(player.gainedAbilities ?? [])]) {
+      instances.push({ definition: this.#content.requireSkill(id), source: { kind: 'general', id: player.general ?? id } });
     }
     for (const [slot, cardId] of Object.entries(player.equip)) {
       if (cardId === null) continue;

@@ -30,12 +30,20 @@ export interface CardDefinition {
 }
 export interface SkillDefinition {
   readonly grantedTo?: (state: ReadonlyGameState, owner: number) => boolean;
-  readonly phaseBefore?: { readonly phases: readonly ('judge' | 'play')[]; execute(state: GameState, owner: number, phase: 'judge' | 'play', runtime: ContentRuntime): void };
+  readonly gameStart?: (state: GameState, owner: number, runtime: ContentRuntime) => void;
+  readonly onKilled?: (state: GameState, owner: number, source: number | null, runtime: ContentRuntime) => void;
+  readonly phaseBefore?: { readonly phases: readonly ('judge' | 'draw' | 'play' | 'discard')[]; execute(state: GameState, owner: number, phase: 'judge' | 'draw' | 'play' | 'discard', runtime: ContentRuntime): void };
+  readonly phaseAfter?: (state: GameState, owner: number, phase: 'discard', runtime: ContentRuntime) => void;
+  readonly onDeath?: (state: GameState, owner: number, victim: number, runtime: ContentRuntime) => void;
+  readonly cardFinished?: (state: GameState, owner: number, card: number, source: number, runtime: ContentRuntime) => void;
   readonly beforeDamage?: (state: GameState, owner: number, runtime: ContentRuntime) => void;
   readonly afterDamage?: (state: GameState, owner: number, context: import('../domain/resolution.ts').FrameData['damage'], amount: number, runtime: ContentRuntime) => void;
   readonly hpChanged?: (state: GameState, owner: number, before: number, after: number, runtime: ContentRuntime) => void;
   readonly responseUsed?: (state: GameState, owner: number, name: CardName, runtime: ContentRuntime) => void;
   readonly choice?: {
+    readonly silent?: boolean;
+    readonly ownerRequired?: boolean;
+    actor?(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext): number;
     options(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime): readonly { id: string; label: string; ids?: readonly number[]; targets?: readonly number[]; pass?: boolean }[];
     execute(state: GameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, action: import('../domain/state.ts').ContentChoiceAction, runtime: ContentRuntime): void;
   };
@@ -55,6 +63,7 @@ export interface SkillDefinition {
     options(state: ReadonlyGameState, owner: number): readonly { id: string; label: string; targets: readonly number[] }[];
     execute(state: GameState, owner: number, targets: readonly number[], runtime: ContentRuntime): void };
   readonly startPhase?: {
+    readonly optional?: boolean;
     available(state: ReadonlyGameState, owner: number): boolean;
     activate(state: GameState, owner: number, runtime: ContentRuntime): void;
     onJudgement?(state: GameState, owner: number, finalId: number | null): boolean;
@@ -62,7 +71,7 @@ export interface SkillDefinition {
   readonly endPhase?: {
     readonly optional?: boolean;
     available(state: ReadonlyGameState, owner: number): boolean;
-    execute(state: GameState, owner: number): void;
+    execute(state: GameState, owner: number, runtime: ContentRuntime): void;
   };
   readonly trigger?: AnyTriggerDefinition;
   readonly transformation?: CardTransformation;
@@ -82,6 +91,7 @@ export interface SkillDefinition {
   };
 }
 export interface ActiveSkillDefinition {
+  available?(state: ReadonlyGameState, owner: number, runtime: ContentRuntime): boolean;
   readonly limit?: 'oncePerTurn';
   readonly cost: 'discardOwned' | 'transfer' | 'none' | 'loseHp' | 'custom';
   /** Small fixed costs can be offered directly; large sets use selection. */
@@ -97,12 +107,15 @@ export interface ActiveSkillDefinition {
   };
 }
 export interface SkillModifier {
+  damageSource?(state: ReadonlyGameState, owner: number, source: number | null, card: CardLike | null): number | null;
+  rescueEnabled?(state: ReadonlyGameState, owner: number, rescuer: number, victim: number): boolean;
+  incomingResponseCount?(state: ReadonlyGameState, owner: number, source: number, mode: 'sha' | 'juedou', current: number): number;
   autoShan?(state: ReadonlyGameState, owner: number): boolean;
   suit?(state: ReadonlyGameState, owner: number, suit: import('../../catalog.ts').Suit): import('../../catalog.ts').Suit;
   survivesDying?(state: ReadonlyGameState, owner: number): boolean;
   responseCount?(state: ReadonlyGameState, owner: number, source: number, target: number,
     mode: 'sha' | 'juedou', current: number): number;
-  targetEnabled?(state: ReadonlyGameState, owner: number, source: number, target: number, card: CardName): boolean;
+  targetEnabled?(state: ReadonlyGameState, owner: number, source: number, target: number, card: CardName, effective?: CardLike): boolean;
   distance?(state: ReadonlyGameState, owner: number, from: number, to: number, current: number): number;
   attackRange?(state: ReadonlyGameState, owner: number, current: number): number;
   shaLimit?(state: ReadonlyGameState, owner: number, current: number): number;

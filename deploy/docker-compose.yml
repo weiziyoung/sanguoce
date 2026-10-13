@@ -12,6 +12,8 @@ services:
       - no-new-privileges:true
     environment:
       SANGUOCE_ORIGIN: ${SANGUOCE_ORIGIN}
+      SANGUOCE_BASE_PATH: ${SANGUOCE_BASE_PATH:-/sanguoce/}
+      SANGUOCE_AUTH_API_URL: ${SANGUOCE_AUTH_API_URL:-http://mx-core:2333/api/v3}
     volumes:
       - ${SANGUOCE_DATA_DIR:-../traces}:/app/traces
     tmpfs:

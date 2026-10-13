@@ -1,31 +1,32 @@
+import { hasPublicAbility } from '../ability-view.ts';
 import { cardColor, cardTypeOf } from '../../../catalog.ts';
 import type { VisiblePlayer } from '../../../contracts.ts';
 import type { EvaluationContext } from '../evaluation-context.ts';
 import type { EvaluationRegistry, SkillEvaluator, GeneralEvaluator } from '../evaluation-registry.ts';
 
-const suitFor = (player: VisiblePlayer, suit: string) => player.general === 'wind.xiaoqiao' && suit === 'spade' ? 'heart' : suit;
+const suitFor = (player: VisiblePlayer, suit: string) => hasPublicAbility(player, 'wind.hongyan') && suit === 'spade' ? 'heart' : suit;
 export function liegongAvailable(ctx: EvaluationContext, target: VisiblePlayer): boolean {
   const weapon = ctx.self.equip.weapon;
   const ranges: Record<string, number> = { zhuge: 1, cixiong: 2, qinggang: 2, qinglong: 3, zhangba: 3,
     guanshi: 3, fangtian: 4, qilin: 5, hanbing: 2, guding: 2, zhuque: 4 };
   const range = weapon ? ranges[weapon.name] ?? 1 : 1;
-  return ctx.self.general === 'wind.huangzhong' && ctx.observation.active === ctx.self.id && ctx.observation.phase === 'play' &&
+  return hasPublicAbility(ctx.self, 'wind.liegong') && ctx.observation.active === ctx.self.id && ctx.observation.phase === 'play' &&
     (target.handCount >= ctx.self.hp || target.handCount <= range);
 }
 /** Counterattacks use only public hand counts/equipment; never inspect opponents' hands. */
 export function leijiRisk(ctx: EvaluationContext, target: VisiblePlayer, dodgeChance: number): number {
-  if (target.general !== 'wind.zhangjiao' || dodgeChance <= 0) return 0;
+  if (!hasPublicAbility(target, 'wind.leiji') || dodgeChance <= 0) return 0;
   const knownBlack = Object.values(target.equip).some(card => card && cardColor(card) === 'black');
   const spare = Math.max(0, target.handCount - 1);
   const canForceSpade = knownBlack || spare > 0 ? 1 - Math.pow(0.75, spare + (knownBlack ? 2 : 0)) : 0;
   const hit = 0.25 + 0.75 * canForceSpade;
-  const exposed = [ctx.self, ...ctx.observation.others].filter(p => p.alive && p.general !== 'wind.xiaoqiao');
+  const exposed = [ctx.self, ...ctx.observation.others].filter(p => p.alive && !hasPublicAbility(p, 'wind.hongyan'));
   const harm = Math.max(0, ...exposed.map(p => -ctx.elementalUtility(p.id, 2, 'thunder')));
   return dodgeChance * hit * harm;
 }
 export function windAttackAdjustment(ctx: EvaluationContext, target: VisiblePlayer, success: number, costs: readonly number[]): number {
   let adjustment = -leijiRisk(ctx, target, 1 - success);
-  if (ctx.self.general === 'wind.weiyan' && ctx.self.hp < ctx.self.maxHp && ctx.relation(target.id) < 0) {
+  if (hasPublicAbility(ctx.self, 'wind.kuanggu') && ctx.self.hp < ctx.self.maxHp && ctx.relation(target.id) < 0) {
     const players = [ctx.self, ...ctx.observation.others].filter(p => p.alive).sort((a, b) => a.id - b.id);
     const from = players.findIndex(p => p.id === ctx.self.id), to = players.findIndex(p => p.id === target.id);
     let distance = Math.min(Math.abs(from - to), players.length - Math.abs(from - to));
@@ -33,7 +34,7 @@ export function windAttackAdjustment(ctx: EvaluationContext, target: VisiblePlay
     if (target.equip.plusHorse) distance++;
     if (distance <= 1) adjustment += 3 * success;
   }
-  if (target.general === 'wind.xiaoqiao' && target.handCount > 0 && ctx.relation(target.id) < 0) {
+  if (hasPublicAbility(target, 'wind.tianxiang') && target.handCount > 0 && ctx.relation(target.id) < 0) {
     const transferChance = 1 - Math.pow(0.5, target.handCount);
     adjustment -= transferChance * success * 4;
   }
@@ -59,7 +60,7 @@ const tianxiang: SkillEvaluator = (ctx, decision, _choice, action) => {
   if (action.type === 'pass') return 0;
   const target = ctx.player(action.targets?.[0] ?? -1); if (!target) return -100;
   const amount = (decision.context as { amount?: number }).amount ?? 1;
-  const survives = target.hp > amount || target.general === 'wind.zhoutai';
+  const survives = target.hp > amount || hasPublicAbility(target, 'wind.buqu');
   const cards = survives ? Math.max(0, target.maxHp - target.hp + amount) : 0;
   const relation = ctx.relation(target.id);
   const hurt = -relation * (3.5 * amount + (target.hp <= amount ? 6 : 0));
@@ -69,7 +70,7 @@ const tianxiang: SkillEvaluator = (ctx, decision, _choice, action) => {
 };
 const leiji: SkillEvaluator = (ctx, _decision, _choice, action) => {
   if (action.type === 'pass') return 0;
-  const target = ctx.player(action.targets?.[0] ?? -1); if (!target || target.general === 'wind.xiaoqiao') return -10;
+  const target = ctx.player(action.targets?.[0] ?? -1); if (!target || hasPublicAbility(target, 'wind.tianxiang')) return -10;
   const spade = [...ctx.self.hand, ...Object.values(ctx.self.equip).filter(Boolean)].some(card => card?.suit === 'spade');
   return ctx.elementalUtility(target.id, 2, 'thunder') * (spade ? 0.9 : 0.25);
 };
@@ -77,6 +78,7 @@ const favorable = (reason: string, suit: string, rank: number) => reason === 'wi
   reason === 'lebu' ? suit === 'heart' : reason === 'bingliang' ? suit === 'club' :
   reason === 'shandian' ? !(suit === 'spade' && rank >= 2 && rank <= 9) :
   ['bagua', 'standard.tieji'].includes(reason) ? ['heart', 'diamond'].includes(suit) :
+  reason === 'mountain.tuntian' ? suit !== 'heart' :
   reason === 'standard.luoshen' ? ['spade', 'club'].includes(suit) : undefined;
 const guidao: SkillEvaluator = (ctx, decision, _choice, action) => {
   if (action.type === 'pass') return 0;

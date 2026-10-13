@@ -5,6 +5,11 @@
 !src/web/production-server.ts
 !src/web/web-game-upload.ts
 !src/web/jev-proxy.ts
+!src/web/player-service.ts
+!src/web/player-store.ts
+!src/web/match-reward.ts
+!src/web/battle-score.ts
+!src/web/battle-report.ts
 !src/policies/
 !src/policies/model-endpoint.ts
 !deploy/

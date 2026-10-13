@@ -14,6 +14,8 @@ export function observe(s: GameState, playerId: number): Observation {
   const own = person(s, playerId);
   const skillProgress = s.skillProgress?.filter(item => item.owner === playerId && item.turn === s.turn)
     .map(({ ability, count }) => ({ ability, count })) ?? [];
+  const failedProxyRequests = s.failedProxyRequests?.filter(item => item.requester === playerId && item.turn === s.turn)
+    .map(({ requester: _requester, ...request }) => copy(request)) ?? [];
   const others = s.players.filter(p => p.id !== playerId);
   const visible = (p: PlayerState) => ({
     id: p.id, label: p.label, sex: p.sex, ...(p.general ? { general: p.general } : {}),
@@ -25,6 +27,12 @@ export function observe(s: GameState, playerId: number): Observation {
     ...(p.faceDown === undefined ? {} : { faceDown: p.faceDown }),
     ...(Object.keys(p.skillFlags ?? {}).some(key => key.endsWith('.used') && p.skillFlags?.[key]) ?
       { spentLimitedSkills: Object.keys(p.skillFlags!).filter(key => key.endsWith('.used') && p.skillFlags![key]).map(key => key.slice(0, -5)) } : {}),
+    ...(p.gainedAbilities?.length ? { gainedAbilities: [...p.gainedAbilities] } : {}),
+    ...(p.generalSkillsDisabled ? { generalSkillsDisabled: true } : {}),
+    ...(Object.keys(p.skillFlags ?? {}).some(k => k.endsWith('.awakened') && p.skillFlags![k]) ?
+      { awakenedSkills: Object.keys(p.skillFlags!).filter(k => k.endsWith('.awakened') && p.skillFlags![k]).map(k => k.slice(0, -9)) } : {}),
+    ...(p.huashen ? { huashen: { count: p.huashen.generals.length, ...(p.id === playerId ? { generals: [...p.huashen.generals] } : {}),
+      selected: p.huashen.selected, ability: p.huashen.ability } } : {}),
     ...(p.piles ? { piles: Object.fromEntries(Object.entries(p.piles).map(([ability, ids]) =>
       [ability, ids.map(id => copy(card(s, id)))])) } : {}),
     ...(s.mode.knownTo[p.id]?.includes(playerId) && s.mode.roles[p.id]
@@ -73,6 +81,7 @@ export function observe(s: GameState, playerId: number): Observation {
     discardCount: s.discard.length, discardTop: s.discard.length ? copy(card(s, s.discard.at(-1)!)) : null,
     ...(s.jiuUsed === undefined ? {} : { jiuUsed: s.jiuUsed }),
     ...(skillProgress.length ? { skillProgress } : {}),
+    ...(failedProxyRequests.length ? { failedProxyRequests } : {}),
     table: s.table.map(id => copy(card(s, id))), shaUsed: s.shaUsed,
     nullify: nullify ? {
       source: nullify.source, target: nullify.target,

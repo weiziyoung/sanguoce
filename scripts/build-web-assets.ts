@@ -61,22 +61,23 @@ for (const card of ART_SPECS) {
   if (!manifest.cards[card.id]) throw new Error(`缺少卡牌图片：${card.label}`);
 }
 for (const general of allContent.generals()) {
-  const image = add(join(source, `三国杀卡牌全高清图/${general.id.startsWith('wind.') ? '风包' : general.id.startsWith('fire.') ? '火包' : '标准25'}`,
-    `${general.id === 'wind.caoren' || general.id === 'wind.zhangjiao' ? general.label + '2010' : general.id === 'fire.wolong' ? '卧龙诸葛' : general.id === 'fire.yanliangwenchou' ? '颜良&文丑' : general.label}.png`),
+  const image = add(join(source, `三国杀卡牌全高清图/${general.id.startsWith('wind.') ? '风包' : general.id.startsWith('fire.') ? '火包' : general.id.startsWith('forest.') ? '林包' : general.id.startsWith('mountain.') ? '山包' : '标准25'}`,
+    `${general.id === 'mountain.zhanghe' ? '张颌' : general.id === 'mountain.zhangzhaozhanghong' ? '张昭&张紘' : general.id === 'wind.caoren' || general.id === 'wind.zhangjiao' ? general.label + '2010' : general.id === 'fire.wolong' ? '卧龙诸葛' : general.id === 'fire.yanliangwenchou' ? '颜良&文丑' : general.label}.png`),
     `generals/${general.id}.png`);
   if (image) manifest.generals[general.id] = image;
   const groupDir = { wei: '魏国', shu: '蜀国', wu: '吴国', qun: '群雄' }[general.group ?? 'wei'];
   const groupPath = join(source, '三国杀配音', groupDir);
   if (!existsSync(groupPath)) continue;
-  const generalDir = readdirSync(groupPath).find(entry => /^\d+-/.test(entry) && entry.split('-')[1] === general.label);
+  const generalDir = readdirSync(groupPath).find(entry => /^\d+-/.test(entry) && entry.split('-')[1] === (general.id === 'mountain.zhanghe' ? '张嗔' : general.label));
   if (!generalDir) continue;
   const base = join(groupPath, generalDir);
-  const voiceDirs = general.id.startsWith('wind.') ? ['风/普通', '普通'] : general.id.startsWith('fire.') ? ['火/普通', '火/普通2', '普通'] : ['标/普通', '普通'];
+  const voiceDirs = general.id.startsWith('wind.') ? ['风/普通', '普通'] : general.id.startsWith('fire.') ? ['火/普通', '火/普通2', '普通'] : general.id.startsWith('forest.') ? ['林/普通', '普通'] : general.id.startsWith('mountain.') ? ['山/普通', '普通'] : ['标/普通', '普通'];
   const voiceDir = voiceDirs.find(dir => existsSync(join(base, dir)));
   if (!voiceDir) continue;
   const voices: AssetManifest['generalAudio'][string] = { skills: {}, aliases: {} };
   voices.death = add(join(base, voiceDirs.find(dir => existsSync(join(base, dir, '阵亡.mp3'))) ?? voiceDir, '阵亡.mp3'), `audio/generals/${general.id}/death.mp3`);
-  for (const ability of general.abilities) {
+  const voicedAbilities = [...general.abilities, ...(general.id === 'mountain.dengai' ? ['mountain.jixi'] : general.id === 'mountain.jiangwei' ? ['standard.guanxing'] : general.id === 'mountain.sunce' ? ['standard.yingzi', 'mountain.yinghun'] : general.id === 'mountain.liushan' ? ['standard.jijiang'] : [])];
+  for (const ability of voicedAbilities) {
     const skill = allContent.requireSkill(ability);
     const label = skill.label;
     if (!label) continue;

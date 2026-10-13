@@ -5,17 +5,18 @@ export function projectEvent(event: RuleEvent, viewer: number): VisibleEvent | n
   switch (event.kind) {
     case 'cardsMoved': case 'hpChanged': case 'triggerInvoked':
     case 'attackTargeted': case 'attackMissed': case 'beforeAttackDamage': case 'damageTaken': case 'judgementApplied':
-    case 'cardsLost': return null;
+    case 'cardsLost': case 'attackUsed': case 'discardPhaseStarted': return null;
     case 'gained': {
       const { from, to, card, hidden, selection, cause } = event.data;
       return { id: event.id, kind: 'gained', data: { from, to,
         card: !hidden || viewer === from || viewer === to ? card : null,
         ...(selection ? { selection } : {}), ...(cause ? { cause } : {}) } };
     }
+    case 'skillsChanged': case 'awakened': case 'huashenChanged': case 'extraTurnStarted':
     case 'pindianRevealed': case 'turnedOver': case 'turnSkipped': case 'judgementSkipped': case 'pileChanged':
     case 'chainChanged': case 'wineUsed': case 'wineCleared': case 'cardRecast': case 'cardRevealed': case 'drawSkipped':
     case 'drawn': case 'judged': case 'judgementReplaced': case 'discarded': case 'equipped': case 'recovered': case 'hpLost':
-    case 'damaged': case 'dying': case 'died': case 'reshuffled': case 'turnStarted':
+    case 'damaged': case 'maxHpChanged': case 'dying': case 'died': case 'reshuffled': case 'turnStarted':
     case 'duelResponded': case 'duelEnded': case 'rescued': case 'attackDeclared':
     case 'playSkipped': case 'delayPlaced': case 'cardUsed': case 'harvestRevealed':
     case 'harvestLeftover': case 'harvestTaken': case 'borrowedAttack': case 'lightningMoved':

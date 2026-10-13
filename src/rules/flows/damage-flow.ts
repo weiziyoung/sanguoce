@@ -20,6 +20,7 @@ export function damage(s: GameState, target: number, source: number | null, amou
 export function prepareDamage(s: GameState, runtime: ContentRuntime): void {
   const context = resolutionStack.require(s, 'damage').data;
   if (!person(s, context.target).alive || context.amount <= 0) return;
+  if (!context.sourceModified && !context.propagated) context.source = runtime.queries.damageSource(s, context.source, context.card);
   if (!context.sourceModified && !context.propagated && context.source !== null) {
     context.amount = runtime.queries.sourceDamageAmount(s, context.source, context.target, context.card, context.amount);
   }

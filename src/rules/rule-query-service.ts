@@ -74,6 +74,17 @@ export class RuleQueryService {
   survivesDying(s: ReadonlyGameState, owner: number): boolean {
     return (this.#abilities?.list(s, owner) ?? []).some(skill => skill.modifier?.survivesDying?.(s, owner));
   }
+  damageSource(s: ReadonlyGameState, source: number | null, card: number | CardLike | null): number | null {
+    const effective = typeof card === 'number' ? s.cards[card] : card;
+    let result = source;
+    for (const p of s.players.filter(p => p.alive)) for (const skill of this.#abilities?.list(s, p.id) ?? []) {
+      if (skill.modifier?.damageSource) result = skill.modifier.damageSource(s, p.id, result, effective);
+    }
+    return result;
+  }
+  rescueEnabled(s: ReadonlyGameState, rescuer: number, victim: number): boolean {
+    return (this.#abilities?.list(s, s.active) ?? []).every(skill => skill.modifier?.rescueEnabled?.(s, s.active, rescuer, victim) !== false);
+  }
   sourceDamageAmount(s: ReadonlyGameState, source: number, target: number, card: number | CardLike | null, initial: number): number {
     let value = initial;
     for (const skill of this.#abilities?.list(s, source) ?? []) value = skill.modifier?.damageAmount?.(s, source, target, card, value) ?? value;
@@ -106,16 +117,19 @@ export class RuleQueryService {
   trickEffective(s: ReadonlyGameState, target: number, card: CardName): boolean {
     return (this.#abilities?.list(s, target) ?? []).every(skill => skill.modifier?.trickEffective?.(s, target, card) !== false);
   }
-  canTarget(s: ReadonlyGameState, source: number, target: number, card: CardName, allowSelf = false): boolean {
+  canTarget(s: ReadonlyGameState, source: number, target: number, card: CardName, allowSelf = false, effective?: CardLike, requireLivingSource = true): boolean {
     if (source === target && !allowSelf) return false;
-    if (!s.players[source]?.alive || !s.players[target]?.alive) return false;
+    if (requireLivingSource && !s.players[source]?.alive || !s.players[target]?.alive) return false;
     return (this.#abilities?.list(s, target) ?? []).every(skill =>
-      skill.modifier?.targetEnabled?.(s, target, source, target, card) !== false);
+      skill.modifier?.targetEnabled?.(s, target, source, target, card, effective) !== false);
   }
   responseCount(s: ReadonlyGameState, source: number, target: number, mode: 'sha' | 'juedou'): number {
     let value = 1;
     for (const skill of this.#abilities?.list(s, source) ?? []) {
       value = skill.modifier?.responseCount?.(s, source, source, target, mode, value) ?? value;
+    }
+    for (const skill of this.#abilities?.list(s, target) ?? []) {
+      value = skill.modifier?.incomingResponseCount?.(s, target, source, mode, value) ?? value;
     }
     if (!Number.isInteger(value) || value < 1 || value > 20) throw new Error('响应次数无效');
     return value;

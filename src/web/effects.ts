@@ -28,11 +28,18 @@ export class TableEffects {
   private choosingZone = false;
   private judgementPickerCount = 0;
   private landedCards: Phaser.GameObjects.Container[] = [];
-  constructor(private scene: Phaser.Scene, assets: TableAssets, private audio: GameAudio) {
+  private playedCard: { id: number; view: Phaser.GameObjects.Container } | null = null;
+  private decorations = new Map<Phaser.GameObjects.GameObject, Phaser.Time.TimerEvent | null>();
+  private scene: Phaser.Scene;
+  private audio: GameAudio;
+  constructor(scene: Phaser.Scene, assets: TableAssets, audio: GameAudio) {
+    this.scene = scene;
+    this.audio = audio;
     this.cues = new SoundCueRouter(assets.manifest);
   }
   dispose() {
     this.audio.stopEffect(); this.clearTableCards(); this.clearJudgementCard(); this.clearHandFlights();
+    for (const view of this.decorations.keys()) this.removeDecoration(view);
     for (const card of this.discardCards.splice(0)) card.view.destroy();
   }
   clearHandFlights(): void {
@@ -42,10 +49,14 @@ export class TableEffects {
   hasTableCard(id: number): boolean {
     return this.trickTableCards.some(item => item.id === id) || this.duelCards.some(item => item.id === id) ||
       this.discardCards.some(item => item.id === id) ||
+      this.playedCard?.id === id ||
       this.judgementTableCard?.id === id;
   }
   hasActiveJudgementCard(): boolean { return this.judgementTableCard !== null; }
   setZonePickerActive(active: boolean, judgementPickerCount = 0): void {
+    // The picker owns the central table while choosing, including Guzheng's
+    // copies of the public discards. Hide the retained animation and captions.
+    for (const { view } of this.discardCards) view.setVisible(!active);
     this.judgementPickerCount = judgementPickerCount;
     const judgementPosition = judgementTablePosition(judgementPickerCount);
     this.judgementTableCard?.view.setPosition(judgementPosition.x, judgementPosition.y);
@@ -73,6 +84,27 @@ export class TableEffects {
   private tween(targets: Phaser.GameObjects.GameObject, config: object): Promise<void> {
     return new Promise(resolve => this.scene.tweens.add({ targets, ...config,
       onComplete: () => { targets.destroy(); resolve(); } }));
+  }
+  private removeDecoration(view: Phaser.GameObjects.GameObject): void {
+    this.decorations.get(view)?.remove(false);
+    this.decorations.delete(view);
+    this.scene.tweens.killTweensOf(view);
+    if (this.playedCard?.view === view) this.playedCard = null;
+    view.destroy();
+  }
+  /** Keep readable effects on screen without delaying the next public event or choice. */
+  private fadeDecoration(view: Phaser.GameObjects.GameObject, config: object, hold = 0): void {
+    this.decorations.set(view, null);
+    const fade = () => {
+      this.decorations.set(view, null);
+      this.scene.tweens.add({ targets: view, ...config,
+        onComplete: () => this.removeDecoration(view) });
+    };
+    if (hold) this.decorations.set(view, this.scene.time.delayedCall(hold, fade));
+    else fade();
+  }
+  private clearPlayedCard(): void {
+    if (this.playedCard) this.removeDecoration(this.playedCard.view);
   }
   private caption(view: Phaser.GameObjects.Container, value: string | null, y = 99): void {
     if (!value) return;
@@ -104,6 +136,7 @@ export class TableEffects {
       handPosition(player, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
   }
   private async showResponse(card: ResponseCard, obs: Observation, verb = '打出'): Promise<void> {
+    this.clearPlayedCard();
     const seats = [obs.self, ...obs.others].map(player => player.id);
     const from = handPosition(card.player, seats, obs.self.id);
     const sprite = cardView(this.scene, card.card, from.x, from.y, 116, 166).container
@@ -115,6 +148,7 @@ export class TableEffects {
     await this.tween(sprite, { y: 462, alpha: 0, duration: 220 });
   }
   private async showJudgement(cue: JudgementCardCue, obs: Observation, origin?: Point): Promise<void> {
+    this.clearPlayedCard();
     const destination = judgementTablePosition(this.judgementPickerCount);
     if (cue.kind === 'finish') {
       if (this.judgementTableCard?.id !== cue.card.id) {
@@ -155,6 +189,7 @@ export class TableEffects {
     ]);
   }
   private async showPindian(event: Extract<VisibleEvent, { kind: 'pindianRevealed' }>, obs: Observation): Promise<void> {
+    this.clearPlayedCard();
     await Promise.all([this.finishTableCards(0), this.finishDiscards(0)]);
     const seats = [obs.self, ...obs.others].map(player => player.id);
     const entries = [{ player: event.data.source, id: event.data.sourceCard, won: event.data.won },
@@ -177,6 +212,7 @@ export class TableEffects {
   }
   private async showDuelResponse(event: Extract<VisibleEvent, { kind: 'duelResponded' }>,
     obs: Observation): Promise<void> {
+    this.clearPlayedCard();
     const source = obs.eventCards?.[event.data.card];
     if (!source) return;
     const seats = [obs.self, ...obs.others].map(player => player.id);
@@ -194,11 +230,12 @@ export class TableEffects {
   }
   private async showDiscard(discard: NonNullable<ReturnType<typeof discardTableCard>>, obs: Observation,
     origin?: Point): Promise<void> {
+    this.clearPlayedCard();
     if (this.discardCards.length && this.discardCards[0].player !== discard.player) await this.finishDiscards(650);
     if (!this.discardCards.length) await this.finishTableCards(0);
     const from = origin ?? handPosition(discard.player, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
     const sprite = cardView(this.scene, discard.card, from.x, from.y, 100, 144).container
-      .setDepth(1080 + this.discardCards.length).setScale(0.72);
+      .setDepth(1080 + this.discardCards.length).setScale(0.72).setVisible(!this.choosingZone);
     this.caption(sprite, `${obs.mode.id === 'identity' ? `座${discard.player + 1}` : discard.player === obs.self.id ? '你' : '对手'} · 弃置`);
     this.discardCards.push({ id: discard.card.id, player: discard.player, view: sprite });
     await Promise.all(this.discardCards.map(({ view }, index) => new Promise<void>(resolve =>
@@ -355,12 +392,17 @@ export class TableEffects {
     ]));
   }
   async play(event: VisibleEvent, obs: Observation, origin?: Point): Promise<void> {
+    if (event.kind === 'gained' && event.data.card !== null) {
+      const index = this.discardCards.findIndex(card => card.id === event.data.card);
+      if (index >= 0) this.discardCards.splice(index, 1)[0].view.destroy();
+    }
     const position = (id: number) => playerPosition(id, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
     const response = responseCard(event, obs);
     const judgement = judgementCard(event, obs);
     const transfer = zoneCardEffect(event, obs);
     const discarded = discardTableCard(event, obs);
     const trickCue = trickTableCue(event, obs);
+    if (trickCue?.kind === 'clear' || trickCue?.kind === 'start') this.clearPlayedCard();
     if (trickCue?.kind === 'clear' || trickCue?.kind === 'start')
       await this.finishDiscards(event.kind === 'turnStarted' ? 650 : 0);
     if (trickCue?.kind === 'clear') await this.finishTableCards(0);
@@ -380,8 +422,8 @@ export class TableEffects {
         this.caption(sprite, tableCardLabel(event, obs), 94);
         await new Promise<void>(resolve => this.scene.tweens.add({ targets: sprite,
           x: 790, y: 486, duration: 270, ease: 'Cubic.Out', onComplete: () => resolve() }));
-        await new Promise<void>(resolve => this.scene.time.delayedCall(680, resolve));
-        await this.tween(sprite, { y: 462, alpha: 0, duration: 220 });
+        this.playedCard = { id: card.id, view: sprite };
+        this.fadeDecoration(sprite, { y: 462, alpha: 0, duration: 220 }, 680);
       }
     } else if (event.kind === 'pindianRevealed') {
       await this.showPindian(event, obs);
@@ -418,10 +460,14 @@ export class TableEffects {
       const p = position(event.kind === 'damaged' ? event.data.target : event.data.player);
       const value = text(this.scene, p.x, p.y - 45, `${event.kind === 'damaged' ? '−' : '+'}${event.data.amount}`,
         62, event.kind === 'damaged' ? '#ff7565' : '#bde49f').setDepth(1000);
-      await Promise.all([
-        this.tween(value, { y: p.y - 115, alpha: 0, duration: 560 }),
-        ...(event.kind === 'damaged' ? [this.flashDamage(event.data.target, obs)] : []),
-      ]);
+      if (event.kind === 'recovered') {
+        this.fadeDecoration(value, { y: p.y - 115, alpha: 0, duration: 560 });
+      } else {
+        await Promise.all([
+          this.tween(value, { y: p.y - 115, alpha: 0, duration: 560 }),
+          this.flashDamage(event.data.target, obs),
+        ]);
+      }
     } else if (event.kind === 'skillActivated') {
       const p = position(event.data.owner);
       const title = text(this.scene, p.x, p.y, event.data.label, 42).setDepth(1000);

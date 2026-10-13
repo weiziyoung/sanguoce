@@ -72,8 +72,7 @@ export class StrategicPolicy implements DecisionPolicy {
     if (military !== undefined) return military;
     if (action.type === 'endPlay') return 0;
     if (action.type === 'beginSkill') return -2;
-    // A failed proactive request leaves the same decision available and can loop forever.
-    // Defer proactive lord proxy attacks until the policy has explicit failed-request memory.
+    // Registered lord evaluators assess public support and guard repeated failed requests.
     if (action.type === 'proxySha') return -2;
     if (action.type === 'activeSkill') return -2;
     const physical = context.card(action.cid);
@@ -94,7 +93,8 @@ export class StrategicPolicy implements DecisionPolicy {
       return gain > 0.5 ? context.order(effective) + gain : -3;
     }
     if (effective === 'taoyuan' || effective === 'nanman' || effective === 'wanjian') {
-      const targets = [context.self, ...context.observation.others].filter(player => player.alive);
+      const targets = [context.self, ...context.observation.others].filter(player => player.alive &&
+        (effective === 'taoyuan' || player.id !== context.self.id));
       const effect = targets.reduce((sum, player) => sum + context.targetEffect(effective, player.id), 0);
       return effect > 0 ? context.order(effective) + effect - 0.2 * cost : -3;
     }
@@ -133,7 +133,13 @@ export class StrategicPolicy implements DecisionPolicy {
       case 'proxyResponse': {
         const requester = numberField(decision, 'requester');
         if (requester === undefined || context.relation(requester) <= 0) return action.type === 'pass' ? 0 : -2;
-        return action.type === 'pass' ? 0 : 4 - 0.25 * context.value(action.ids?.[0]);
+        const victim = numberField(decision, 'target');
+        if (victim !== undefined && context.relation(victim) > 0) return action.type === 'pass' ? 0 : -2;
+        if (action.type === 'pass') return 0;
+        if (action.type === 'bagua') return 12;
+        const urgent = context.player(requester)?.hp === 1 ? 3 : 0;
+        const utility = 4 + urgent - 0.25 * (action.ids ?? []).reduce((cost, id) => cost + context.value(id), 0);
+        return utility > 0 ? utility : -1;
       }
       case 'dying': {
         const dying = numberField(decision, 'target');
@@ -143,6 +149,7 @@ export class StrategicPolicy implements DecisionPolicy {
       }
       case 'nullify': {
         if (action.type === 'pass') return 0;
+        if (action.type === 'ignoreNullify') return -100;
         const chain = context.observation.nullify;
         if (!chain) return -1;
         const effect = context.targetEffect(chain.cname as CardName, chain.target);

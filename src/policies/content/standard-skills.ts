@@ -1,3 +1,5 @@
+import { registerMountainEvaluations } from './mountain.ts';
+import { registerForestEvaluations } from './forest.ts';
 import { registerFireEvaluations } from './fire.ts';
 import { registerWindEvaluations } from './wind.ts';
 import { fanPreparationEvaluation } from './junzheng.ts';
@@ -16,6 +18,7 @@ import { guicaiEvaluation } from './standard/simayi.ts';
 import { lvmengEvaluation } from './standard/lvmeng.ts';
 import { guanxingEvaluation, zhugeliangEvaluation } from './standard/zhugeliang.ts';
 import { ganningEvaluation } from './standard/ganning.ts';
+import { lordProxyEvaluation } from './standard/lord.ts';
 
 /** Composition only: new content registers its own evaluator without changing the policy. */
 export function standardSkillEvaluations(): EvaluationRegistry {
@@ -32,6 +35,7 @@ export function standardSkillEvaluations(): EvaluationRegistry {
     'standard.tiandu': usefulOptionalSkill, 'standard.jizhi': usefulOptionalSkill,
     'standard.xiaoji': usefulOptionalSkill, 'standard.fankui': usefulOptionalSkill,
     'standard.ganglie': usefulOptionalSkill,
+    'standard.jijiang': lordProxyEvaluation,
   })) registry.register(id, evaluator);
   registry.registerGeneral('standard.sunquan', sunquanEvaluation)
     .registerGeneral('standard.ganning', ganningEvaluation)
@@ -41,5 +45,7 @@ export function standardSkillEvaluations(): EvaluationRegistry {
   registry.register('junzheng.zhuque', fanPreparationEvaluation);
   registerWindEvaluations(registry);
   registerFireEvaluations(registry);
+  registerForestEvaluations(registry);
+  registerMountainEvaluations(registry);
   return registry;
 }

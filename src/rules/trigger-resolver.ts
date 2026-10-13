@@ -32,7 +32,7 @@ export class TriggerResolver {
   }
   private event(state: GameState, id: number): TriggerEvent {
     const event = state.events[id - 1];
-    if (!event || event.id !== id || !['attackTargeted', 'attackMissed', 'beforeAttackDamage', 'cardUsed', 'damageTaken', 'judgementApplied', 'cardsLost'].includes(event.kind)) {
+    if (!event || event.id !== id || !['attackUsed', 'attackTargeted', 'attackMissed', 'beforeAttackDamage', 'cardUsed', 'damageTaken', 'judgementApplied', 'cardsLost'].includes(event.kind)) {
       throw new Error(`触发事件不存在或类型不匹配：${id}`);
     }
     return event as TriggerEvent;
@@ -94,7 +94,7 @@ export class TriggerResolver {
   }
   private invoke(state: GameState, definition: TriggerDefinition, event: TriggerEvent, owner: number): void {
     emitEvent(state, 'triggerInvoked', { definition: definition.id, owner, eventId: event.id });
-    if (definition.grantedBy) emitEvent(state, 'skillActivated', {
+    if (definition.grantedBy && definition.announce !== false) emitEvent(state, 'skillActivated', {
       ability: definition.grantedBy, label: definition.label ?? definition.id, owner, targets: [],
     });
     definition.execute(state, event, owner, this.#runtime ?? undefined);

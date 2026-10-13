@@ -32,14 +32,16 @@ function modelPlayerRef(player: VisiblePlayer): string {
 function modelSkills(player: VisiblePlayer): string {
   const general = player.general ? STANDARD_MODEL_GENERALS[player.general] : undefined;
   if (player.general && !general) throw new Error(`武将技能信息缺失：${player.general}`);
-  return (general?.skills ?? []).map(([id, label]) => {
+  if (player.generalSkillsDisabled) return '断肠：全部武将技能已失效';
+  const skills = [...(general?.skills ?? []), ...(player.gainedAbilities ?? []).filter(id => !general?.skills.some(([owned]) => owned === id)).map(id => [id, STANDARD_MODEL_SKILL_NAMES[id] ?? id] as const)];
+  return skills.map(([id, label]) => {
     const description = STANDARD_SKILL_HELP[id];
     if (!description) throw new Error(`技能说明缺失：${label}`);
     return `【${label}】${description.replace(/[。；]+$/u, '')}`;
   }).join('；');
 }
 function modelEvent(line: string): string {
-  return line.replace(/\b(?:standard|pilot|wind|fire)\.[a-z][\w.-]*\b/giu, id => {
+  return line.replace(/\b(?:standard|pilot|wind|fire|forest|mountain)\.[a-z][\w.-]*\b/giu, id => {
     const cardId = id.startsWith('standard.') ? id.slice('standard.'.length) : id;
     const label = (NAMES as Record<string, string>)[cardId] ?? STANDARD_MODEL_SKILL_NAMES[id];
     if (!label) throw new Error(`事件展示名称缺失：${id}`);
@@ -68,7 +70,10 @@ function hearts(player: VisiblePlayer): string {
   return "♥".repeat(Math.max(0, player.hp)) + "♡".repeat(Math.max(0, player.maxHp - player.hp));
 }
 function publicStatus(player: VisiblePlayer): string {
-  return [player.faceDown ? '背面朝上：下个回合跳过并翻回正面' : '',
+  return [player.generalSkillsDisabled ? '断肠：全部武将技能失效' : '', player.awakenedSkills?.length ? `已觉醒：${player.awakenedSkills.map(id => STANDARD_MODEL_SKILL_NAMES[id] ?? id).join('、')}` : '',
+    player.huashen ? `化身：${player.huashen.selected ? STANDARD_MODEL_GENERALS[player.huashen.selected]?.label ?? '' : '未选择'}；共有${player.huashen.count}张${player.huashen.generals ? '：' + player.huashen.generals.map(id => STANDARD_MODEL_GENERALS[id]?.label ?? id).join('、') : ''}` : '',
+    player.piles?.['mountain.tuntian']?.length ? `田：${player.piles['mountain.tuntian'].map(cardText).join('、')}` : '',
+    player.faceDown ? '背面朝上：下个回合跳过并翻回正面' : '',
     player.spentLimitedSkills?.length ? `已用限定技：${player.spentLimitedSkills.map(id => STANDARD_MODEL_SKILL_NAMES[id] ?? id).join('、')}` : '',
     player.piles?.['wind.buqu']?.length ? `不屈牌点数：${player.piles['wind.buqu'].map(card => card.rank).join('、')}` : '',
     player.chained ? '连环' : '', player.drunk ? '已饮酒：本回合下一张【杀】伤害+1，使用该杀即消耗' : '']
@@ -202,6 +207,8 @@ export class ChineseView {
       `- 你：${named(self)}，${identity(self)}，体力${self.hp}/${self.maxHp}，手牌${self.hand.length}张：${cardList(self.hand)}；装备${equipment(self)}；判定区${delayed(self)}；公开状态${publicStatus(self)}。`,
       ...others,
       ...(self.general === 'standard.liubei' ? [`仁德本回合已赠牌${observation.skillProgress?.find(item => item.ability === 'standard.rende')?.count ?? 0}张；累计达到2张时回复1点体力，每回合仅回复一次。`] : []),
+      ...(observation.failedProxyRequests?.some(request => request.ability === 'standard.jijiang' && request.turn === observation.turn)
+        ? ['本回合此前【激将】请求无人应答；同势力角色的公开手牌数或装备未变化时，避免反复请求。'] : []),
       ...modelIdentityContext(observation, named),
       '【技能说明】',
       ...skills,

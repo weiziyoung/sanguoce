@@ -9,8 +9,8 @@ import type { TargetRule } from '../../rules/content-registry.ts';
 import { SkillFlow } from '../../rules/flows/skill-flow.ts';
 
 function targetAllowed(s: GameState, actor: number, target: number, cardName: CardName,
-  rule: TargetRule | undefined, runtime: ContentRuntime): boolean {
-  if (!runtime.queries.canTarget(s, actor, target, cardName, runtime.content.card(cardName).play.allowSelf)) return false;
+  rule: TargetRule | undefined, runtime: ContentRuntime, effective?: import("../../../catalog.ts").CardLike): boolean {
+  if (!runtime.queries.canTarget(s, actor, target, cardName, runtime.content.card(cardName).play.allowSelf, effective)) return false;
   switch (rule) {
     case 'distance1Stealable': return runtime.queries.distance(s, actor, target) <=
       runtime.queries.trickDistanceLimit(s, actor, cardName) && stealable(s, target).length > 0;
@@ -53,7 +53,7 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
     }
     if (play.targeting === 'multiple') {
       const possible = alive(s).filter(id => (play.allowSelf || id !== actor) &&
-        targetAllowed(s, actor, id, cname, play.targetRule, runtime));
+        targetAllowed(s, actor, id, cname, play.targetRule, runtime, c));
       const choices = subsets(possible, play.maxTargets ?? 1).map(ids => leaf(`${base}:${ids.join(':')}`,
         `目标：${ids.map(id => person(s, id).label).join('、')}`, { type: 'play' as const, cid, targets: ids }));
       if (play.recast) choices.push(leaf(`recast:${cid}`, '重铸：弃置此牌并摸一张牌', { type: 'recast', cid }));
@@ -61,12 +61,13 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
       continue;
     }
     if (play.targeting === 'none') {
+      if (runtime.content.card(cname).kind === 'delay' && !runtime.queries.canTarget(s, actor, actor, cname, true, c)) continue;
       options.push(leaf(base, label, { type: "play", cid, targets: [] }));
       continue;
     }
     const targets: InternalOption[] = [];
     for (const other of alive(s).filter(id => play.allowSelf || id !== actor)) {
-      if (!targetAllowed(s, actor, other, cname, play.targetRule, runtime)) continue;
+      if (!targetAllowed(s, actor, other, cname, play.targetRule, runtime, c)) continue;
       if (play.targeting === 'borrowed') {
         const second = alive(s).filter(id => id !== other && runtime.queries.canSha(s, other, id));
         if (!second.length) continue;
@@ -125,14 +126,20 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
       (item): item is NonNullable<typeof item> => item !== undefined)) {
       const cname = transformation.produces;
       const definition = runtime.content.card(cname);
+      if (definition.kind === 'basic' && definition.play.availability === 'drink' && (s.jiuUsed ?? 0) < 1) {
+        const costs = runtime.transforms.candidates(s, actor, cname).filter(cost => cost.transformation === transformation.id);
+        if (costs.length) options.push({ id: `virtual-basic:${transformation.id}`, label: `【${skill.label}】当【${definition.label}】使用`,
+          children: costs.map(cost => leaf(`virtual-basic:${transformation.id}:${cost.ids.join(':')}`, transformationCostLabel(s, cost.ids),
+            { type: 'virtualBasic', cname, ids: cost.ids, targets: [], transformation: transformation.id })) });
+      }
       if (!['trick', 'delay'].includes(definition.kind) || !['single', 'multiple', 'none'].includes(definition.play.targeting)) continue;
       const costs = runtime.transforms.candidates(s, actor, cname).filter(item =>
         item.virtual && item.transformation === transformation.id);
+      const choices = costs.map(cost => {
       const targets = alive(s).filter(id => (definition.play.allowSelf || id !== actor) &&
-        targetAllowed(s, actor, id, cname, definition.play.targetRule, runtime));
+        targetAllowed(s, actor, id, cname, definition.play.targetRule, runtime, cost.effective));
       const groups = definition.play.targeting === 'none' ? [[]] : definition.play.targeting === 'multiple' ?
         subsets(targets, definition.play.maxTargets ?? 1) : targets.map(id => [id]);
-      const choices = costs.map(cost => {
         const prefix = `virtual-trick:${transformation.id}:${cost.ids.join(':')}`;
         const children: InternalOption[] = groups.map(selected => leaf(`${prefix}:${selected.join(':') || 'all'}`,
           selected.length ? `目标：${selected.map(id => person(s, id).label).join('、')}` : `使用【${definition.label}】`,

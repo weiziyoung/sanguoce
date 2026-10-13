@@ -20,9 +20,10 @@ function attackScore(ctx: EvaluationContext, attack: ScoredAction,
 /** A small usable expansion policy, based only on public states and own costs. */
 export function militaryPlayScore(ctx: EvaluationContext, action: ScoredAction, candidates: readonly Choice[],
   usefulAttack: (choice: Choice, planned?: EvaluationContext) => boolean): number | undefined {
-  const card = ctx.card(action.cid);
+  const original = ctx.card(action.type === 'virtualBasic' ? action.ids?.[0] : action.cid);
+  const card = original && action.type === 'virtualBasic' ? { ...original, name: action.cname! } : original;
   if (action.type === 'recast') return 1.2;
-  if (!card || action.type !== 'play') return undefined;
+  if (!card || !['play', 'virtualBasic'].includes(action.type ?? '')) return undefined;
   const targets = action.targets ?? [];
   if (card.name === 'tengjia' && ctx.value(card.id) <= 0.5) return -100;
   if (card.name === 'jiu') {

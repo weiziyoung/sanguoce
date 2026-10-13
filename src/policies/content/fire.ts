@@ -1,3 +1,4 @@
+import { hasPublicAbility } from '../ability-view.ts';
 import type { VisiblePlayer } from '../../../contracts.ts';
 import type { EvaluationContext } from '../evaluation-context.ts';
 import type { EvaluationRegistry, SkillEvaluator } from '../evaluation-registry.ts';
@@ -72,11 +73,11 @@ const shuangxiong: SkillEvaluator = (ctx, decision, _choice, action) => {
   return action.type === 'skill' && ctx.self.handCount >= 4 && attacks >= 2 && enemies ? 5 : -2;
 };
 export function fireAttackAdjustment(ctx: EvaluationContext, target: VisiblePlayer, hit: number): number {
-  if (target.general === 'fire.xunyu' && ctx.relation(target.id) < 0 && target.hp > 1) {
+  if (hasPublicAbility(target, 'fire.jieming') && ctx.relation(target.id) < 0 && target.hp > 1) {
     const need = Math.max(0, ...players(ctx).filter(p => ctx.relation(p.id) < 0).map(p => Math.min(5, p.maxHp) - p.handCount));
     return -hit * need;
   }
-  if (ctx.self.general === 'fire.pangde' && ctx.relation(target.id) < 0 &&
+  if (hasPublicAbility(ctx.self, 'fire.mengjin') && ctx.relation(target.id) < 0 &&
     (target.handCount > 1 || Object.values(target.equip).some(Boolean))) return (1 - hit) * 2.5;
   return 0;
 }

@@ -27,8 +27,8 @@ export function startTurn(s: GameState): void {
   if (s.skillProgress) s.skillProgress = [];
   emitEvent(s, 'turnStarted', { player: s.active, turn: s.turn });
   push(s,
-    { kind: "phaseStart" }, { kind: "phaseBefore", phase: "judge" }, { kind: "phaseJudge" }, { kind: "phaseDraw" },
-    { kind: "phaseBefore", phase: "play" }, { kind: "phasePlay" }, { kind: "phaseDiscard" }, { kind: "phaseEnd" },
+    { kind: "phaseStart" }, { kind: "phaseBefore", phase: "judge" }, { kind: "phaseJudge" }, { kind: "phaseBefore", phase: "draw" }, { kind: "phaseDraw" },
+    { kind: "phaseBefore", phase: "play" }, { kind: "phasePlay" }, { kind: "phaseBefore", phase: "discard" }, { kind: "phaseDiscard" }, { kind: "phaseAfter", phase: "discard" }, { kind: "phaseEnd" },
   );
 }
 
@@ -37,6 +37,7 @@ export function handlePhaseStartTask(s: GameState, task: TaskOf<"phaseStart">,
   if (!person(s, s.active).alive) return;
   s.phase = "start";
   s.skipPlay = false;
+  if (s.skipDiscardPhase !== undefined) s.skipDiscardPhase = false;
   if (s.skipJudge !== undefined) s.skipJudge = false;
   if (s.skipDraw !== undefined) s.skipDraw = false;
   push(s, ...runtime.abilities.list(s, s.active).filter(skill => skill.startPhase)
@@ -113,6 +114,7 @@ export function handlePhasePlayTask(s: GameState, task: TaskOf<"phasePlay">, run
 export function handlePhaseDiscardTask(s: GameState, task: TaskOf<"phaseDiscard">, runtime: ContentRuntime = getStandardRuntime()): void {
   if (!person(s, s.active).alive) return;
   s.phase = "discard";
+  if (s.skipDiscardPhase) return;
   const skill = runtime.abilities.list(s, s.active).find(skill => skill.modifier?.skipDiscard?.(s, s.active));
   if (skill && person(s, s.active).hand.length > runtime.queries.handLimit(s, s.active)) {
     setPrompt(s, s.active, 'phaseDiscardChoice', `是否发动【${skill.label ?? skill.id}】跳过弃牌阶段？`, [
@@ -154,7 +156,14 @@ export function handlePhaseEndTask(s: GameState, task: TaskOf<"phaseEnd">,
 
 export function handlePhaseEndAdvanceTask(s: GameState): void {
   clearWine(s, s.active, 'turnEnd');
-  s.active = nextAlive(s, s.active);
+  let extra = s.extraTurns?.shift();
+  while (extra !== undefined && !s.players[extra].alive) extra = s.extraTurns?.shift();
+  if (extra !== undefined && s.players[extra].alive) {
+    s.turnReturn ??= s.active; s.active = extra;
+    emitEvent(s, 'extraTurnStarted', { player: extra });
+  } else {
+    s.active = nextAlive(s, s.turnReturn ?? s.active); delete s.turnReturn;
+  }
   startTurn(s);
 }
 

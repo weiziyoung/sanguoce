@@ -43,7 +43,8 @@ export function eventSounds(event: VisibleEvent, obs: Observation, manifest: Ass
   const skillVoice = (id: number, ability: string) => {
     const general = player(id)?.general;
     if (!general) return undefined;
-    const voices = manifest.generalAudio[general];
+    const borrowed = player(id)?.huashen?.selected;
+    const voices = manifest.generalAudio[general]?.skills[ability] || !borrowed ? manifest.generalAudio[general] : manifest.generalAudio[borrowed];
     const skill = voices?.aliases[ability] ?? ability;
     const clips = voices?.skills[skill];
     return clips?.length ? pickSkillClip(`${general}:${skill}`, clips) : undefined;

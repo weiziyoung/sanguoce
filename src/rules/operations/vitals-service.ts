@@ -26,6 +26,18 @@ export class VitalsService {
     person(s, target).alive = false;
     emitEvent(s, 'died', { target, source });
   }
+  loseMaxHp(s: GameState, target: number, amount: number): void {
+    this.validate(amount);
+    const p = person(s, target), before = p.maxHp, beforeHp = p.hp;
+    p.maxHp = Math.max(0, p.maxHp - amount);
+    p.hp = Math.min(p.hp, p.maxHp);
+    if (p.hp !== beforeHp) emitEvent(s, 'hpChanged', { player: target, before: beforeHp, after: p.hp });
+    if (p.maxHp !== before) emitEvent(s, 'maxHpChanged', { player: target, before, after: p.maxHp, hp: p.hp });
+  }
+  gainMaxHp(s: GameState, target: number, amount: number): void {
+    this.validate(amount); const p = person(s, target), before = p.maxHp; p.maxHp += amount;
+    emitEvent(s, 'maxHpChanged', { player: target, before, after: p.maxHp, hp: p.hp });
+  }
   private validate(amount: number): void {
     if (!Number.isInteger(amount) || amount < 0) throw new Error('体力变化必须为非负整数');
   }

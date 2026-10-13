@@ -31,7 +31,7 @@ export function handleResponsePollTask(s: GameState, runtime: ContentRuntime = g
     runtime.queries.autoShan(s, actor) &&
     !(mode === "sha" && (context.ignoreArmor || runtime.abilities.has(s, context.source, 'standard.qinggang')));
   const options = responseOptions(s, actor, need, baguaAllowed, runtime);
-  if ((mode === 'sha' || mode === 'juedou' || mode === 'nanman') && !context.proxyTried &&
+  if (!context.proxyTried &&
     s.mode.id === 'identity' && s.mode.roles[actor] === 'lord') {
     for (const skill of runtime.abilities.list(s, actor)) {
       const proxy = skill.proxyResponse;

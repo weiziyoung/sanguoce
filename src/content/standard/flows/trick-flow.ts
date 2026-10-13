@@ -19,7 +19,7 @@ import { getStandardRuntime } from '../runtime.ts';
 
 export function beginTrick(s: GameState, source: number, cname: CardName, targets: number[], cid: number,
   second: number | null = null, runtime: ContentRuntime = getStandardRuntime(), card?: CardLike): void {
-  const frame = resolutionStack.open(s, 'trick', { source, cname, cid, targets, pool: [], ...(card ? { card } : {}) });
+  const frame = resolutionStack.open(s, 'trick', { source, cname, cid, targets, pool: [], ...(cname === 'nanman' ? { damageSource: runtime.queries.damageSource(s, source, card ?? s.cards[cid]) } : {}), ...(card ? { card } : {}) });
   const harvest = runtime.content.card(cname).effect === 'harvest';
   if (harvest) {
     const pool = deckService.takeTop(s, alive(s).length, { kind: 'table' });
@@ -57,7 +57,8 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
   const definition = runtime.content.card(cname);
   if (!runtime.queries.trickEffective(s, target, cname)) return;
   if (definition.trickEffect) { definition.trickEffect(s, task, runtime); return; }
-  const effectiveCard = resolutionStack.get(s, task.trickFrameId, 'trick').data.card;
+  const trick = resolutionStack.get(s, task.trickFrameId, 'trick').data;
+  const effectiveCard = trick.card;
   const effect = definition.effect;
   if (effect === 'drawTwo') draw(s, target, 2);
   else if (effect === 'recoverOne') {
@@ -67,7 +68,7 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
     }
   } else if (effect === 'requireSha' || effect === 'requireShan') {
     const mode = effect === 'requireSha' ? 'nanman' : 'wanjian';
-    promptResponse(s, { mode, actor: target, source, cardId: cid,
+    promptResponse(s, { mode, actor: target, source: mode === 'nanman' ? trick.damageSource ?? source : source, cardId: cid,
       ...(effectiveCard ? { card: effectiveCard } : {}),
       ...(cname === mode ? {} : { cardName: cname }) });
   } else if (effect === 'duel') {
@@ -99,7 +100,7 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
 
 export function handleTrickTargetTask(s: GameState, task: TaskOf<"trickTarget">,
   runtime: ContentRuntime = getStandardRuntime()): void {
-  if ((runtime.queries.canTarget(s, task.source, task.target, task.cname) || task.source === task.target) &&
+  if (runtime.queries.canTarget(s, task.source, task.target, task.cname, task.source === task.target, resolutionStack.get(s, task.trickFrameId, 'trick').data.card ?? s.cards[task.cid], false) &&
     runtime.queries.trickEffective(s, task.target, task.cname)) {
     const effect: Task = { ...task, kind: "resolveTrick" };
     beginNullify(s, effect, null, task.source, task.target, task.cname);

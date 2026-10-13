@@ -25,14 +25,14 @@ export function promptDying(s: GameState, runtime: ContentRuntime): void {
   while (!living.every(id => d.passed.includes(id))) {
     const actor = d.cursor;
     if (person(s, actor).alive && !d.passed.includes(actor)) {
-      const cards = [...runtime.transforms.candidates(s, actor, 'tao'),
+      const cards = [...(runtime.queries.rescueEnabled(s, actor, d.target) ? runtime.transforms.candidates(s, actor, 'tao') : []),
         ...(actor === d.target ? runtime.transforms.candidates(s, actor, 'jiu') : [])];
       if (cards.length) {
         setPrompt(s, actor, 'dying',
           `${victim.label}濒死（${victim.hp}点体力）：使用【桃】或自用【酒】救治？`,
-          [...cards.map(({ ids, transformation }) => leaf(transformation ?
+          [...cards.map(({ ids, transformation, effective }) => leaf(transformation ?
             `save:transform:${transformation}:${ids.join(':')}` : `save:${ids[0]}`,
-            `使用${transformation ? `${transformationCostLabel(s, ids)}当【桃】` : cardText(card(s, ids[0]))}`,
+            `使用${transformation ? `${transformationCostLabel(s, ids)}当【${runtime.content.card(effective.name).label}】` : cardText(card(s, ids[0]))}`,
             { type: 'save', ids, ...(transformation ? { transformation } : {}) })),
           leaf('save-pass', '不救治', { type: 'pass' })], { target: d.target });
         return;
@@ -51,11 +51,13 @@ export function handleDyingChoice(s: GameState, prompt: PromptOf<'dying'>, data:
   const d = resolutionStack.require(s, 'dying').data;
   const actor = prompt.actor;
   if (data.type === 'save') {
-    const selfWine = actor === d.target && !data.transformation && data.ids.length === 1 && s.cards[data.ids[0]].name === 'jiu';
+    const selfWine = actor === d.target && runtime.transforms.candidates(s, actor, 'jiu').some(candidate =>
+      candidate.transformation === data.transformation && JSON.stringify(candidate.ids) === JSON.stringify(data.ids));
+    if (!selfWine && !runtime.queries.rescueEnabled(s, actor, d.target)) throw new Error('当前回合禁止该角色使用桃救援');
     spendCard(s, actor, data.ids, selfWine ? 'jiu' : 'tao', 'use', runtime, data.transformation);
     if (data.transformation) emitEvent(s, 'transformationUsed', { ability: data.transformation,
       label: runtime.content.skillForTransformation(data.transformation).label ?? data.transformation,
-      owner: actor, produces: 'tao' });
+      owner: actor, produces: selfWine ? 'jiu' : 'tao' });
     vitals.recover(s, d.target, selfWine ? 1 : runtime.queries.rescueRecovery(s, actor, d.target), actor);
     emitEvent(s, 'rescued', { source: actor, target: d.target });
     d.passed = [];

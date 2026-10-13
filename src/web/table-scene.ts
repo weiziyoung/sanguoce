@@ -11,7 +11,7 @@ import { TableAssets } from './assets.ts';
 import type { GameAudio } from './audio.ts';
 import { TableHud, node, type SkillTile } from './hud.ts';
 import { TableEffects } from './effects.ts';
-import { HAND, PLAY_AREA, EQUIPMENT_ROW, equipmentRowPosition, deckPosition, handPosition, handCardPosition, zonePickerPosition, playerPosition, playerPortraitSize, judgementMarkerPosition, inside, type Point } from './layout.ts';
+import { HAND, PLAY_AREA, EQUIPMENT_ROW, equipmentRowPosition, deckPosition, handPosition, handCardPosition, zonePickerPosition, discardPickerPosition, playerPosition, playerPortraitSize, judgementMarkerPosition, inside, type Point } from './layout.ts';
 import { background, panel, portraitArt, cardView, cardBack, equipmentIcon, text, COLORS } from './visuals.ts';
 import { zoneCardEffect } from './zone-card-effect.ts';
 import { discardTableCard } from './discard-table-card.ts';
@@ -46,7 +46,7 @@ export class TableScene extends Phaser.Scene {
   private hiddenBacks = new Map<number, Phaser.GameObjects.Container>();
   private chainViews = new Map<number, Phaser.GameObjects.Graphics>();
   private wineViews = new Map<number, { art: WinePortraitArt; status: Phaser.GameObjects.Text; drunk: boolean; chained: boolean }>();
-  private vitalsViews = new Map<number, { pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text }>();
+  private vitalsViews = new Map<number, { pips: Phaser.GameObjects.Image[]; death: Phaser.GameObjects.Text; nameX: number; nameBottom: number; bottom: number }>();
   private vitals = new PlayerVitalsPresenter((id, state) => this.renderVitals(id, state));
   private pendingHandOrigin: Point | null = null;
   private highlights!: Phaser.GameObjects.Graphics;
@@ -82,7 +82,7 @@ export class TableScene extends Phaser.Scene {
     this.assets.prepareHealthPips(this);
     this.roleNotes.clear();
     background(this);
-    this.hud = new TableHud();
+    this.hud = new TableHud(this.assets.manifest.generals);
     this.effects = new TableEffects(this, this.assets, this.audio);
     this.highlights = this.add.graphics().setDepth(100);
     this.arrow = this.add.graphics().setDepth(950);
@@ -96,7 +96,7 @@ export class TableScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.disposed = true; this.ai.dispose(); unsubscribe();
       node('ai-retry').onclick = null; node('ai-configure').onclick = null;
-      this.effects.dispose(); this.hud.preview();
+      this.effects.dispose(); this.hud.preview(); this.hud.dispose();
     });
     this.lastEvent = Math.max(0, ...this.session.observation.events.map(e => e.id));
     bindSceneSettings(this, this.settings);
@@ -108,11 +108,18 @@ export class TableScene extends Phaser.Scene {
     return playerPosition(id, [obs.self, ...obs.others].map(p => p.id), obs.self.id);
   }
   private get ready(): boolean { return !this.settings.open && !this.busy && Boolean(this.model) && !this.dragging; }
-  private clear() { if (!this.ready) return; this.model?.clear(); this.updateSelection(); }
+  private clear() { if (!this.ready) return; this.model?.clear(); this.redraw(this.session.observation); }
+  private scope(choice: ActionChoice): void {
+    if (!this.ready || !this.model) return;
+    this.model.scope(choice);
+    // Conversions can introduce public cost cards absent from the ordinary play view.
+    this.redraw(this.session.observation);
+  }
   private skills(): SkillTile[] {
     const general = this.session.observation.self.general;
     if (!general) return [];
-    const definitions = allContent.general(general).abilities.map(id => allContent.requireSkill(id));
+    const player = this.session.observation.self;
+    const definitions = [...new Set([...allContent.general(general).abilities, ...(player.gainedAbilities ?? [])])].map(id => allContent.requireSkill(id));
     // Equipment conversions use the same legal-action projection as general skills.
     const abilityIds = [...new Set(this.model?.leaves.map(c => c.ability).filter((id): id is string => Boolean(id)))];
     for (const id of abilityIds) {
@@ -130,20 +137,20 @@ export class TableScene extends Phaser.Scene {
         seal: skill.lordSkill ? '主公' : skill.active ? '主动' : conversion ? '转化' : automatic ? '自动' : skill.modifier ? '常驻' : '触发',
         passive: !skill.active && !conversion,
         help: STANDARD_SKILL_HELP[skill.id] ?? EQUIPMENT_HELP[skill.id.replace(/^(standard|junzheng)\./, '')] ?? '',
-        detail: this.session.observation.self.spentLimitedSkills?.includes(skill.id) ? '限定技 · 已使用' : resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || conversion ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : skill.modifier ? '常驻生效' : '等待触发时机',
+        detail: player.generalSkillsDisabled ? '断肠 · 已失效' : player.awakenedSkills?.includes(skill.id) ? '觉醒技 · 已觉醒' : this.session.observation.self.spentLimitedSkills?.includes(skill.id) ? '限定技 · 已使用' : resolving ? '正在结算 · 按提示操作' : skill.lordSkill && this.session.mode === 'duel' ? '主公技 · 本局不可用' : matches.length ? selected ? skill.id === 'standard.tuxi' ? '选择目标 · 确认发动' : '已发动 · 选择牌 / 目标' : '点击发动' : skill.active || conversion ? unavailableSkillDetail(skill.id, this.session.observation) : automatic ? '自动触发' : skill.modifier ? '常驻生效' : '等待触发时机',
         choose: () => {
           if (!this.ready || !matches.length) return;
           if (selected) { this.clear(); return; }
           if (matches.length === 1 && !matches[0].cardIds.length && !matches[0].targetIds.length) { void this.submit(matches[0]); return; }
-          this.model!.scope({ id: `ui:${skill.id}`, label: skill.label ?? skill.id, cardIds: [], targetIds: [], children: matches });
-          this.updateSelection();
+          this.scope({ id: `ui:${skill.id}`, label: skill.label ?? skill.id, ability: skill.id,
+            cardIds: [], targetIds: [], children: matches });
         } };
     });
   }
   private renderHud() {
     this.hud.render(this.session.observation, this.model, this.busy, this.skills(),
       c => { void this.submit(c); }, choices => { void this.run(choices); }, () => this.clear(),
-      choice => { this.model?.scope(choice); this.updateSelection(); });
+      choice => this.scope(choice));
     if (this.aiPaused && !this.busy) node('prompt').textContent = 'AI 决策暂停 · 请重试或修改设置';
   }
   private async refresh() {
@@ -222,7 +229,7 @@ export class TableScene extends Phaser.Scene {
       this.audio.finish(this.assets.manifest.systemAudio.game_end);
       document.getElementById('outside-mute')?.classList.remove('hidden');
       document.getElementById('outside-settings')?.classList.remove('hidden');
-      showSettlement(obs, this.session.mode, this.session.gameDocument());
+      showSettlement(obs, this.session.mode, this.session.gameDocument(), this.assets.manifest.generals);
     }
   }
   private async run(choice?: ActionChoice | ActionChoice[]) {
@@ -341,16 +348,18 @@ export class TableScene extends Phaser.Scene {
       art.setAlpha(0.4);
       this.track(text(this, x, y, '背面朝上', 22, '#e7d5af').setDepth(4));
     }
+    const fields = player.piles?.['mountain.tuntian'] ?? [];
+    const avatar = player.huashen;
+    const badges = [fields.length ? `田 ${fields.length}` : '', avatar ? `化身 ${avatar.selected ? allContent.general(avatar.selected).label : ''} · ${avatar.count}` : '', player.generalSkillsDisabled ? '断肠' : '', player.awakenedSkills?.length ? '已觉醒' : ''].filter(Boolean);
+    if (badges.length) {
+      const label = this.track(text(this, x, self ? y - h / 2 - 23 : y + h / 2 + (player.judge.length ? 43 : 15), badges.join(' · '), 13, '#e6c27c').setDepth(9));
+      label.setWordWrapWidth(w + 45);
+    }
     const buqu = player.piles?.['wind.buqu'] ?? [];
     if (buqu.length) {
       const buquY = self ? y - h / 2 - 18 : y + h / 2 + (player.judge.length ? 44 : 14);
       const label = this.track(text(this, x, buquY, `不屈 ${player.hp}体力 · ${buqu.map(c => c.rank).join(' / ')}`, 14, '#e6c27c').setDepth(9));
       label.setWordWrapWidth(w + 30);
-      if (self && this.model?.decision.kind === 'contentChoice' &&
-        (this.model.decision.context as { timing?: string }).timing === 'remove') {
-        const gap = Math.min(82, 1000 / buqu.length);
-        buqu.forEach((card, i) => this.makeCard(card, 800 + (i - (buqu.length - 1) / 2) * gap, 475, 76, 106, 50 + i, false));
-      }
     }
     this.track(this.add.rectangle(x - w / 2 + 19, y, 34, h - 12, 0x102422, 0.96));
     const nameX = x - w / 2 + 19;
@@ -362,7 +371,7 @@ export class TableScene extends Phaser.Scene {
       this.track(this.add.image(nameX, pipLayout[i].y, healthPipTexture(state))
         .setDisplaySize(pipLayout[i].size, pipLayout[i].size)));
     const death = this.track(text(this, x, y, '阵 亡', 40, '#c78c7b').setDepth(75).setVisible(!player.alive));
-    this.vitalsViews.set(player.id, { pips, death });
+    this.vitalsViews.set(player.id, { pips, death, nameX, nameBottom: name.y + name.height, bottom: y + h / 2 });
     const chain = this.track(portraitChain(this, x, y, w, h).setDepth(6).setVisible(Boolean(player.alive && player.chained)));
     this.chainViews.set(player.id, chain);
     const status = this.track(text(this, x + 15, y - h / 2 + 48,
@@ -401,7 +410,7 @@ export class TableScene extends Phaser.Scene {
     hit.on('pointerup', (p: Phaser.Input.Pointer) => { if (p.leftButtonReleased() && this.ready && this.model?.selectTarget(player.id)) this.updateSelection(); });
     hit.on('pointerover', () => {
       if (this.dragging || this.model?.nextTargets.includes(player.id)) return;
-      const abilities = player.general ? allContent.general(player.general).abilities : [];
+      const abilities = [...new Set([...(player.general ? allContent.general(player.general).abilities : []), ...(player.gainedAbilities ?? [])])];
       this.hud.preview(this.assets.manifest.generals[player.general ?? ''],
         `${player.label} · ${player.general ? allContent.general(player.general).label : '武将'}`,
         abilities.map(id => ({ title: allContent.requireSkill(id).label ?? id,
@@ -425,8 +434,7 @@ export class TableScene extends Phaser.Scene {
       marker.on('pointerout', () => { marker.setScale(1); this.hud.preview(); });
       marker.on('pointerup', (pointer: Phaser.Input.Pointer) => {
         if (!pointer.leftButtonReleased() || !this.ready) return;
-        const choice = this.model?.leaves.find(item => item.zone === 'judge' && item.cardIds.includes(card.id));
-        if (choice) void this.submit(choice);
+        this.chooseCard(card.id);
       });
     });
   }
@@ -434,7 +442,12 @@ export class TableScene extends Phaser.Scene {
     const view = this.vitalsViews.get(id);
     if (!view) return;
     const pips = healthPips(state);
-    view.pips.forEach((pip, index) => pip.setTexture(healthPipTexture(pips[index] ?? 'empty')));
+    const positions = healthPipLayout(view.nameBottom, view.bottom, state.maxHp);
+    view.pips.forEach((pip, index) => {
+      const pos = positions[index];
+      pip.setVisible(Boolean(pos));
+      if (pos) pip.setPosition(view.nameX, pos.y).setDisplaySize(pos.size, pos.size).setTexture(healthPipTexture(pips[index] ?? 'empty'));
+    });
     view.death.setVisible(!state.alive);
   }
   private equipmentLabel(card: Card, slot: string, pos: Point & { width: number }): void {
@@ -465,18 +478,21 @@ export class TableScene extends Phaser.Scene {
     chip.on('pointerout', () => { label.setColor('#f3e4bd'); this.hud.preview(); });
     chip.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (!pointer.leftButtonReleased() || !this.ready) return;
-      const choice = this.model?.leaves.find(item => item.zone === 'equip' && item.cardIds.includes(card.id));
-      if (choice) void this.submit(choice);
-      else if (this.model?.selectableCards.includes(card.id) && this.model.selectCard(card.id)) this.updateSelection();
+      this.chooseCard(card.id);
     });
   }
   private zonePicker(picks: readonly ZonePick[], withJudgement = false) {
     picks.forEach((pick, index) => {
-      const { x, y, width, height } = zonePickerPosition(index, picks.length, withJudgement);
+      const { x, y, width, height } = pick.zone === 'discard' ? discardPickerPosition(index, picks.length) :
+        zonePickerPosition(index, picks.length, withJudgement);
       if (pick.card) {
         this.makeCard(pick.card, x, y, width, height, 50 + index, false);
+        // Guzheng is explained once by the HUD; repeated captions crowd the
+        // picker when several cards from the discard phase are offered.
+        if (pick.zone === 'discard') return;
+        const owner = pick.owner !== undefined ? [this.session.observation.self, ...this.session.observation.others].find(player => player.id === pick.owner) : undefined;
         this.track(text(this, x, y + height / 2 + (picks.length > 10 ? 4 : 16),
-          pick.zone === 'equip' ? this.model?.decision.kind === 'guanshi' ? '装备 · 弃牌费用' : '装备区' : '判定区',
+          owner ? `${owner.label} · ${pick.zone === 'equip' ? '装备区' : '判定区'}` : pick.zone === 'equip' ? this.model?.decision.kind === 'guanshi' ? '装备 · 弃牌费用' : '装备区' : pick.zone === 'pile' ? pick.pile === 'mountain.tuntian' ? '田' : pick.pile === 'wind.buqu' ? '不屈牌' : '技能牌' : '判定区',
           15, '#c7e2cb').setDepth(51 + index));
         return;
       }
@@ -489,6 +505,13 @@ export class TableScene extends Phaser.Scene {
       this.track(text(this, x, y + height / 2 + (picks.length > 10 ? 4 : 16),
         `暗手牌 ${pick.choice.slot! + 1}`, 15, '#c7e2cb').setDepth(51 + index));
     });
+  }
+  private chooseCard(id: number): void {
+    if (!this.ready || !this.model) return;
+    const immediate = this.model.scoped.find(choice => choice.cardIds.includes(id) &&
+      (choice.zone && choice.zone !== 'hand' || choice.actionType === 'toggle'));
+    if (immediate) { void this.submit(immediate); return; }
+    if (this.model.selectCard(id)) this.updateSelection();
   }
   private makeCard(card: Card, x: number, y: number, width: number, height: number,
     order: number, draggable = true): CardSprite {
@@ -505,11 +528,7 @@ export class TableScene extends Phaser.Scene {
     view.on('pointerout', () => { if (this.dragging) return; this.hud.preview(); this.updateSelection(); });
     view.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (!pointer.leftButtonReleased() || pointer.getDistance() >= this.input.dragDistanceThreshold || !this.ready) return;
-      const zone = this.model?.leaves.find(choice => choice.zone && choice.zone !== 'hand' && choice.cardIds.includes(card.id));
-      if (zone) { void this.submit(zone); return; }
-      const toggle = this.model?.scoped.find(c => c.actionType === 'toggle' && c.cardIds.includes(card.id));
-      if (toggle) { void this.submit(toggle); return; }
-      if (this.model?.selectCard(card.id)) this.updateSelection();
+      this.chooseCard(card.id);
     });
     return sprite;
   }

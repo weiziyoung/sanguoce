@@ -10,6 +10,7 @@ export interface TriggerDefinition<K extends TriggerKind = TriggerKind> {
   /** If set, the owner must currently possess this registered ability. */
   readonly grantedBy?: string;
   readonly optional?: boolean;
+  readonly announce?: boolean;
   readonly label?: string;
   repeats?(state: ReadonlyGameState, event: DeepReadonly<EventOf<K>>, owner: number): number;
   owners(state: ReadonlyGameState, event: DeepReadonly<EventOf<K>>): readonly number[];

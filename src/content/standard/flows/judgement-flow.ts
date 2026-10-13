@@ -11,9 +11,9 @@ import { JudgementFlow } from '../../../rules/flows/judgement-flow.ts';
 import type { ContentRuntime } from '../../../rules/content-runtime.ts';
 import { getStandardRuntime } from '../runtime.ts';
 
-export function moveLightning(s: GameState, owner: number, cid: number): void {
+export function moveLightning(s: GameState, owner: number, cid: number, runtime: ContentRuntime = getStandardRuntime()): void {
   let next = nextAlive(s, owner);
-  while (next !== owner && person(s, next).judge.some(id => name(s, id) === "shandian")) {
+  while (next !== owner && (person(s, next).judge.some(id => name(s, id) === "shandian") || !runtime.queries.canTarget(s, owner, next, "shandian", false, s.cards[cid]))) {
     next = nextAlive(s, next);
   }
   if (next === owner) {
@@ -25,10 +25,10 @@ export function moveLightning(s: GameState, owner: number, cid: number): void {
   }
 }
 
-export function cancelJudge(s: GameState, owner: number, cid: number): void {
+export function cancelJudge(s: GameState, owner: number, cid: number, runtime: ContentRuntime = getStandardRuntime()): void {
   if (!person(s, owner).judge.includes(cid)) return;
   const cname = name(s, cid);
-  if (cname === "shandian") moveLightning(s, owner, cid);
+  if (cname === "shandian") moveLightning(s, owner, cid, runtime);
   else discardOwned(s, owner, cid);
 }
 
@@ -49,7 +49,7 @@ export function applyDelayedJudgement(s: GameState, owner: number, cid: number, 
       discardOwned(s, owner, cid);
       damage(s, owner, null, 3, null, cid, { nature: 'thunder' });
     } else {
-      moveLightning(s, owner, cid);
+      moveLightning(s, owner, cid, runtime);
     }
   }
 }
@@ -72,8 +72,8 @@ export function handleResolveJudgeTask(s: GameState, task: TaskOf<"resolveJudge"
   }
 }
 
-export function handleCancelJudgeTask(s: GameState, task: TaskOf<"cancelJudge">): void {
-  cancelJudge(s, task.owner, task.cid);
+export function handleCancelJudgeTask(s: GameState, task: TaskOf<"cancelJudge">, runtime: ContentRuntime = getStandardRuntime()): void {
+  cancelJudge(s, task.owner, task.cid, runtime);
 }
 
 export function handleApplyDelayedJudgementTask(s: GameState, task: TaskOf<'applyDelayedJudgement'>, runtime: ContentRuntime = getStandardRuntime()): void {

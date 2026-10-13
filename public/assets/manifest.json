@@ -84,7 +84,23 @@
     "fire.taishici": "/assets/generals/fire.taishici.png",
     "fire.yuanshao": "/assets/generals/fire.yuanshao.png",
     "fire.yanliangwenchou": "/assets/generals/fire.yanliangwenchou.png",
-    "fire.pangde": "/assets/generals/fire.pangde.png"
+    "fire.pangde": "/assets/generals/fire.pangde.png",
+    "forest.caopi": "/assets/generals/forest.caopi.png",
+    "forest.xuhuang": "/assets/generals/forest.xuhuang.png",
+    "forest.sunjian": "/assets/generals/forest.sunjian.png",
+    "forest.lusu": "/assets/generals/forest.lusu.png",
+    "forest.menghuo": "/assets/generals/forest.menghuo.png",
+    "forest.zhurong": "/assets/generals/forest.zhurong.png",
+    "forest.dongzhuo": "/assets/generals/forest.dongzhuo.png",
+    "forest.jiaxu": "/assets/generals/forest.jiaxu.png",
+    "mountain.dengai": "/assets/generals/mountain.dengai.png",
+    "mountain.zhanghe": "/assets/generals/mountain.zhanghe.png",
+    "mountain.jiangwei": "/assets/generals/mountain.jiangwei.png",
+    "mountain.liushan": "/assets/generals/mountain.liushan.png",
+    "mountain.sunce": "/assets/generals/mountain.sunce.png",
+    "mountain.zhangzhaozhanghong": "/assets/generals/mountain.zhangzhaozhanghong.png",
+    "mountain.caiwenji": "/assets/generals/mountain.caiwenji.png",
+    "mountain.zuoci": "/assets/generals/mountain.zuoci.png"
   },
   "cardAudio": {
     "sha": {
@@ -798,6 +814,284 @@
       "aliases": {},
       "death": "/assets/audio/generals/fire.pangde/death.mp3",
       "selection": "/assets/audio/generals/fire.pangde/fire.mengjin-1.mp3"
+    },
+    "forest.caopi": {
+      "skills": {
+        "forest.xingshang": [
+          "/assets/audio/generals/forest.caopi/forest.xingshang-1.mp3",
+          "/assets/audio/generals/forest.caopi/forest.xingshang-2.mp3"
+        ],
+        "forest.fangzhu": [
+          "/assets/audio/generals/forest.caopi/forest.fangzhu-1.mp3",
+          "/assets/audio/generals/forest.caopi/forest.fangzhu-2.mp3"
+        ],
+        "forest.songwei": [
+          "/assets/audio/generals/forest.caopi/forest.songwei-1.mp3",
+          "/assets/audio/generals/forest.caopi/forest.songwei-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.caopi/death.mp3",
+      "selection": "/assets/audio/generals/forest.caopi/forest.xingshang-1.mp3"
+    },
+    "forest.xuhuang": {
+      "skills": {
+        "forest.duanliang": [
+          "/assets/audio/generals/forest.xuhuang/forest.duanliang-1.mp3",
+          "/assets/audio/generals/forest.xuhuang/forest.duanliang-2.mp3"
+        ]
+      },
+      "aliases": {
+        "forest.duanliang": "forest.duanliang"
+      },
+      "death": "/assets/audio/generals/forest.xuhuang/death.mp3",
+      "selection": "/assets/audio/generals/forest.xuhuang/forest.duanliang-1.mp3"
+    },
+    "forest.sunjian": {
+      "skills": {
+        "forest.yinghun": [
+          "/assets/audio/generals/forest.sunjian/forest.yinghun-1.mp3",
+          "/assets/audio/generals/forest.sunjian/forest.yinghun-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.sunjian/death.mp3",
+      "selection": "/assets/audio/generals/forest.sunjian/forest.yinghun-1.mp3"
+    },
+    "forest.lusu": {
+      "skills": {
+        "forest.haoshi": [
+          "/assets/audio/generals/forest.lusu/forest.haoshi-1.mp3",
+          "/assets/audio/generals/forest.lusu/forest.haoshi-2.mp3"
+        ],
+        "forest.dimeng": [
+          "/assets/audio/generals/forest.lusu/forest.dimeng-1.mp3",
+          "/assets/audio/generals/forest.lusu/forest.dimeng-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.lusu/death.mp3",
+      "selection": "/assets/audio/generals/forest.lusu/forest.haoshi-1.mp3"
+    },
+    "forest.menghuo": {
+      "skills": {
+        "forest.huoshou": [
+          "/assets/audio/generals/forest.menghuo/forest.huoshou-1.mp3",
+          "/assets/audio/generals/forest.menghuo/forest.huoshou-2.mp3"
+        ],
+        "forest.zaiqi": [
+          "/assets/audio/generals/forest.menghuo/forest.zaiqi-1.mp3",
+          "/assets/audio/generals/forest.menghuo/forest.zaiqi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.menghuo/death.mp3",
+      "selection": "/assets/audio/generals/forest.menghuo/forest.huoshou-1.mp3"
+    },
+    "forest.zhurong": {
+      "skills": {
+        "forest.juxiang": [
+          "/assets/audio/generals/forest.zhurong/forest.juxiang-1.mp3",
+          "/assets/audio/generals/forest.zhurong/forest.juxiang-2.mp3"
+        ],
+        "forest.lieren": [
+          "/assets/audio/generals/forest.zhurong/forest.lieren-1.mp3",
+          "/assets/audio/generals/forest.zhurong/forest.lieren-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.zhurong/death.mp3",
+      "selection": "/assets/audio/generals/forest.zhurong/forest.juxiang-1.mp3"
+    },
+    "forest.dongzhuo": {
+      "skills": {
+        "forest.jiuchi": [
+          "/assets/audio/generals/forest.dongzhuo/forest.jiuchi-1.mp3",
+          "/assets/audio/generals/forest.dongzhuo/forest.jiuchi-2.mp3"
+        ],
+        "forest.roulin": [
+          "/assets/audio/generals/forest.dongzhuo/forest.roulin-1.mp3",
+          "/assets/audio/generals/forest.dongzhuo/forest.roulin-2.mp3"
+        ],
+        "forest.benghuai": [
+          "/assets/audio/generals/forest.dongzhuo/forest.benghuai-1.mp3",
+          "/assets/audio/generals/forest.dongzhuo/forest.benghuai-2.mp3"
+        ],
+        "forest.baonue": [
+          "/assets/audio/generals/forest.dongzhuo/forest.baonue-1.mp3",
+          "/assets/audio/generals/forest.dongzhuo/forest.baonue-2.mp3"
+        ]
+      },
+      "aliases": {
+        "forest.jiuchi": "forest.jiuchi"
+      },
+      "death": "/assets/audio/generals/forest.dongzhuo/death.mp3",
+      "selection": "/assets/audio/generals/forest.dongzhuo/forest.jiuchi-1.mp3"
+    },
+    "forest.jiaxu": {
+      "skills": {
+        "forest.wansha": [
+          "/assets/audio/generals/forest.jiaxu/forest.wansha-1.mp3",
+          "/assets/audio/generals/forest.jiaxu/forest.wansha-2.mp3"
+        ],
+        "forest.luanwu": [
+          "/assets/audio/generals/forest.jiaxu/forest.luanwu-1.mp3",
+          "/assets/audio/generals/forest.jiaxu/forest.luanwu-2.mp3"
+        ],
+        "forest.weimu": [
+          "/assets/audio/generals/forest.jiaxu/forest.weimu-1.mp3",
+          "/assets/audio/generals/forest.jiaxu/forest.weimu-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/forest.jiaxu/death.mp3",
+      "selection": "/assets/audio/generals/forest.jiaxu/forest.wansha-1.mp3"
+    },
+    "mountain.dengai": {
+      "skills": {
+        "mountain.tuntian": [
+          "/assets/audio/generals/mountain.dengai/mountain.tuntian-1.mp3",
+          "/assets/audio/generals/mountain.dengai/mountain.tuntian-2.mp3"
+        ],
+        "mountain.zaoxian": [
+          "/assets/audio/generals/mountain.dengai/mountain.zaoxian-1.mp3",
+          "/assets/audio/generals/mountain.dengai/mountain.zaoxian-2.mp3"
+        ],
+        "mountain.jixi": [
+          "/assets/audio/generals/mountain.dengai/mountain.jixi-1.mp3",
+          "/assets/audio/generals/mountain.dengai/mountain.jixi-2.mp3"
+        ]
+      },
+      "aliases": {
+        "mountain.jixi": "mountain.jixi"
+      },
+      "death": "/assets/audio/generals/mountain.dengai/death.mp3",
+      "selection": "/assets/audio/generals/mountain.dengai/mountain.tuntian-1.mp3"
+    },
+    "mountain.zhanghe": {
+      "skills": {
+        "mountain.qiaobian": [
+          "/assets/audio/generals/mountain.zhanghe/mountain.qiaobian-1.mp3",
+          "/assets/audio/generals/mountain.zhanghe/mountain.qiaobian-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.zhanghe/death.mp3",
+      "selection": "/assets/audio/generals/mountain.zhanghe/mountain.qiaobian-1.mp3"
+    },
+    "mountain.jiangwei": {
+      "skills": {
+        "mountain.tiaoxin": [
+          "/assets/audio/generals/mountain.jiangwei/mountain.tiaoxin-1.mp3",
+          "/assets/audio/generals/mountain.jiangwei/mountain.tiaoxin-2.mp3"
+        ],
+        "mountain.zhiji": [
+          "/assets/audio/generals/mountain.jiangwei/mountain.zhiji-1.mp3",
+          "/assets/audio/generals/mountain.jiangwei/mountain.zhiji-2.mp3"
+        ],
+        "standard.guanxing": [
+          "/assets/audio/generals/mountain.jiangwei/standard.guanxing-1.mp3",
+          "/assets/audio/generals/mountain.jiangwei/standard.guanxing-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.jiangwei/death.mp3",
+      "selection": "/assets/audio/generals/mountain.jiangwei/mountain.tiaoxin-1.mp3"
+    },
+    "mountain.liushan": {
+      "skills": {
+        "mountain.xiangle": [
+          "/assets/audio/generals/mountain.liushan/mountain.xiangle-1.mp3",
+          "/assets/audio/generals/mountain.liushan/mountain.xiangle-2.mp3"
+        ],
+        "mountain.fangquan": [
+          "/assets/audio/generals/mountain.liushan/mountain.fangquan-1.mp3",
+          "/assets/audio/generals/mountain.liushan/mountain.fangquan-2.mp3"
+        ],
+        "mountain.ruoyu": [
+          "/assets/audio/generals/mountain.liushan/mountain.ruoyu-1.mp3",
+          "/assets/audio/generals/mountain.liushan/mountain.ruoyu-2.mp3"
+        ],
+        "standard.jijiang": [
+          "/assets/audio/generals/mountain.liushan/standard.jijiang-1.mp3",
+          "/assets/audio/generals/mountain.liushan/standard.jijiang-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.liushan/death.mp3",
+      "selection": "/assets/audio/generals/mountain.liushan/mountain.xiangle-1.mp3"
+    },
+    "mountain.sunce": {
+      "skills": {
+        "mountain.jiang": [
+          "/assets/audio/generals/mountain.sunce/mountain.jiang-1.mp3",
+          "/assets/audio/generals/mountain.sunce/mountain.jiang-2.mp3"
+        ],
+        "mountain.hunzi": [
+          "/assets/audio/generals/mountain.sunce/mountain.hunzi-1.mp3",
+          "/assets/audio/generals/mountain.sunce/mountain.hunzi-2.mp3"
+        ],
+        "mountain.zhiba": [
+          "/assets/audio/generals/mountain.sunce/mountain.zhiba-1.mp3",
+          "/assets/audio/generals/mountain.sunce/mountain.zhiba-2.mp3"
+        ],
+        "standard.yingzi": [
+          "/assets/audio/generals/mountain.sunce/standard.yingzi-1.mp3",
+          "/assets/audio/generals/mountain.sunce/standard.yingzi-2.mp3"
+        ],
+        "mountain.yinghun": [
+          "/assets/audio/generals/mountain.sunce/mountain.yinghun-1.mp3",
+          "/assets/audio/generals/mountain.sunce/mountain.yinghun-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.sunce/death.mp3",
+      "selection": "/assets/audio/generals/mountain.sunce/mountain.jiang-1.mp3"
+    },
+    "mountain.zhangzhaozhanghong": {
+      "skills": {
+        "mountain.zhijian": [
+          "/assets/audio/generals/mountain.zhangzhaozhanghong/mountain.zhijian-1.mp3",
+          "/assets/audio/generals/mountain.zhangzhaozhanghong/mountain.zhijian-2.mp3"
+        ],
+        "mountain.guzheng": [
+          "/assets/audio/generals/mountain.zhangzhaozhanghong/mountain.guzheng-1.mp3",
+          "/assets/audio/generals/mountain.zhangzhaozhanghong/mountain.guzheng-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.zhangzhaozhanghong/death.mp3",
+      "selection": "/assets/audio/generals/mountain.zhangzhaozhanghong/mountain.zhijian-1.mp3"
+    },
+    "mountain.caiwenji": {
+      "skills": {
+        "mountain.beige": [
+          "/assets/audio/generals/mountain.caiwenji/mountain.beige-1.mp3",
+          "/assets/audio/generals/mountain.caiwenji/mountain.beige-2.mp3"
+        ],
+        "mountain.duanchang": [
+          "/assets/audio/generals/mountain.caiwenji/mountain.duanchang-1.mp3",
+          "/assets/audio/generals/mountain.caiwenji/mountain.duanchang-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.caiwenji/death.mp3",
+      "selection": "/assets/audio/generals/mountain.caiwenji/mountain.beige-1.mp3"
+    },
+    "mountain.zuoci": {
+      "skills": {
+        "mountain.huashen": [
+          "/assets/audio/generals/mountain.zuoci/mountain.huashen-1.mp3",
+          "/assets/audio/generals/mountain.zuoci/mountain.huashen-2.mp3"
+        ],
+        "mountain.xinsheng": [
+          "/assets/audio/generals/mountain.zuoci/mountain.xinsheng-1.mp3",
+          "/assets/audio/generals/mountain.zuoci/mountain.xinsheng-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/mountain.zuoci/death.mp3",
+      "selection": "/assets/audio/generals/mountain.zuoci/mountain.huashen-1.mp3"
     }
   },
   "systemAudio": {

@@ -23,7 +23,7 @@ export interface GameConfig {
   /** Standard remains available for reproducible legacy games. */
   cards?: 'standard' | 'junzheng';
   /** Optional general expansions; standard generals are always included. */
-  generalPacks?: ('wind' | 'fire')[];
+  generalPacks?: ('wind' | 'fire' | 'forest' | 'mountain')[];
   deck?: readonly Omit<Card, "id">[];
 }
 export interface Choice {
@@ -53,10 +53,17 @@ export interface VisiblePlayer {
   handCount: number;
   chained?: boolean; drunk?: number; faceDown?: boolean; spentLimitedSkills?: string[];
   piles?: Record<string, Card[]>;
+  gainedAbilities?: string[]; generalSkillsDisabled?: boolean; awakenedSkills?: string[];
+  huashen?: { count: number; generals?: string[]; selected?: string; ability?: string };
   /** Omitted when the viewer is not entitled to know the role. */
   role?: string;
   equip: Record<string, Card | null>;
   judge: Card[];
+}
+export interface FailedProxyRequest {
+  ability: string;
+  turn: number;
+  supporters: { id: number; handCount: number; equipmentIds: number[] }[];
 }
 export interface Observation {
   events: import("./src/domain/events.ts").VisibleEvent[];
@@ -79,6 +86,8 @@ export interface Observation {
   jiuUsed?: number;
   /** Viewing player's current-turn skill progress, without other players' private state. */
   skillProgress?: { ability: string; count: number }[];
+  /** The viewer's failed lord requests, using only public supporter counts/equipment. */
+  failedProxyRequests?: FailedProxyRequest[];
   nullify: { source: PlayerId; target: PlayerId; cname: string; parity: number; cardLabel?: string } | null;
   log: string[];
   outcome: GameOutcome;

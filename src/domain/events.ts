@@ -3,6 +3,7 @@ import type { AttackContext } from './state.ts';
 import type { CardZone } from './zones.ts';
 
 export interface TriggerSignals {
+  attackUsed: { source: number; targets: number[]; card: CardLike };
   attackTargeted: AttackContext;
   attackMissed: AttackContext;
   beforeAttackDamage: AttackContext;
@@ -16,8 +17,14 @@ export type TriggerSignal = { [K in TriggerKind]: { kind: K; data: TriggerSignal
 export type DiscardReason = 'discard' | 'use' | 'respond' | 'convertToSha';
 export interface ZoneSelection { cause: CardName; fromZone: 'hand' | 'equip' | 'judge'; }
 export interface EventData extends TriggerSignals {
+  skillsChanged: { player: number; gained: string[]; disabled: boolean };
+  awakened: { player: number; ability: string };
+  huashenChanged: { player: number; general: string; ability: string };
+  discardPhaseStarted: { player: number };
+  extraTurnStarted: { player: number };
   cardsMoved: { moves: { card: number; from: CardZone; to: CardZone }[] };
   hpChanged: { player: number; before: number; after: number };
+  maxHpChanged: { player: number; before: number; after: number; hp: number };
   hpLost: { player: number; amount: number };
   triggerInvoked: { definition: string; owner: number; eventId: number };
   chainChanged: { player: number; chained: boolean };
@@ -71,7 +78,7 @@ export type EventOf<K extends keyof EventData> = {
 };
 export type RuleEvent = { [K in keyof EventData]: EventOf<K> }[keyof EventData];
 export type TriggerEvent = { [K in TriggerKind]: EventOf<K> }[TriggerKind];
-type InternalKind = Exclude<TriggerKind, 'cardUsed'> | 'cardsMoved' | 'hpChanged' | 'triggerInvoked';
+type InternalKind = Exclude<TriggerKind, 'cardUsed'> | 'cardsMoved' | 'hpChanged' | 'triggerInvoked' | 'discardPhaseStarted';
 export type VisibleEventData = Omit<EventData, InternalKind | 'gained'> & {
   gained: { from: number; to: number; card: number | null; selection?: ZoneSelection; cause?: string };
 };

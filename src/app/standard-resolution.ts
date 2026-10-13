@@ -1,3 +1,4 @@
+import { emitEvent } from '../domain/event-journal.ts';
 import { offerContentChoice, chooseContent } from '../rules/flows/content-choice-flow.ts';
 import { prepareDamage } from '../rules/flows/damage-flow.ts';
 import { prepareAttack, launchAttack, chooseAttackPreparation } from '../rules/flows/attack-use-flow.ts';
@@ -39,7 +40,7 @@ import { AttackRedirectFlow } from '../rules/flows/attack-redirect-flow.ts';
 export function createStandardResolution(modes: ModeRegistry, triggers: TriggerRegistry = standardTriggers,
   runtime: ContentRuntime = new ContentRuntime(standardContent, triggers)) {
   const resolver = new TriggerResolver(triggers, runtime.abilities, runtime);
-  const deaths = new DeathFlow(modes);
+  const deaths = new DeathFlow(modes, runtime);
   const skills = new SkillFlow(runtime);
   const judgements = new JudgementFlow(runtime);
   const distributions = new DistributionFlow();
@@ -86,6 +87,8 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     responsePoll: s => handleResponsePollTask(s, runtime),
     proxyResponsePoll: s => proxies.poll(s),
     proxyResponseSuccess: s => responseSuccess(s, resolutionStack.require(s, 'response').data.context),
+    applyProxyBaguaJudgement: s => proxies.applyBagua(s),
+    proxyResponseProvided: s => proxies.provided(s),
     pindianOffer: s => pindian.offer(s),
     pindianResolve: s => pindian.resolve(s),
     contentChoiceOffer: s => offerContentChoice(s, runtime),
@@ -93,7 +96,12 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     contentHpChanged: (s, task) => {
       for (const skill of runtime.abilities.list(s, task.player)) skill.hpChanged?.(s, task.player, task.before, task.after, runtime);
     },
+    gameStartSkill: (s, task) => runtime.content.requireSkill(task.ability).gameStart?.(s, task.owner, runtime),
+    phaseAfter: (s, task) => {
+      for (const p of s.players.filter(p => p.alive)) for (const skill of runtime.abilities.list(s, p.id)) skill.phaseAfter?.(s, p.id, task.phase, runtime);
+    },
     phaseBefore: (s, task) => {
+      if (task.phase === 'discard' && runtime.content.skills().some(skill => skill.phaseAfter)) emitEvent(s, 'discardPhaseStarted', { player: s.active });
       for (const skill of runtime.abilities.list(s, s.active)) if (skill.phaseBefore?.phases.includes(task.phase)) skill.phaseBefore.execute(s, s.active, task.phase, runtime);
     },
     damagePrepare: s => prepareDamage(s, runtime),
@@ -101,6 +109,7 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     dyingPoll: s => promptDying(s, runtime),
     nullifyPoll: s => promptNullify(s, runtime),
     death: (state, task) => deaths.resolve(state, task),
+    deathCleanup: (state, task) => deaths.cleanup(state, task),
     phaseStart: (s, task) => handlePhaseStartTask(s, task, runtime),
     phaseJudge: handlePhaseJudgeTask,
     phaseDraw: (s, task) => handlePhaseDrawTask(s, task, runtime),
@@ -110,8 +119,8 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     phaseEnd: (s, task) => handlePhaseEndTask(s, task, runtime),
     judgeCard: handleJudgeCardTask,
     resolveJudge: (s, task) => handleResolveJudgeTask(s, task, runtime),
-    cancelJudge: handleCancelJudgeTask,
-    finishCard: handleFinishCardTask,
+    cancelJudge: (s, task) => handleCancelJudgeTask(s, task, runtime),
+    finishCard: (s, task) => handleFinishCardTask(s, task, runtime),
     trickTarget: (s, task) => handleTrickTargetTask(s, task, runtime),
     resolveTrick: (s, task) => handleResolveTrickTask(s, task, runtime),
     wuguCleanup: handleWuguCleanupTask,

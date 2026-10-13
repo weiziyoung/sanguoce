@@ -17,12 +17,13 @@ export class PlayerVitalsPresenter {
 
   play(event: VisibleEvent, effect: () => Promise<void>): Promise<void> {
     const player = event.kind === 'damaged' || event.kind === 'died' ? event.data.target :
-      event.kind === 'hpLost' || event.kind === 'recovered' ? event.data.player : undefined;
+      event.kind === 'hpLost' || event.kind === 'recovered' || event.kind === 'maxHpChanged' ? event.data.player : undefined;
     const previous = player === undefined ? undefined : this.states.get(player);
     if (player !== undefined && previous) {
       let next: PlayerVitalsState = previous;
       switch (event.kind) {
         case 'damaged': next = { ...previous, hp: event.data.hp, maxHp: event.data.maxHp }; break;
+        case 'maxHpChanged': next = { ...previous, hp: event.data.hp, maxHp: event.data.after }; break;
         case 'hpLost': next = { ...previous, hp: previous.hp - event.data.amount }; break;
         case 'recovered': next = { ...previous, hp: Math.min(previous.maxHp, previous.hp + event.data.amount) }; break;
         case 'died': next = { ...previous, hp: Math.min(0, previous.hp), alive: false }; break;

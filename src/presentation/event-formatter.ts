@@ -12,11 +12,15 @@ export function formatEvent(event: RuleEvent | VisibleEvent, labels: EventLabels
   const card = (id: number) => cardText(labels.cards[id]);
   const name = (id: string) => NAMES[id] ?? Object.values(labels.cards).find(card => card.name === id)?.label ?? id;
   switch (event.kind) {
+    case 'skillsChanged': return event.data.disabled ? `${player(event.data.player)}失去全部武将技能` : `${player(event.data.player)}获得技能：${event.data.gained.map(id => id.split('.').at(-1)).join('、')}`;
+    case 'awakened': return `${player(event.data.player)}完成觉醒`;
+    case 'huashenChanged': return `${player(event.data.player)}更换化身`;
+    case 'extraTurnStarted': return `${player(event.data.player)}开始额外回合`;
     case 'pindianRevealed': return `${player(event.data.source)}拼点${card(event.data.sourceCard)}，${player(event.data.target)}拼点${card(event.data.targetCard)}：发起者${event.data.won ? '赢' : '没赢'}`;
     case 'turnedOver': return `${player(event.data.player)}将武将牌翻至${event.data.faceDown ? '背面' : '正面'}`;
     case 'turnSkipped': return `${player(event.data.player)}跳过本回合`;
     case 'judgementSkipped': return `${player(event.data.player)}跳过判定阶段`;
-    case 'pileChanged': return `${player(event.data.player)}的不屈牌：${event.data.cards.map(card).join('、') || '无'}`;
+    case 'pileChanged': return `${player(event.data.player)}的${event.data.ability === 'mountain.tuntian' ? '田' : '不屈牌'}：${event.data.cards.map(card).join('、') || '无'}`;
     case 'chainChanged': return `${player(event.data.player)}${event.data.chained ? '进入连环状态' : '解除连环状态'}`;
     case 'wineUsed': return `${player(event.data.player)}饮酒，下一张杀的伤害+${event.data.bonus}`;
     case 'cardRecast': return `${player(event.data.player)}重铸${card(event.data.card)}`;
@@ -30,6 +34,7 @@ export function formatEvent(event: RuleEvent | VisibleEvent, labels: EventLabels
     case 'equipped': return `${player(event.data.player)}${event.data.replaced ? '替换了' : '装备'}${card(event.data.card)}`;
     case 'recovered': return `${player(event.data.player)}回复${event.data.amount}点体力`;
     case 'hpLost': return `${player(event.data.player)}失去${event.data.amount}点体力`;
+    case 'maxHpChanged': return `${player(event.data.player)}的体力上限由${event.data.before}${event.data.after > event.data.before ? '增至' : '减至'}${event.data.after}`;
     case 'damaged': return `${player(event.data.target)}受到${event.data.amount}点${event.data.source === null ? '无来源' : player(event.data.source) + '造成的'}${event.data.nature === 'fire' ? '火焰' : event.data.nature === 'thunder' ? '雷电' : ''}伤害（${event.data.hp}/${event.data.maxHp}）`;
     case 'dying': return `${player(event.data.target)}进入濒死状态`;
     case 'died': return `${player(event.data.target)}阵亡`;

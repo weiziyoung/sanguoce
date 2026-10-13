@@ -38,6 +38,6 @@ export class PindianFlow {
     cardMovement.move(s, [d.targetCard], { kind: 'table' }, d.target);
     emitEvent(s, 'pindianRevealed', { source: d.owner, target: d.target, sourceCard: d.sourceCard, targetCard: d.targetCard, won, ability: d.ability });
     cardMovement.move(s, [d.sourceCard, d.targetCard], { kind: 'discard' });
-    resolutionStack.enqueue(s, { kind: 'contentCallback', ability: d.ability, owner: d.owner, context: { timing: 'pindian', target: d.target, won } });
+    resolutionStack.enqueue(s, { kind: 'contentCallback', ability: d.ability, owner: d.owner, context: { timing: 'pindian', target: d.target, won, selectedIds: [d.sourceCard, d.targetCard] } });
   }
 }

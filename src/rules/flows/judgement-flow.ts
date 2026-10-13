@@ -87,8 +87,7 @@ export class JudgementFlow {
   after(state: GameState): void {
     const frame = resolutionStack.require(state, 'judgement');
     const { owner, reason, finalId } = frame.data;
-    if (finalId === null || !this.runtime.abilities.list(state, owner).some(skill =>
-      skill.trigger?.event === 'judgementApplied')) return;
+    if (finalId === null || !this.runtime.triggers.forEvent('judgementApplied').length) return;
     resolutionStack.enqueue(state, { kind: 'openTriggers', signal: {
       kind: 'judgementApplied', data: { player: owner, reason, card: finalId },
     }, then: [] });

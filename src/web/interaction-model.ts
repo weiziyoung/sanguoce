@@ -29,6 +29,28 @@ export class TableInteraction {
   clear(): void { this.cards = []; this.targets = []; this.focus = null; }
   scope(choice: ActionChoice): void { this.clear(); this.focus = choice; }
 
+  get qiaobianContext(): { timing: string; mode?: string; remaining?: number[] } | null {
+    const context = this.decision.context as { ability?: string; timing: string; mode?: string; remaining?: number[] } | undefined;
+    return this.decision.kind === 'contentChoice' && context?.ability === 'mountain.qiaobian' ? context : null;
+  }
+  private resetTargets(): void {
+    this.targets = [];
+    const context = this.decision.context as { ability?: string } | undefined;
+    if (this.decision.kind === 'contentChoice' && context?.ability === 'mountain.guzheng' && this.cards.length === 1) {
+      const returns = this.scoped.filter(choice => sameCards(choice.cardIds, this.cards));
+      // Guzheng's recipient is fixed by the discard phase, not a second choice.
+      if (returns.length && returns.every(choice => choice.targetIds.length === 1 &&
+        choice.targetIds[0] === returns[0].targetIds[0])) this.targets = [...returns[0].targetIds];
+      return;
+    }
+    if (this.qiaobianContext?.timing !== 'move' || this.cards.length !== 1) return;
+    const moves = this.scoped.filter(choice => sameCards(choice.cardIds, this.cards) && choice.targetIds.length === 2);
+    const sources = new Set(moves.map(choice => choice.targetIds[0]));
+    // The chosen public card already identifies its owner. Preserve the original
+    // legal action's source while asking the player only for the recipient.
+    if (sources.size === 1) this.targets = [moves[0].targetIds[0]];
+  }
+
   get tuxiIntent(): ActionChoice | null {
     if (this.decision.kind !== 'phaseDrawChoice') return null;
     const children = this.leaves.filter(choice => choice.actionType === 'skill' && choice.ability === 'standard.tuxi');
@@ -37,7 +59,10 @@ export class TableInteraction {
   }
   get tuxiActive(): boolean { return this.focus?.id === 'ui:standard.tuxi'; }
   get unorderedTargets(): boolean {
-    return this.tuxiActive || this.decision.kind === 'play' && (
+    const context = this.decision.context as { ability?: string } | undefined;
+    // Dimeng exchanges two peers; their click order does not assign distinct roles.
+    return this.tuxiActive || this.decision.kind === 'skillTarget' && context?.ability === 'forest.dimeng' ||
+      this.decision.kind === 'play' && (
       this.cards.length === 1 && this.unorderedTargetCards.has(this.cards[0]) ||
       this.cards.length > 0 && this.scoped.some(choice => sameCards(choice.cardIds, this.cards) &&
         (choice.actionType === 'virtualSha' || choice.actionType === 'virtualTrick')));
@@ -111,17 +136,24 @@ export class TableInteraction {
       const next = [...this.cards, id];
       this.cards = extend && this.scoped.some(choice => next.every(card => choice.cardIds.includes(card))) ? next : [id];
     }
+    this.resetTargets();
     return true;
   }
 
   dragCard(id: number): boolean {
     if (!this.selectableCards.includes(id)) return false;
     if (!this.cards.includes(id)) this.selectCard(id);
-    this.targets = [];
+    this.resetTargets();
     return true;
   }
 
   selectTarget(id: number): boolean {
+    const context = this.decision.context as { ability?: string } | undefined;
+    if (this.decision.kind === 'contentChoice' && context?.ability === 'mountain.guzheng') return false;
+    if (this.qiaobianContext?.timing === 'move' && this.targets.length === 2 && this.targets[1] === id) {
+      this.targets.pop();
+      return true;
+    }
     if (this.unorderedTargets && this.targets.includes(id)) {
       this.targets = this.targets.filter(target => target !== id);
       return true;

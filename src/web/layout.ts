@@ -98,6 +98,13 @@ export function judgementTablePosition(pickerCount = 0): Point {
 export function zonePickerPosition(index: number, count: number, withJudgement = false): ReturnType<typeof hiddenHandSlot> {
   return hiddenHandSlot(index + (withJudgement ? 1 : 0), count + (withJudgement ? 1 : 0));
 }
+/** Leave space above Guzheng's cards for the prompt and the 26px selection lift. */
+export function discardPickerPosition(index: number, count: number): ReturnType<typeof hiddenHandSlot> {
+  const slot = hiddenHandSlot(index, count);
+  if (count <= 10) return { ...slot, y: 522 };
+  // Large batches use compact rows, clear of both the prompt and the hand area.
+  return { ...slot, y: index < Math.ceil(count / 2) ? 480 : 612, width: 70, height: 96 };
+}
 /** Park a resolving trick clear of the central hand/equipment picker. */
 export function trickTablePosition(cname: string, index: number, count: number, choosingZone: boolean): Point {
   if (choosingZone && cname !== 'wugu') return {

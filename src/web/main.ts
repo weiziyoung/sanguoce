@@ -11,6 +11,9 @@ import { SettingsPanel } from './settings-panel.ts';
 import { resourceUrl, resolveAssetManifest } from './deployment.ts';
 import { bindModeSelection, generalPacksFromQuery, cardsFromQuery, createBrowserSession, gameUrl, type WebMode } from './game-setup.ts';
 import './style.css';
+import { PlayerPanel } from './player-panel.ts';
+import { playerClient } from './player-client.ts';
+import { HomeLeaderboard } from './home-leaderboard.ts';
 
 async function imageReady(url: string): Promise<void> {
   const image = new Image();
@@ -30,6 +33,8 @@ async function main(boot: BootScreen) {
   const musicHint = document.getElementById('music-unlock')!;
   audio.onMusicBlocked = blocked => musicHint.classList.toggle('hidden', !blocked);
   const settings = browserSettings();
+  const players = new PlayerPanel(settings);
+  new HomeLeaderboard();
   new SettingsPanel(settings, audio, manifest.cardAudio.wuzhong?.male ?? manifest.cardAudio.sha?.male
     ?? manifest.cardAudio.sha?.female ?? manifest.systemAudio.game_start);
   boot.set(0.2, '正在加载音乐、字体与画面…');
@@ -64,6 +69,8 @@ async function main(boot: BootScreen) {
     audio.startOutside();
     modes.classList.add('hidden');
     const session = createBrowserSession(mode, seed, cards, generalPacks);
+    players.setInGame();
+    playerClient.beginGame(mode, seed);
     document.getElementById('app')!.classList.toggle('identity', mode === 'identity');
     document.getElementById('brand-mode')!.textContent = `${mode === 'identity' ? '五人身份' : '对决'} · ${cards === 'junzheng' ? '标准＋军争' : '标准'}${generalPacks.length ? ' · ' + generalPackLabel(generalPacks) : ''}`;
     document.getElementById('restart')!.onclick = () => {
