@@ -58,6 +58,9 @@ export class TableEffects {
     // copies of the public discards. Hide the retained animation and captions.
     for (const { view } of this.discardCards) view.setVisible(!active);
     this.judgementPickerCount = judgementPickerCount;
+    // Harvest's revealed pool owns the central table, including nullification windows.
+    for (const { view } of this.trickTableCards)
+      view.setVisible(!(active && this.activeTrick === 'wugu'));
     const judgementPosition = judgementTablePosition(judgementPickerCount);
     this.judgementTableCard?.view.setPosition(judgementPosition.x, judgementPosition.y);
     if (this.choosingZone === active) return;
@@ -256,7 +259,8 @@ export class TableEffects {
     const from = handPosition(cue.player, seats, obs.self.id);
     const index = this.trickTableCards.length;
     const sprite = cardView(this.scene, cue.card, from.x, from.y, 100, 144).container
-      .setDepth(1060 + index).setScale(0.72);
+      .setDepth(1060 + index).setScale(0.72)
+      .setVisible(!(this.choosingZone && cue.cname === 'wugu'));
     const visible = obs.events.find(event => event.kind === (cue.kind === 'append' ? 'nullificationUsed' : 'cardUsed') &&
       event.data.card === cue.card.id);
     this.caption(sprite, visible ? tableCardLabel(visible, obs) : null);

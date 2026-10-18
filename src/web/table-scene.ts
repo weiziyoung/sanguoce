@@ -311,7 +311,8 @@ export class TableScene extends Phaser.Scene {
     [obs.self, ...obs.others].forEach(p => this.portrait(p, obs));
     const picks = zonePickerChoices(obs, this.model);
     const pendingJudgement = pendingJudgementCard(obs, this.session.decision);
-    this.effects.setZonePickerActive(picks.length > 0, pendingJudgement ? picks.length : 0);
+    const choosingHarvest = this.session.decision?.kind === 'wugu' || obs.nullify?.cname === 'wugu';
+    this.effects.setZonePickerActive(picks.length > 0 || choosingHarvest, pendingJudgement ? picks.length : 0);
     this.zonePicker(picks, Boolean(pendingJudgement));
     const hand = obs.self.hand;
     hand.forEach((card, index) => {
