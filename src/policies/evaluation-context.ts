@@ -1,9 +1,10 @@
 import { mountainAttackAdjustment } from './content/mountain.ts';
+import { yijiangAttackAdjustment } from './content/yijiang2011-plan.ts';
 import { hasPublicAbility, publicAbilities } from './ability-view.ts';
 import { forestAttackAdjustment } from './content/forest.ts';
 import { fireAttackAdjustment } from './content/fire.ts';
 import { liegongAvailable, windAttackAdjustment, leijiRisk } from './content/wind.ts';
-import { STANDARD_DECK, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
+import { STANDARD_DECK, cardType, cardColor, cardTypeOf, type Card, type CardName, type DeckEntry, type DamageNature } from '../../catalog.ts';
 import type { Observation, VisiblePlayer } from '../../contracts.ts';
 import { CARD_AI_PROFILE } from '../../card-ai-profile.ts';
 import { RelationshipModel } from './relationship-model.ts';
@@ -62,6 +63,8 @@ export class EvaluationContext {
   }
   distance(from: number, to: number): number {
     if (from === to) return 0;
+    const bidder = this.player(from), duel = bidder?.skillState?.['yijiang2011.xianzhen'];
+    if (bidder && hasPublicAbility(bidder, 'yijiang2011.xianzhen') && duel?.turn === this.observation.turn && duel.won && duel.target === to) return 1;
     const seats = [this.self, ...this.observation.others].filter(p => p.alive).sort((a, b) => a.id - b.id);
     const a = seats.findIndex(p => p.id === from), b = seats.findIndex(p => p.id === to);
     if (a < 0 || b < 0) return Infinity;
@@ -125,11 +128,14 @@ export class EvaluationContext {
   shaEffect(id: number, costs: readonly number[], nature?: DamageNature,
     plan: { extraWine?: number; linked?: readonly number[]; xianglePaid?: boolean; ignoreArmor?: boolean } = {}): number {
     const weapon = this.self.equip.weapon;
-    const ignoresArmor = plan.ignoreArmor ?? (weapon?.name === 'qinggang' && !costs.includes(weapon.id));
+    const duel = this.self.skillState?.['yijiang2011.xianzhen'];
+    const ignoresArmor = plan.ignoreArmor ?? ((weapon?.name === 'qinggang' && !costs.includes(weapon.id)) || (hasPublicAbility(this.self, 'yijiang2011.xianzhen') && duel?.turn === this.observation.turn && duel.won && duel.target === id));
     const black = costs.length > 0 && costs.every(cid => {
       const card = this.card(cid);
       return card !== undefined && cardColor(card) === 'black' && !(hasPublicAbility(this.self, 'wind.hongyan') && card.suit === 'spade');
     });
+    if (hasPublicAbility(this.player(id)!, 'yijiang2011.yizhong') && !this.player(id)?.equip.armor && black) return 0;
+    if (hasPublicAbility(this.player(id)!, 'yijiang2011.zhichi') && this.player(id)?.skillState?.['yijiang2011.zhichi']?.turn === this.observation.turn) return 0;
     if (this.player(id)?.equip.armor?.name === 'renwang' && black && !ignoresArmor) return 0;
     const attribute = nature ?? (costs.length === 1 ? this.card(costs[0])?.nature : undefined) ?? 'normal';
     const armor = this.player(id)?.equip.armor?.name;
@@ -143,6 +149,7 @@ export class EvaluationContext {
     const wind = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('wind.'));
     const fire = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('fire.'));
     const forest = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('forest.'));
+    const yijiang = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('yijiang2011.'));
     const mountain = [...publicAbilities(target), ...publicAbilities(this.self)].some(id => id.startsWith('mountain.'));
     const doubled = hasPublicAbility(this.self, 'forest.roulin') && target.sex === 'female' || hasPublicAbility(target, 'forest.roulin') && this.self.sex === 'female';
     let hit = bypass ? 1 : Math.pow(1 - this.responseRates.shan, target.handCount);
@@ -150,8 +157,9 @@ export class EvaluationContext {
     if (!bypass && (hasPublicAbility(target, 'wind.leiji') && armor === 'bagua' || hasPublicAbility(target, 'fire.bazhen') && (!armor || armor === 'bagua')) && !ignoresArmor) hit *= 0.5;
     const extra = mountainAttackAdjustment(this, target, hit, costs, plan.xianglePaid) +
       this.relation(id) * fieldBenefit(this, target) * (1 - hit) +
-      (forest ? forestAttackAdjustment(this, target, hit) : 0) + (wind ? windAttackAdjustment(this, target, hit, costs) : 0) + (fire ? fireAttackAdjustment(this, target, hit) : 0);
-    if (wind || fire || forest || mountain || attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
+      (forest ? forestAttackAdjustment(this, target, hit) : 0) + (wind ? windAttackAdjustment(this, target, hit, costs) : 0) + (fire ? fireAttackAdjustment(this, target, hit) : 0) +
+      (yijiang ? yijiangAttackAdjustment(this, target, hit, costs, 1 + bonus, !!ignoresArmor) : 0);
+    if (wind || fire || forest || mountain || yijiang || attribute !== 'normal' || bonus || armor === 'baiyin' || armor === 'tengjia' || fan) {
       const success = wind || fire || forest || mountain ? hit : Math.pow(1 - this.responseRates.shan, this.player(id)?.handCount ?? 0);
       const direct = this.elementalUtility(id, 1 + bonus, attribute, ignoresArmor, plan.linked);
       return (fan ? Math.max(direct, this.elementalUtility(id, 1 + bonus, 'fire', false, plan.linked)) : direct) * success + extra;
@@ -177,6 +185,7 @@ export class EvaluationContext {
     linked?: readonly number[]): number {
     const target = this.player(id);
     if (!target?.alive) return 0;
+    if (hasPublicAbility(this.self, 'yijiang2011.jueqing')) return this.damageUtility(target, amount, 3.5 * amount + (target.hp <= amount ? 3 : 0));
     if (nature === 'normal' && target.equip.armor?.name === 'tengjia' && !ignoresArmor) return 0;
     const adjusted = (player: VisiblePlayer, base: number, ignore: boolean) => ignore ? base :
       player.equip.armor?.name === 'baiyin' ? Math.min(1, base) :
@@ -196,11 +205,12 @@ export class EvaluationContext {
   targetEffect(name: CardName, id: number): number {
     const player = this.player(id);
     if (!player?.alive) return 0;
+    if (cardType(name) === 'trick' && (id !== this.self.id && (hasPublicAbility(player, 'yijiang2011.wuyan') || hasPublicAbility(this.self, 'yijiang2011.wuyan')) || hasPublicAbility(player, 'yijiang2011.zhichi') && player.skillState?.['yijiang2011.zhichi']?.turn === this.observation.turn)) return 0;
     const relation = this.relation(id);
     const enemy = -relation;
     const missing = player.maxHp - player.hp;
     const response = (kind: 'sha' | 'shan') => 1 - Math.pow(1 - this.responseRates[kind], player.handCount);
-    if (name === 'sha' && [...publicAbilities(player), ...publicAbilities(this.self)].some(ability => /^(wind|fire|forest|mountain)\./.test(ability))) return this.shaEffect(id, []);
+    if (name === 'sha' && [...publicAbilities(player), ...publicAbilities(this.self)].some(ability => /^(wind|fire|forest|mountain|yijiang2011)\./.test(ability))) return this.shaEffect(id, []);
     if (name === 'sha') return this.damageUtility(player, 1, 3.5 + (player.hp <= 1 ? 3 : 0)) * (1 - response('shan'));
     if (name === 'juedou') return this.damageUtility(player, 1, 3 + (player.hp <= 1 ? 2 : 0)) * (1 - response('sha') * 0.5);
     if (name === 'tao' || name === 'taoyuan') return missing > 0 ? relation * (player.hp <= 1 ? 8 : 4) : 0;

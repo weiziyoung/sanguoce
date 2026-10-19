@@ -23,7 +23,7 @@ export interface GameConfig {
   /** Standard remains available for reproducible legacy games. */
   cards?: 'standard' | 'junzheng';
   /** Optional general expansions; standard generals are always included. */
-  generalPacks?: ('wind' | 'fire' | 'forest' | 'mountain')[];
+  generalPacks?: ('wind' | 'fire' | 'forest' | 'mountain' | 'yijiang2011')[];
   deck?: readonly Omit<Card, "id">[];
 }
 export interface Choice {
@@ -52,6 +52,7 @@ export interface VisiblePlayer {
   alive: boolean;
   handCount: number;
   chained?: boolean; drunk?: number; faceDown?: boolean; spentLimitedSkills?: string[];
+  skillState?: Record<string, { turn: number; target?: number; won?: boolean }>;
   piles?: Record<string, Card[]>;
   gainedAbilities?: string[]; generalSkillsDisabled?: boolean; awakenedSkills?: string[];
   huashen?: { count: number; generals?: string[]; selected?: string; ability?: string };

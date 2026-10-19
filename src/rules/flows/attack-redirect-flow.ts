@@ -35,6 +35,7 @@ export class AttackRedirectFlow {
       owner, targets: [action.target] });
     discardOwned(state, owner, action.card);
     window.data.redirected = true;
-    window.data.then = [{ kind: 'shaStart', ...attack, target: action.target, redirectedBy: owner }];
+    window.data.then = [{ kind: 'shaStart', ...attack, target: action.target, redirectedBy: owner,
+      ignoreArmor: this.runtime.queries.ignoresArmor(state, attack.source, action.target) }];
   }
 }

@@ -23,7 +23,7 @@ export interface FrameData {
   trick: { source: number; cname: CardName; cid: number; targets: number[]; pool: number[]; card?: CardLike; damageSource?: number | null;
     ignoredNullifiers?: number[] };
   nullification: NullificationState;
-  damage: { target: number; source: number | null; amount: number; card: number | CardLike | null;
+  damage: { targetWasFaceDown?: boolean; hpLoss?: boolean; target: number; source: number | null; amount: number; card: number | CardLike | null;
     redirectedBy?: number; forcedBy?: number; nature?: DamageNature; ignoreArmor?: boolean; propagated?: boolean; sourceModified?: boolean; cancelled?: boolean };
   dying: DyingState;
 }

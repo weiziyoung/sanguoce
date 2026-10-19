@@ -46,3 +46,5 @@ export { windPack, windGeneralDefinitions } from './src/content/wind/content.ts'
 export { firePack, fireGeneralDefinitions } from './src/content/fire/content.ts';
 
 export { forestPack, forestGeneralDefinitions } from './src/content/forest/content.ts';
+
+export { yijiang2011Pack, yijiang2011GeneralDefinitions } from './src/content/yijiang2011/content.ts';

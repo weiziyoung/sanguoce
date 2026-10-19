@@ -1,0 +1,15 @@
+import type { ContentPack, SkillDefinition } from '../../rules/content-registry.ts';
+import { CaoZhiGeneral } from './generals/caozhi.ts';
+import { YuJinGeneral } from './generals/yujin.ts';
+import { ZhangChunHuaGeneral } from './generals/zhangchunhua.ts';
+import { FaZhengGeneral } from './generals/fazheng.ts';
+import { MaSuGeneral } from './generals/masu.ts';
+import { XuShuGeneral } from './generals/xushu.ts';
+import { XuShengGeneral } from './generals/xusheng.ts';
+import { LingTongGeneral } from './generals/lingtong.ts';
+import { WuGuoTaiGeneral } from './generals/wuguotai.ts';
+import { ChenGongGeneral } from './generals/chengong.ts';
+import { GaoShunGeneral } from './generals/gaoshun.ts';
+const modules = [new CaoZhiGeneral(), new YuJinGeneral(), new ZhangChunHuaGeneral(), new FaZhengGeneral(), new MaSuGeneral(), new XuShuGeneral(), new XuShengGeneral(), new LingTongGeneral(), new WuGuoTaiGeneral(), new ChenGongGeneral(), new GaoShunGeneral()];
+export const yijiang2011GeneralDefinitions = modules.map(m => m.general);
+export const yijiang2011Pack: ContentPack = { id: 'yijiang2011', cards: [], deck: [], generals: yijiang2011GeneralDefinitions, skills: modules.flatMap<SkillDefinition>(m => [...m.skills]).map(skill => ({ ...skill, ...(skill.trigger ? { trigger: { ...skill.trigger, label: skill.label } } : {}) })) };

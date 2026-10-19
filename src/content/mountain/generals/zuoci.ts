@@ -6,7 +6,7 @@ import { resolutionStack } from '../../../domain/resolution-stack.ts';
 import { random } from '../../../rules/operations/random.ts';
 import { emitEvent } from '../../../domain/event-journal.ts';
 /** Original Huashen excludes locked, limited, awakening and lord skills. */
-const excluded = new Set(['standard.paoxiao', 'standard.qicai', 'standard.mashu', 'standard.wushuang', 'standard.kongcheng', 'standard.qianxun',
+const excluded = new Set(['yijiang2011.yizhong', 'yijiang2011.jueqing', 'yijiang2011.enyuan', 'yijiang2011.huilei', 'yijiang2011.wuyan', 'yijiang2011.zhichi', 'yijiang2011.jinjiu', 'standard.paoxiao', 'standard.qicai', 'standard.mashu', 'standard.wushuang', 'standard.kongcheng', 'standard.qianxun',
   'wind.kuanggu', 'wind.hongyan', 'fire.mashu', 'fire.bazhen', 'fire.niepan', 'forest.huoshou', 'forest.juxiang', 'forest.roulin', 'forest.benghuai', 'forest.wansha', 'forest.weimu', 'forest.luanwu',
   'mountain.zaoxian', 'mountain.zhiji', 'mountain.xiangle', 'mountain.hunzi', 'mountain.ruoyu', 'mountain.duanchang', 'mountain.huashen', 'mountain.xinsheng']);
 export function huashenSkills(runtime: Pick<ContentRuntime, 'content'>, general: string): string[] {

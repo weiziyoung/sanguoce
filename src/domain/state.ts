@@ -12,6 +12,7 @@ export interface PlayerState {
   group?: 'wei' | 'shu' | 'wu' | 'qun';
   hp: number; maxHp: number; alive: boolean;
   chained?: boolean; drunk?: number; faceDown?: boolean;
+  skillState?: Record<string, { turn: number; target?: number; won?: boolean }>;
   piles?: Record<string, number[]>; skillFlags?: Record<string, boolean>;
   gainedAbilities?: string[]; generalSkillsDisabled?: boolean;
   huashen?: { generals: string[]; selected?: string; ability?: string };
@@ -47,6 +48,7 @@ export interface TaskData {
   damagePrepare: {}; damageApply: {}; dyingPoll: {}; nullifyPoll: {};
   pindianOffer: {}; pindianResolve: {};
   contentChoiceOffer: {}; contentCallback: { ability: string; owner: number; context: ContentChoiceContext };
+  contentEvent: { owner: number; ability: string; eventId: number };
   contentHpChanged: { player: number; before: number; after: number };
   gameStartSkill: { owner: number; ability: string };
   phaseBefore: { phase: 'judge' | 'draw' | 'play' | 'discard' };
@@ -79,9 +81,9 @@ export interface TaskData {
 }
 export type TaskOf<K extends keyof TaskData> = { kind: K } & TaskData[K];
 export type Task = { [K in keyof TaskData]: TaskOf<K> }[keyof TaskData];
-export type ContentChoiceContext = { timing: string; target?: number; source?: number | null;
+export type ContentChoiceContext = { privateCards?: number[]; timing: string; target?: number; source?: number | null;
   amount?: number; before?: number; after?: number; finalId?: number | null; won?: boolean; selectedIds?: number[]; remaining?: number[]; mode?: string; ability?: string; attack?: AttackContext };
-export interface ContentChoiceAction { type: 'choose' | 'pass'; choice: string; ids: number[]; targets: number[]; }
+export interface ContentChoiceAction { zone?: 'hand'; slot?: number; type: 'choose' | 'pass'; choice: string; ids: number[]; targets: number[]; }
 export interface ActionMap {
   pindian: { type: 'pindian'; cid: number };
   contentChoice: ContentChoiceAction;
@@ -165,7 +167,7 @@ export interface NullificationState {
 }
 export type DamageCause =
   | { kind: 'damage'; source: number | null; amount: number; card: number | CardLike | null }
-  | { kind: 'hpLoss'; source: null };
+  | { kind: 'hpLoss'; source: number | null };
 export interface DyingState { target: number; cursor: number; passed: number[]; cause: DamageCause; }
 export interface GameState {
   cards: Record<number, Card>; deck: number[]; discard: number[]; table: number[];

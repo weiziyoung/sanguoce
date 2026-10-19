@@ -1,3 +1,4 @@
+import { registerYijiang2011Evaluations } from './yijiang2011.ts';
 import { registerMountainEvaluations } from './mountain.ts';
 import { registerForestEvaluations } from './forest.ts';
 import { registerFireEvaluations } from './fire.ts';
@@ -47,5 +48,6 @@ export function standardSkillEvaluations(): EvaluationRegistry {
   registerFireEvaluations(registry);
   registerForestEvaluations(registry);
   registerMountainEvaluations(registry);
+  registerYijiang2011Evaluations(registry);
   return registry;
 }

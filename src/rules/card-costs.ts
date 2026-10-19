@@ -1,3 +1,4 @@
+import { emitEvent } from '../domain/event-journal.ts';
 import { cardText, type CardLike, type CardName } from '../../catalog.ts';
 import type { DiscardReason } from '../domain/events.ts';
 import { card } from '../domain/state-access.ts';
@@ -9,8 +10,8 @@ export const transformationCostLabel = (s: GameState, ids: readonly number[]) =>
 export function effectiveCard(s: GameState, actor: number, ids: number[], need: CardName,
   runtime: ContentRuntime, transformation?: string): CardLike {
   if (ids.length === 1 && !transformation) {
-    if (!s.players[actor].hand.includes(ids[0]) || card(s, ids[0]).name !== need) throw new Error('实体响应牌已失效');
-    const physical = card(s, ids[0]);
+    if (!s.players[actor].hand.includes(ids[0]) || runtime.queries.cardName(s, actor, card(s, ids[0])) !== need) throw new Error('实体响应牌已失效');
+    const physical = { ...card(s, ids[0]), name: need };
     const suit = runtime.queries.suit(s, actor, physical);
     return suit && suit !== physical.suit ? { ...physical, suit } : physical;
   }
@@ -27,7 +28,15 @@ export function spendCard(s: GameState, actor: number, ids: number[], need: Card
   reason: DiscardReason, runtime: ContentRuntime, transformation?: string,
   responseMode?: 'juedou'): CardLike {
   const effective = effectiveCard(s, actor, ids, need, runtime, transformation);
+  if (transformation) {
+    const skill = runtime.content.skillForTransformation(transformation);
+    (skill.transformation ?? skill.transformations?.find(t => t.id === transformation))?.onUse?.(s, actor);
+  }
   for (const cid of ids) discardOwned(s, actor, cid, reason, undefined, responseMode);
+  if (!transformation && ids.length === 1 && s.cards[ids[0]].name !== need) {
+    const skill = runtime.abilities.list(s, actor).find(skill => skill.modifier?.cardName);
+    if (skill) emitEvent(s, 'transformationUsed', { ability: skill.id, label: skill.label ?? skill.id, owner: actor, produces: need, ...(responseMode ? { responseMode } : {}) });
+  }
   if (need === 'sha' && actor === s.active && s.phase === 'play' && s.shaPlayedOrRespondedInPlay !== undefined) {
     s.shaPlayedOrRespondedInPlay = true;
   }

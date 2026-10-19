@@ -83,6 +83,7 @@ export function handleShaMissTask(s: GameState, task: TaskOf<'shaMiss'>): void {
 
 export function handleShaHitTask(s: GameState, task: TaskOf<'shaHit'>, runtime: ContentRuntime = getStandardRuntime()): void {
   if (!runtime.queries.attackEffective(s, task)) return;
+  if (runtime.queries.damageAsHpLoss(s, task.source)) { push(s, { ...task, kind: 'attackDamage' }); return; }
   push(s, { kind: 'openTriggers', signal: { kind: 'beforeAttackDamage', data: task }, then: [{ ...task, kind: 'attackDamage' }] });
 }
 

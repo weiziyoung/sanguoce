@@ -1,15 +1,16 @@
 import { NAMES, cardText } from '../../../../catalog.ts';
 import { leaf } from '../../../core/decision-manager.ts';
-import { card, handCards } from '../../../domain/state-access.ts';
+import { card } from '../../../domain/state-access.ts';
 import type { GameState, InternalOption } from '../../../domain/state.ts';
 import type { ContentRuntime } from '../../../rules/content-runtime.ts';
 import { transformationAction, transformationCostLabel, transformationKey } from '../transforms.ts';
 
 export function responseOptions(state: GameState, actor: number, need: 'sha' | 'shan',
   baguaAllowed: boolean, runtime: ContentRuntime): InternalOption[] {
-  const options = handCards(state, actor, need).map(cid =>
-    leaf(`respond:${cid}`, `打出${cardText(card(state, cid))}`, { type: 'respond', ids: [cid] }));
-  for (const cost of runtime.transforms.candidates(state, actor, need).filter(item => item.virtual)) {
+  const candidates = runtime.transforms.candidates(state, actor, need);
+  const options = candidates.filter(item => !item.virtual).map(({ ids: [cid], effective }) =>
+    leaf(`respond:${cid}`, `打出${cardText(card(state, cid))}${effective.name !== state.cards[cid].name ? `（视为${NAMES[need]}）` : ''}`, { type: 'respond', ids: [cid] }));
+  for (const cost of candidates.filter(item => item.virtual)) {
     const ability = cost.transformation!;
     const label = runtime.content.skillForTransformation(ability).label ?? ability;
     options.push(leaf(`respond:${transformationKey(ability)}:${cost.ids.join(':')}`,

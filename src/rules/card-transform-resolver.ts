@@ -9,6 +9,7 @@ export interface CardTransformation {
   readonly allowedZones?: readonly ('hand' | 'equip')[];
   readonly allowedPiles?: readonly string[];
   readonly preserveSuit?: boolean;
+  onUse?(s: import("../domain/state.ts").GameState, actor: number): void;
   costs(s: ReadonlyGameState, actor: number): readonly (readonly number[])[];
 }
 export interface CardCandidate { ids: number[]; virtual: boolean; effective: CardLike; transformation?: string; }
@@ -25,8 +26,13 @@ export class CardTransformResolver {
   }
   candidates(s: ReadonlyGameState, actor: number, need: CardName): CardCandidate[] {
     const hand = s.players[actor].hand;
-    const direct: CardCandidate[] = hand.filter(id => s.cards[id].name === need)
-      .map(id => ({ ids: [id], virtual: false, effective: structuredClone(s.cards[id]) }));
+    const effective = (id: number) => {
+      let card = structuredClone(s.cards[id]);
+      for (const skill of this.#abilities?.list(s, actor) ?? []) card = { ...card, name: skill.modifier?.cardName?.(s, actor, card) ?? card.name };
+      return card;
+    };
+    const direct: CardCandidate[] = hand.filter(id => effective(id).name === need)
+      .map(id => ({ ids: [id], virtual: false, effective: effective(id) }));
     for (const transformation of this.#transformations) {
       if (transformation.produces !== need) continue;
       if (transformation.grantedBy && !this.#abilities?.has(s, actor, transformation.grantedBy)) continue;

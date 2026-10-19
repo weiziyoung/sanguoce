@@ -21,6 +21,8 @@ export function prepareDamage(s: GameState, runtime: ContentRuntime): void {
   const context = resolutionStack.require(s, 'damage').data;
   if (!person(s, context.target).alive || context.amount <= 0) return;
   if (!context.sourceModified && !context.propagated) context.source = runtime.queries.damageSource(s, context.source, context.card);
+  context.targetWasFaceDown = !!s.players[context.target].faceDown;
+  if (context.source !== null && runtime.queries.damageAsHpLoss(s, context.source)) { context.hpLoss = true; return; }
   if (!context.sourceModified && !context.propagated && context.source !== null) {
     context.amount = runtime.queries.sourceDamageAmount(s, context.source, context.target, context.card, context.amount);
   }
@@ -33,6 +35,12 @@ export function handleDamageApplyTask(s: GameState, runtime: ContentRuntime): vo
   const { target, source, amount, card, redirectedBy, forcedBy, propagated } = context;
   const p = person(s, target);
   if (!p.alive || context.cancelled) return;
+  if (context.hpLoss) {
+    vitals.loseHp(s, target, amount);
+    emitEvent(s, 'hpLost', { player: target, amount });
+    if (p.hp <= 0) beginDying(s, target, null, { kind: 'hpLoss', source });
+    return;
+  }
   const actual = runtime.queries.damageAmount(s, source, target, card, amount, context);
   if (!Number.isInteger(actual) || actual < 0) throw new Error('伤害修正结果无效');
   if (!actual) return;

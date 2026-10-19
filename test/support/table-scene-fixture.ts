@@ -165,5 +165,5 @@ export function tableSceneFixture(initial: GameState, self = decision(initial)?.
     assert.ok(tile, `技能铭牌缺失：${id}`); tile.click();
   };
   const dispose = () => { view.effects.dispose(); view.hud.dispose(); Object.assign(globalThis, { document: previousDocument }); };
-  return { scene: view, node, submitted, load, clickCard, clickTarget, clickEquipment, clickSkill, drawings, dispose };
+  return { scene: view, get state() { return state; }, node, submitted, load, clickCard, clickTarget, clickEquipment, clickSkill, drawings, dispose };
 }

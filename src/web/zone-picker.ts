@@ -26,15 +26,19 @@ export function zonePickerChoices(obs: Observation, model: TableInteraction | nu
       ...(model.decision.kind === 'contentChoice' ? player.judge.map(card => ({ card, zone: 'judge' as const })) : []),
       ...Object.entries(player.piles ?? {}).flatMap(([pile, cards]) => cards.map(card => ({ card, zone: 'pile' as const, pile }))),
     ]);
-    if (model.decision.kind === 'contentChoice' && (model.decision.context as { ability?: string }).ability === 'mountain.guzheng') {
+    if (model.decision.kind === 'contentChoice' && ['mountain.guzheng', 'yijiang2011.luoying'].includes((model.decision.context as { ability?: string }).ability ?? '')) {
       for (const card of Object.values(obs.eventCards ?? {})) if (costs.some(c => c.cardIds.includes(card.id))) publicPicks.push({ card, zone: 'discard' });
     }
-    return publicPicks.flatMap<ZonePick>(({ card, zone, pile }) => {
+    if (model.decision.kind === 'contentChoice' && (model.decision.context as { ability?: string }).ability === 'yijiang2011.xinzhan') {
+      for (const card of obs.table) if (costs.some(c => c.cardIds.includes(card.id))) publicPicks.push({ card, zone: 'pile' });
+    }
+    const hidden = costs.filter(c => c.zone === 'hand' && !c.cardIds.length).map(choice => ({ choice, zone: 'hand' as const }));
+    return [...hidden, ...publicPicks.flatMap<ZonePick>(({ card, zone, pile }) => {
       if (!card) return [];
       const choice = costs.find(choice => choice.cardIds.includes(card.id));
       const owner = model.qiaobianContext?.timing === 'move' ? choice?.targetIds[0] : undefined;
       return choice ? [{ choice, zone, card, ...(owner !== undefined ? { owner } : {}), ...(pile ? { pile } : {}) }] : [];
-    });
+    })];
   }
   const context = model?.decision.context as { target?: number } | undefined;
   const target = [obs.self, ...obs.others].find(player => player.id === context?.target);

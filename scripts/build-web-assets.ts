@@ -61,7 +61,7 @@ for (const card of ART_SPECS) {
   if (!manifest.cards[card.id]) throw new Error(`缺少卡牌图片：${card.label}`);
 }
 for (const general of allContent.generals()) {
-  const image = add(join(source, `三国杀卡牌全高清图/${general.id.startsWith('wind.') ? '风包' : general.id.startsWith('fire.') ? '火包' : general.id.startsWith('forest.') ? '林包' : general.id.startsWith('mountain.') ? '山包' : '标准25'}`,
+  const image = add(join(source, `三国杀卡牌全高清图/${general.id.startsWith('wind.') ? '风包' : general.id.startsWith('fire.') ? '火包' : general.id.startsWith('forest.') ? '林包' : general.id.startsWith('mountain.') ? '山包' : general.id.startsWith('yijiang2011.') ? '一将成名' : '标准25'}`,
     `${general.id === 'mountain.zhanghe' ? '张颌' : general.id === 'mountain.zhangzhaozhanghong' ? '张昭&张紘' : general.id === 'wind.caoren' || general.id === 'wind.zhangjiao' ? general.label + '2010' : general.id === 'fire.wolong' ? '卧龙诸葛' : general.id === 'fire.yanliangwenchou' ? '颜良&文丑' : general.label}.png`),
     `generals/${general.id}.png`);
   if (image) manifest.generals[general.id] = image;
@@ -71,7 +71,7 @@ for (const general of allContent.generals()) {
   const generalDir = readdirSync(groupPath).find(entry => /^\d+-/.test(entry) && entry.split('-')[1] === (general.id === 'mountain.zhanghe' ? '张嗔' : general.label));
   if (!generalDir) continue;
   const base = join(groupPath, generalDir);
-  const voiceDirs = general.id.startsWith('wind.') ? ['风/普通', '普通'] : general.id.startsWith('fire.') ? ['火/普通', '火/普通2', '普通'] : general.id.startsWith('forest.') ? ['林/普通', '普通'] : general.id.startsWith('mountain.') ? ['山/普通', '普通'] : ['标/普通', '普通'];
+  const voiceDirs = general.id === 'yijiang2011.masu' ? ['旧', '普通'] : general.id === 'yijiang2011.yujin' ? ['（1版）毅重/普通'] : general.id.startsWith('yijiang2011.') ? ['将/普通', '普通'] : general.id.startsWith('wind.') ? ['风/普通', '普通'] : general.id.startsWith('fire.') ? ['火/普通', '火/普通2', '普通'] : general.id.startsWith('forest.') ? ['林/普通', '普通'] : general.id.startsWith('mountain.') ? ['山/普通', '普通'] : ['标/普通', '普通'];
   const voiceDir = voiceDirs.find(dir => existsSync(join(base, dir)));
   if (!voiceDir) continue;
   const voices: AssetManifest['generalAudio'][string] = { skills: {}, aliases: {} };
@@ -83,6 +83,9 @@ for (const general of allContent.generals()) {
     if (!label) continue;
     const clips = [1, 2].map(index => add(join(base, voiceDirs.find(dir => existsSync(join(base, dir, `${label}${index}.mp3`))) ?? voiceDir, `${label}${index}.mp3`),
       `audio/generals/${general.id}/${ability}-${index}.mp3`)).filter((clip): clip is string => Boolean(clip));
+    if (!clips.length) { const file = voiceDirs.map(dir => join(base, dir, `${label}.mp3`)).find(existsSync);
+      if (file) { const clip = add(file, `audio/generals/${general.id}/${ability}-1.mp3`); if (clip) clips.push(clip); }
+    }
     if (!clips.length) continue;
     voices.skills[ability] = clips;
     if (skill.transformation) voices.aliases[skill.transformation.id] = ability;

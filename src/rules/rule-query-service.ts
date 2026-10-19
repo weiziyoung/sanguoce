@@ -40,6 +40,19 @@ export class RuleQueryService {
     for (const skill of this.#abilities?.list(s, actor) ?? []) value = skill.modifier?.shaLimit?.(s, actor, value) ?? value;
     return value;
   }
+  cardName(s: ReadonlyGameState, actor: number, card: CardLike): CardName {
+    let name = card.name;
+    for (const skill of this.#abilities?.list(s, actor) ?? []) name = skill.modifier?.cardName?.(s, actor, { ...card, name }) ?? name;
+    return name;
+  }
+  damageAsHpLoss(s: ReadonlyGameState, actor: number): boolean {
+    return (this.#abilities?.list(s, actor) ?? []).some(skill => skill.modifier?.damageAsHpLoss?.(s, actor));
+  }
+  shaTargetLimit(s: ReadonlyGameState, actor: number, target: number): number {
+    let value = this.shaLimit(s, actor);
+    for (const skill of this.#abilities?.list(s, actor) ?? []) value = skill.modifier?.shaTargetLimit?.(s, actor, target, value) ?? value;
+    return value;
+  }
   shaTargets(s: ReadonlyGameState, actor: number): number {
     let value = 1;
     for (const m of this.#modifiers) value = m.shaTargets?.(s, actor, value) ?? value;
@@ -105,17 +118,18 @@ export class RuleQueryService {
   autoShan(s: ReadonlyGameState, actor: number): boolean {
     return (this.#abilities?.list(s, actor) ?? []).some(skill => skill.modifier?.autoShan?.(s, actor));
   }
-  ignoresArmor(s: ReadonlyGameState, source: number): boolean {
-    return (this.#abilities?.list(s, source) ?? []).some(skill => skill.modifier?.ignoresArmor?.(s, source));
+  ignoresArmor(s: ReadonlyGameState, source: number, target?: number): boolean {
+    return (this.#abilities?.list(s, source) ?? []).some(skill => skill.modifier?.ignoresArmor?.(s, source, target));
   }
   attackEffective(s: ReadonlyGameState, attack: AttackContext): boolean {
-    const ignores = attack.ignoreArmor || this.ignoresArmor(s, attack.source);
+    const ignores = attack.ignoreArmor || this.ignoresArmor(s, attack.source, attack.target);
     return (this.#abilities?.instances(s, attack.target) ?? []).every(instance =>
       ignores && instance.source.kind === 'equipment' && instance.source.slot === 'armor' ||
       instance.definition.modifier?.attackEffective?.(s, attack.target, attack) !== false);
   }
-  trickEffective(s: ReadonlyGameState, target: number, card: CardName): boolean {
-    return (this.#abilities?.list(s, target) ?? []).every(skill => skill.modifier?.trickEffective?.(s, target, card) !== false);
+  trickEffective(s: ReadonlyGameState, target: number, card: CardName, source?: number): boolean {
+    return [...new Set([target, ...(source === undefined ? [] : [source])])].every(owner =>
+      (this.#abilities?.list(s, owner) ?? []).every(skill => skill.modifier?.trickEffective?.(s, owner, card, source, target) !== false));
   }
   canTarget(s: ReadonlyGameState, source: number, target: number, card: CardName, allowSelf = false, effective?: CardLike, requireLivingSource = true): boolean {
     if (source === target && !allowSelf) return false;
@@ -135,7 +149,7 @@ export class RuleQueryService {
     return value;
   }
   canSha(s: ReadonlyGameState, from: number, to: number, ignoreDistance = false): boolean {
-    return from !== to && this.canTarget(s, from, to, 'sha') &&
+    return from !== to && (this.#abilities?.list(s, from) ?? []).every(skill => skill.modifier?.shaUseEnabled?.(s, from) !== false) && this.canTarget(s, from, to, 'sha') &&
       (ignoreDistance || this.distance(s, from, to) <= this.attackRange(s, from));
   }
 }

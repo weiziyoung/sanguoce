@@ -30,17 +30,16 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
   const options: InternalOption[] = [];
   for (const cid of p.hand) {
     const c = card(s, cid);
-    const cname = c.name;
+    const cname = runtime.queries.cardName(s, actor, c);
     const { play } = runtime.content.card(cname);
     if (play.availability === 'drink' && (s.jiuUsed ?? 0) >= 1) continue;
     if (play.targeting === 'unplayable') continue;
-    if (play.targeting === 'attack' && s.shaUsed >= runtime.queries.shaLimit(s, actor)) continue;
     if (play.availability === 'wounded' && p.hp >= p.maxHp) continue;
     if (play.availability === 'uniqueSelfJudge' && p.judge.some(id => name(s, id) === cname)) continue;
     const base = `play:${cid}`;
-    const label = `使用${cardText(c)}`;
+    const label = `使用${cardText(c)}${cname !== c.name ? `（视为【${runtime.content.card(cname).label}】）` : ''}`;
     if (play.targeting === 'attack') {
-      const possible = alive(s).filter(id => runtime.queries.canSha(s, actor, id));
+      const possible = alive(s).filter(id => runtime.queries.canSha(s, actor, id) && s.shaUsed < runtime.queries.shaTargetLimit(s, actor, id));
       const maxTargets = runtime.queries.shaTargets(s, actor);
       const groups = subsets(possible, maxTargets);
       if (groups.length) options.push({
@@ -86,8 +85,8 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
     }
     if (targets.length) options.push({ id: base, label, children: targets });
   }
-  if (s.shaUsed < runtime.queries.shaLimit(s, actor)) {
-    const targets = alive(s).filter(id => runtime.queries.canSha(s, actor, id));
+  if (alive(s).some(id => id !== actor && s.shaUsed < runtime.queries.shaTargetLimit(s, actor, id))) {
+    const targets = alive(s).filter(id => runtime.queries.canSha(s, actor, id) && s.shaUsed < runtime.queries.shaTargetLimit(s, actor, id));
     if (targets.length) {
       const byAbility = new Map<string, ReturnType<typeof shaCosts>>();
       for (const cost of shaCosts(s, actor, runtime).filter(candidate => candidate.virtual)) {
@@ -112,7 +111,7 @@ export function playOptions(s: GameState, runtime: ContentRuntime = getStandardR
         const proxy = skill.proxyResponse;
         if (proxy?.produces !== 'sha' || !s.players.some(player => player.alive && player.id !== actor &&
           player.group === proxy.group && runtime.transforms.candidates(s, player.id, 'sha').length)) continue;
-        const targets = alive(s).filter(id => runtime.queries.canSha(s, actor, id));
+        const targets = alive(s).filter(id => runtime.queries.canSha(s, actor, id) && s.shaUsed < runtime.queries.shaTargetLimit(s, actor, id));
         if (targets.length) options.push({ id: `proxy-sha:${skill.id}`,
           label: `发动【${skill.label ?? skill.id}】请求同势力角色出【杀】`,
           children: targets.map(target => leaf(`proxy-sha:${skill.id}:${target}`,

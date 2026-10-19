@@ -27,6 +27,7 @@ export function observe(s: GameState, playerId: number): Observation {
     ...(p.faceDown === undefined ? {} : { faceDown: p.faceDown }),
     ...(Object.keys(p.skillFlags ?? {}).some(key => key.endsWith('.used') && p.skillFlags?.[key]) ?
       { spentLimitedSkills: Object.keys(p.skillFlags!).filter(key => key.endsWith('.used') && p.skillFlags![key]).map(key => key.slice(0, -5)) } : {}),
+    ...(p.skillState ? { skillState: copy(Object.fromEntries(Object.entries(p.skillState).filter(([, value]) => value.turn === s.turn))) } : {}),
     ...(p.gainedAbilities?.length ? { gainedAbilities: [...p.gainedAbilities] } : {}),
     ...(p.generalSkillsDisabled ? { generalSkillsDisabled: true } : {}),
     ...(Object.keys(p.skillFlags ?? {}).some(k => k.endsWith('.awakened') && p.skillFlags![k]) ?
@@ -82,7 +83,8 @@ export function observe(s: GameState, playerId: number): Observation {
     ...(s.jiuUsed === undefined ? {} : { jiuUsed: s.jiuUsed }),
     ...(skillProgress.length ? { skillProgress } : {}),
     ...(failedProxyRequests.length ? { failedProxyRequests } : {}),
-    table: s.table.map(id => copy(card(s, id))), shaUsed: s.shaUsed,
+    table: s.table.filter(id => !s.resolution.stack.some(f => f.kind === 'contentChoice' &&
+      f.data.owner !== playerId && f.data.context.privateCards?.includes(id))).map(id => copy(card(s, id))), shaUsed: s.shaUsed,
     nullify: nullify ? {
       source: nullify.source, target: nullify.target,
       cname: nullify.cname, parity: nullify.parity,

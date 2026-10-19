@@ -1,3 +1,4 @@
+import { yijiang2011Pack } from '../content/yijiang2011/content.ts';
 import { mountainPack } from '../content/mountain/content.ts';
 import { forestPack } from '../content/forest/content.ts';
 import { firePack } from '../content/fire/content.ts';
@@ -6,8 +7,8 @@ import { windPack } from '../content/wind/content.ts';
 export const STANDARD_MODEL_GENERALS: Readonly<Record<string, {
   label: string; skills: readonly (readonly [id: string, label: string])[];
 }>> = {
-  ...Object.fromEntries([...windPack.generals, ...firePack.generals, ...forestPack.generals, ...mountainPack.generals].map(general => [general.id, { label: general.label,
-    skills: general.abilities.map(id => [id, [...windPack.skills, ...firePack.skills, ...forestPack.skills, ...mountainPack.skills].find(skill => skill.id === id)!.label!] as const) }])),
+  ...Object.fromEntries([...windPack.generals, ...firePack.generals, ...forestPack.generals, ...mountainPack.generals, ...yijiang2011Pack.generals].map(general => [general.id, { label: general.label,
+    skills: general.abilities.map(id => [id, [...windPack.skills, ...firePack.skills, ...forestPack.skills, ...mountainPack.skills, ...yijiang2011Pack.skills].find(skill => skill.id === id)!.label!] as const) }])),
   'standard.guanyu': { label: '关羽', skills: [['standard.wusheng', '武圣']] },
   'standard.zhangfei': { label: '张飞', skills: [['standard.paoxiao', '咆哮']] },
   'standard.zhaoyun': { label: '赵云', skills: [['standard.longdan', '龙胆']] },

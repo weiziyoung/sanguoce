@@ -29,6 +29,8 @@ export interface CardDefinition {
   readonly leaveEquipment?: (state: GameState, owner: number, cid: number) => void;
 }
 export interface SkillDefinition {
+  readonly events?: readonly import('../domain/events.ts').RuleEvent['kind'][];
+  readonly onEvent?: (state: GameState, owner: number, event: import('../domain/events.ts').RuleEvent, runtime: ContentRuntime) => void;
   readonly grantedTo?: (state: ReadonlyGameState, owner: number) => boolean;
   readonly gameStart?: (state: GameState, owner: number, runtime: ContentRuntime) => void;
   readonly onKilled?: (state: GameState, owner: number, source: number | null, runtime: ContentRuntime) => void;
@@ -44,7 +46,7 @@ export interface SkillDefinition {
     readonly silent?: boolean;
     readonly ownerRequired?: boolean;
     actor?(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext): number;
-    options(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime): readonly { id: string; label: string; ids?: readonly number[]; targets?: readonly number[]; pass?: boolean }[];
+    options(state: ReadonlyGameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime): readonly { id: string; label: string; ids?: readonly number[]; targets?: readonly number[]; zone?: 'hand'; slot?: number; pass?: boolean }[];
     execute(state: GameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, action: import('../domain/state.ts').ContentChoiceAction, runtime: ContentRuntime): void;
   };
   readonly callback?: (state: GameState, owner: number, context: import('../domain/state.ts').ContentChoiceContext, runtime: ContentRuntime) => void;
@@ -119,14 +121,18 @@ export interface SkillModifier {
   distance?(state: ReadonlyGameState, owner: number, from: number, to: number, current: number): number;
   attackRange?(state: ReadonlyGameState, owner: number, current: number): number;
   shaLimit?(state: ReadonlyGameState, owner: number, current: number): number;
+  shaUseEnabled?(state: ReadonlyGameState, owner: number): boolean;
+  shaTargetLimit?(state: ReadonlyGameState, owner: number, target: number, current: number): number;
+  damageAsHpLoss?(state: ReadonlyGameState, owner: number): boolean;
+  cardName?(state: ReadonlyGameState, owner: number, card: CardLike): CardName;
   shaTargets?(state: ReadonlyGameState, owner: number, current: number): number;
   handLimit?(state: ReadonlyGameState, owner: number, current: number): number;
   trickDistanceLimit?(state: ReadonlyGameState, owner: number, card: CardName, current: number): number;
   rescueRecovery?(state: ReadonlyGameState, owner: number, rescuer: number, victim: number, current: number): number;
   skipDiscard?(state: ReadonlyGameState, owner: number): boolean;
-  ignoresArmor?(state: ReadonlyGameState, owner: number): boolean;
+  ignoresArmor?(state: ReadonlyGameState, owner: number, target?: number): boolean;
   attackEffective?(state: ReadonlyGameState, owner: number, attack: AttackContext): boolean;
-  trickEffective?(state: ReadonlyGameState, owner: number, card: CardName): boolean;
+  trickEffective?(state: ReadonlyGameState, owner: number, card: CardName, source?: number, target?: number): boolean;
   damageReceived?(state: ReadonlyGameState, owner: number, context: import('../domain/resolution.ts').FrameData['damage'], current: number): number;
   damageAmount?(state: ReadonlyGameState, owner: number, target: number, card: number | CardLike | null, current: number): number;
 }

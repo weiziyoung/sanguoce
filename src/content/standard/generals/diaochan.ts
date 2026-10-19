@@ -15,7 +15,8 @@ export class DiaoChanGeneral implements StandardGeneralModule {
         return men.flatMap(initiator => men.filter(target => target.id !== initiator.id)
           .map(target => [initiator.id, target.id]));
       },
-      execute: (state, _owner, _costs, [initiator, target]) => {
+      execute: (state, _owner, _costs, [initiator, target], runtime) => {
+        if (!runtime.queries.trickEffective(state, target, 'juedou', initiator)) return;
         // The first man initiates the virtual Duel; the second must respond first.
         // Lijian has no nullification window.
         promptResponse(state, { mode: 'juedou', actor: target, source: initiator, cardName: 'juedou' });

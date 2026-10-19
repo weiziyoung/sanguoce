@@ -74,6 +74,8 @@ function publicStatus(player: VisiblePlayer): string {
     player.huashen ? `化身：${player.huashen.selected ? STANDARD_MODEL_GENERALS[player.huashen.selected]?.label ?? '' : '未选择'}；共有${player.huashen.count}张${player.huashen.generals ? '：' + player.huashen.generals.map(id => STANDARD_MODEL_GENERALS[id]?.label ?? id).join('、') : ''}` : '',
     player.piles?.['mountain.tuntian']?.length ? `田：${player.piles['mountain.tuntian'].map(cardText).join('、')}` : '',
     player.faceDown ? '背面朝上：下个回合跳过并翻回正面' : '',
+    player.skillState?.['yijiang2011.zhichi'] ? '智迟生效：本回合杀和普通锦囊对其无效' : '',
+    player.skillState?.['yijiang2011.xianzhen'] ? player.skillState['yijiang2011.xianzhen'].won ? `陷阵拼点胜：对座位${player.skillState['yijiang2011.xianzhen'].target}无视距离、防具及杀次数` : '陷阵未赢：本回合不能使用杀' : '',
     player.spentLimitedSkills?.length ? `已用限定技：${player.spentLimitedSkills.map(id => STANDARD_MODEL_SKILL_NAMES[id] ?? id).join('、')}` : '',
     player.piles?.['wind.buqu']?.length ? `不屈牌点数：${player.piles['wind.buqu'].map(card => card.rank).join('、')}` : '',
     player.chained ? '连环' : '', player.drunk ? '已饮酒：本回合下一张【杀】伤害+1，使用该杀即消耗' : '']

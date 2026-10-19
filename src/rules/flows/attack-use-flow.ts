@@ -49,10 +49,9 @@ export function chooseAttackPreparation(s: GameState, prompt: PromptOf<'attackPr
 
 export function launchAttack(s: GameState, runtime: ContentRuntime): void {
   const { source, sha, targets, nature, damageBonus, ignoreDistance, forcedBy } = resolutionStack.require(s, 'attackUse').data;
-  const ignoreArmor = runtime.queries.ignoresArmor(s, source);
   const attacks = targets.map(target => ({ kind: 'shaStart' as const, source, sha, target,
     ...(nature === 'normal' ? {} : { nature }), ...(damageBonus ? { damageBonus } : {}),
-    ...(ignoreArmor ? { ignoreArmor } : {}), ...(ignoreDistance === undefined ? {} : { ignoreDistance }),
+    ...(runtime.queries.ignoresArmor(s, source, target) ? { ignoreArmor: true } : {}), ...(ignoreDistance === undefined ? {} : { ignoreDistance }),
     ...(forcedBy === undefined ? {} : { forcedBy }) }));
   if (runtime.triggers.forEvent('attackUsed').length) resolutionStack.enqueue(s, { kind: 'openTriggers', signal: { kind: 'attackUsed',
     data: { source, targets, card: typeof sha === 'number' ? s.cards[sha] : sha } }, then: attacks });

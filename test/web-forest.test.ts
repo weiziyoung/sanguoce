@@ -26,7 +26,7 @@ test('林包八将原版卡图、专属技能、选将与阵亡语音完整且�
 });
 
 test('启动页风火林分别勾选，两种玩法与两种牌堆的十六组合、返回主页和重开均保留配置', () => {
-  const ids = ['cards-standard', 'cards-junzheng', 'generals-wind', 'generals-fire', 'generals-forest', 'generals-mountain', 'mode-duel', 'mode-identity'];
+  const ids = ['cards-standard', 'cards-junzheng', 'generals-wind', 'generals-fire', 'generals-forest', 'generals-mountain', 'generals-yijiang2011', 'mode-duel', 'mode-identity'];
   const elements: Record<string, {checked: boolean; onclick?: () => void}> = Object.fromEntries(ids.map(id => [id, { checked: false }]));
   const sessions: ReturnType<typeof createBrowserSession>[] = [];
   bindModeSelection({ getElementById: (id: string) => elements[id] } as unknown as Document, new URLSearchParams('generals=forest'),

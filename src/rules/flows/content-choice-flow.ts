@@ -18,7 +18,7 @@ export function offerContentChoice(state: GameState, runtime: ContentRuntime): v
   if (!options.length) return;
   setPrompt(state, actor, 'contentChoice', `【${skill.label ?? ability}】：选择行动`, options.map(option =>
     leaf(`content:${ability}:${option.id}`, option.label, { type: option.pass ? 'pass' : 'choose',
-      choice: option.id, ids: [...(option.ids ?? [])], targets: [...(option.targets ?? [])] })),
+      choice: option.id, ...(option.zone ? { zone: option.zone, slot: option.slot } : {}), ids: [...(option.ids ?? [])], targets: [...(option.targets ?? [])] })),
   { ability, owner, ...context });
 }
 export function chooseContent(state: GameState, prompt: PromptOf<'contentChoice'>,

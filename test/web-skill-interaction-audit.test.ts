@@ -18,14 +18,17 @@ import { PindianFlow } from '../src/rules/flows/pindian-flow.ts';
 import { damage } from '../src/rules/flows/damage-flow.ts';
 import { beginAttackUse } from '../src/rules/flows/attack-use-flow.ts';
 import type { ActionChoice } from '../src/presentation/choice-view.ts';
+import { yijiangScene } from './support/yijiang2011-scenario.ts';
 import { mountainScene } from './support/mountain-scenario.ts';
+import { zonePickerChoices } from '../src/web/zone-picker.ts';
+import { zonePickerPosition } from '../src/web/layout.ts';
 import { tableSceneFixture } from './support/table-scene-fixture.ts';
 
 const coveredAbilities = new Set<string>();
 const skillId = (ability: string) => allContent.skills().find(skill => skill.id === ability ||
   skill.transformations?.some(transform => transform.id === ability))!.id;
 function richScene(general: string, count: number, cards: CardSet) {
-  const x = mountainScene(count, cards, count === 5);
+  const x = yijiangScene(count, cards, count === 5);
   for (let seat = 0; seat < count; seat++) x.general(seat, seat ? 'standard.caocao' : general);
   x.f.state.players[0].hp--;
   for (const [name, suit] of [['sha', 'heart'], ['sha', 'spade'], ['shan', 'heart'], ['shan', 'diamond'],
@@ -57,6 +60,12 @@ function reach(ui: ReturnType<typeof tableSceneFixture>, choice: ActionChoice) {
   if (model.decision.kind === 'play' && choice.ability) ui.clickSkill(choice.ability);
   if (model.tuxiIntent && choice.ability === 'standard.tuxi') ui.node('context-actions').children[0].click();
   if (model.ganglieDiscardIntent && choice.cardIds.length) ui.node('context-actions').children[0].click();
+  if (!ui.submitted.length && choice.zone === 'hand' && choice.slot !== undefined && !choice.cardIds.length) {
+    const obs = observe(ui.state, model.decision.actor), picks = zonePickerChoices(obs, model);
+    const index = picks.findIndex(pick => pick.choice.id === choice.id), pos = zonePickerPosition(index, picks.length, false);
+    const back = ui.scene.objects.find(item => item.interactive && item.x === pos.x && item.y === pos.y && item.depth === 50 + index);
+    assert.ok(back, '暗手牌必须有可点击牌背'); back.emit('pointerdown');
+  }
   if (!ui.submitted.length) {
     for (const id of choice.cardIds) {
       if (ui.scene.cards.some(sprite => sprite.card.id === id)) ui.clickCard(id);
@@ -79,6 +88,12 @@ function reach(ui: ReturnType<typeof tableSceneFixture>, choice: ActionChoice) {
 }
 
 const contentStages: [string, ContentChoiceContext][] = [
+  ['yijiang2011.luoying', { timing: 'gain' }], ['yijiang2011.jiushi', { timing: 'flip' }],
+  ['yijiang2011.shangshi', { timing: 'draw' }], ['yijiang2011.enyuan', { timing: 'pay', source: 1 }],
+  ['yijiang2011.xuanhuo', { timing: 'take', target: 1 }], ['yijiang2011.xuanhuo', { timing: 'give', target: 1 }],
+  ['yijiang2011.xinzhan', { timing: 'gain' }], ['yijiang2011.xinzhan', { timing: 'order' }],
+  ['yijiang2011.xuanfeng', { timing: 'effect' }], ['yijiang2011.buyi', { timing: 'reveal', target: 1 }],
+  ['yijiang2011.mingce', { timing: 'target', target: 1 }], ['yijiang2011.mingce', { timing: 'effect', target: 1, source: 0 }],
   ['wind.shensu', { timing: 'judge' }], ['wind.shensu', { timing: 'play' }],
   ['wind.tianxiang', { timing: 'damage', source: 1, amount: 1 }],
   ['wind.buqu', { timing: 'add' }], ['wind.buqu', { timing: 'remove' }], ['wind.leiji', { timing: 'target' }],
@@ -111,6 +126,14 @@ for (const [ability, context] of contentStages) {
         state.deck.push(state.players[0].equip.plusHorse!); state.players[0].equip.plusHorse = null;
       }
       const actualContext = structuredClone(context);
+      if (ability === 'yijiang2011.xuanhuo' && context.timing === 'give' && count === 2) continue;
+      if (ability === 'yijiang2011.xuanhuo' && context.timing === 'give') actualContext.selectedIds = [state.players[0].hand[0]];
+      if (ability === 'yijiang2011.luoying') { const id = state.players[1].hand[0]; discardOwned(state, 1, id); actualContext.selectedIds = [id]; }
+      if (ability === 'yijiang2011.jiushi') state.players[0].faceDown = true;
+      if (ability === 'yijiang2011.shangshi') { state.deck.push(...state.players[0].hand); state.players[0].hand = []; }
+      if (ability === 'yijiang2011.buyi') state.players[1].hp = 0;
+      if (ability === 'yijiang2011.xinzhan') { const ids = state.deck.splice(-3); state.table.push(...ids); actualContext.privateCards = ids; actualContext.remaining = ids; actualContext.selectedIds = []; }
+
       if (ability === 'mountain.guzheng') {
         const discarded = [...state.players[1].hand];
         for (const id of discarded) discardOwned(state, 1, id);

@@ -100,7 +100,18 @@
     "mountain.sunce": "/assets/generals/mountain.sunce.png",
     "mountain.zhangzhaozhanghong": "/assets/generals/mountain.zhangzhaozhanghong.png",
     "mountain.caiwenji": "/assets/generals/mountain.caiwenji.png",
-    "mountain.zuoci": "/assets/generals/mountain.zuoci.png"
+    "mountain.zuoci": "/assets/generals/mountain.zuoci.png",
+    "yijiang2011.caozhi": "/assets/generals/yijiang2011.caozhi.png",
+    "yijiang2011.yujin": "/assets/generals/yijiang2011.yujin.png",
+    "yijiang2011.zhangchunhua": "/assets/generals/yijiang2011.zhangchunhua.png",
+    "yijiang2011.fazheng": "/assets/generals/yijiang2011.fazheng.png",
+    "yijiang2011.masu": "/assets/generals/yijiang2011.masu.png",
+    "yijiang2011.xushu": "/assets/generals/yijiang2011.xushu.png",
+    "yijiang2011.xusheng": "/assets/generals/yijiang2011.xusheng.png",
+    "yijiang2011.lingtong": "/assets/generals/yijiang2011.lingtong.png",
+    "yijiang2011.wuguotai": "/assets/generals/yijiang2011.wuguotai.png",
+    "yijiang2011.chengong": "/assets/generals/yijiang2011.chengong.png",
+    "yijiang2011.gaoshun": "/assets/generals/yijiang2011.gaoshun.png"
   },
   "cardAudio": {
     "sha": {
@@ -1092,6 +1103,160 @@
       "aliases": {},
       "death": "/assets/audio/generals/mountain.zuoci/death.mp3",
       "selection": "/assets/audio/generals/mountain.zuoci/mountain.huashen-1.mp3"
+    },
+    "yijiang2011.caozhi": {
+      "skills": {
+        "yijiang2011.luoying": [
+          "/assets/audio/generals/yijiang2011.caozhi/yijiang2011.luoying-1.mp3",
+          "/assets/audio/generals/yijiang2011.caozhi/yijiang2011.luoying-2.mp3"
+        ],
+        "yijiang2011.jiushi": [
+          "/assets/audio/generals/yijiang2011.caozhi/yijiang2011.jiushi-1.mp3",
+          "/assets/audio/generals/yijiang2011.caozhi/yijiang2011.jiushi-2.mp3"
+        ]
+      },
+      "aliases": {
+        "yijiang2011.jiushi": "yijiang2011.jiushi"
+      },
+      "death": "/assets/audio/generals/yijiang2011.caozhi/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.caozhi/yijiang2011.luoying-1.mp3"
+    },
+    "yijiang2011.yujin": {
+      "skills": {
+        "yijiang2011.yizhong": [
+          "/assets/audio/generals/yijiang2011.yujin/yijiang2011.yizhong-1.mp3",
+          "/assets/audio/generals/yijiang2011.yujin/yijiang2011.yizhong-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.yujin/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.yujin/yijiang2011.yizhong-1.mp3"
+    },
+    "yijiang2011.zhangchunhua": {
+      "skills": {
+        "yijiang2011.jueqing": [
+          "/assets/audio/generals/yijiang2011.zhangchunhua/yijiang2011.jueqing-1.mp3",
+          "/assets/audio/generals/yijiang2011.zhangchunhua/yijiang2011.jueqing-2.mp3"
+        ],
+        "yijiang2011.shangshi": [
+          "/assets/audio/generals/yijiang2011.zhangchunhua/yijiang2011.shangshi-1.mp3",
+          "/assets/audio/generals/yijiang2011.zhangchunhua/yijiang2011.shangshi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.zhangchunhua/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.zhangchunhua/yijiang2011.jueqing-1.mp3"
+    },
+    "yijiang2011.fazheng": {
+      "skills": {
+        "yijiang2011.enyuan": [
+          "/assets/audio/generals/yijiang2011.fazheng/yijiang2011.enyuan-1.mp3",
+          "/assets/audio/generals/yijiang2011.fazheng/yijiang2011.enyuan-2.mp3"
+        ],
+        "yijiang2011.xuanhuo": [
+          "/assets/audio/generals/yijiang2011.fazheng/yijiang2011.xuanhuo-1.mp3",
+          "/assets/audio/generals/yijiang2011.fazheng/yijiang2011.xuanhuo-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.fazheng/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.fazheng/yijiang2011.enyuan-1.mp3"
+    },
+    "yijiang2011.masu": {
+      "skills": {
+        "yijiang2011.xinzhan": [
+          "/assets/audio/generals/yijiang2011.masu/yijiang2011.xinzhan-1.mp3"
+        ],
+        "yijiang2011.huilei": [
+          "/assets/audio/generals/yijiang2011.masu/yijiang2011.huilei-1.mp3",
+          "/assets/audio/generals/yijiang2011.masu/yijiang2011.huilei-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.masu/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.masu/yijiang2011.xinzhan-1.mp3"
+    },
+    "yijiang2011.xushu": {
+      "skills": {
+        "yijiang2011.wuyan": [
+          "/assets/audio/generals/yijiang2011.xushu/yijiang2011.wuyan-1.mp3",
+          "/assets/audio/generals/yijiang2011.xushu/yijiang2011.wuyan-2.mp3"
+        ],
+        "yijiang2011.jujian": [
+          "/assets/audio/generals/yijiang2011.xushu/yijiang2011.jujian-1.mp3",
+          "/assets/audio/generals/yijiang2011.xushu/yijiang2011.jujian-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.xushu/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.xushu/yijiang2011.wuyan-1.mp3"
+    },
+    "yijiang2011.xusheng": {
+      "skills": {
+        "yijiang2011.pojun": [
+          "/assets/audio/generals/yijiang2011.xusheng/yijiang2011.pojun-1.mp3",
+          "/assets/audio/generals/yijiang2011.xusheng/yijiang2011.pojun-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.xusheng/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.xusheng/yijiang2011.pojun-1.mp3"
+    },
+    "yijiang2011.lingtong": {
+      "skills": {
+        "yijiang2011.xuanfeng": [
+          "/assets/audio/generals/yijiang2011.lingtong/yijiang2011.xuanfeng-1.mp3",
+          "/assets/audio/generals/yijiang2011.lingtong/yijiang2011.xuanfeng-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.lingtong/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.lingtong/yijiang2011.xuanfeng-1.mp3"
+    },
+    "yijiang2011.wuguotai": {
+      "skills": {
+        "yijiang2011.ganlu": [
+          "/assets/audio/generals/yijiang2011.wuguotai/yijiang2011.ganlu-1.mp3",
+          "/assets/audio/generals/yijiang2011.wuguotai/yijiang2011.ganlu-2.mp3"
+        ],
+        "yijiang2011.buyi": [
+          "/assets/audio/generals/yijiang2011.wuguotai/yijiang2011.buyi-1.mp3",
+          "/assets/audio/generals/yijiang2011.wuguotai/yijiang2011.buyi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.wuguotai/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.wuguotai/yijiang2011.ganlu-1.mp3"
+    },
+    "yijiang2011.chengong": {
+      "skills": {
+        "yijiang2011.mingce": [
+          "/assets/audio/generals/yijiang2011.chengong/yijiang2011.mingce-1.mp3",
+          "/assets/audio/generals/yijiang2011.chengong/yijiang2011.mingce-2.mp3"
+        ],
+        "yijiang2011.zhichi": [
+          "/assets/audio/generals/yijiang2011.chengong/yijiang2011.zhichi-1.mp3",
+          "/assets/audio/generals/yijiang2011.chengong/yijiang2011.zhichi-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.chengong/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.chengong/yijiang2011.mingce-1.mp3"
+    },
+    "yijiang2011.gaoshun": {
+      "skills": {
+        "yijiang2011.xianzhen": [
+          "/assets/audio/generals/yijiang2011.gaoshun/yijiang2011.xianzhen-1.mp3",
+          "/assets/audio/generals/yijiang2011.gaoshun/yijiang2011.xianzhen-2.mp3"
+        ],
+        "yijiang2011.jinjiu": [
+          "/assets/audio/generals/yijiang2011.gaoshun/yijiang2011.jinjiu-1.mp3",
+          "/assets/audio/generals/yijiang2011.gaoshun/yijiang2011.jinjiu-2.mp3"
+        ]
+      },
+      "aliases": {},
+      "death": "/assets/audio/generals/yijiang2011.gaoshun/death.mp3",
+      "selection": "/assets/audio/generals/yijiang2011.gaoshun/yijiang2011.xianzhen-1.mp3"
     }
   },
   "systemAudio": {

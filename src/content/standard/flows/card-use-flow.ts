@@ -17,8 +17,9 @@ import { ProxyResponseFlow } from './proxy-response-flow.ts';
 
 function playCard(s: GameState, source: number, data: Extract<ActionMap["play"], { type: "play" }>, runtime: ContentRuntime): void {
   const { cid, targets } = data;
-  const cname = name(s, cid);
+  const cname = runtime.queries.cardName(s, source, s.cards[cid]);
   const definition = runtime.content.card(cname);
+  const renamed = cname !== name(s, cid) ? { effectiveName: cname } : {};
   if (definition.effect === 'equip') {
     equip(s, source, cid, runtime.content);
     return;
@@ -32,10 +33,10 @@ function playCard(s: GameState, source: number, data: Extract<ActionMap["play"],
   cardMovement.move(s, [cid], { kind: "table" }, source);
   push(s, { kind: "finishCard", cid, source });
   if (!runtime.triggers.forEvent('cardUsed').length) {
-    emitEvent(s, 'cardUsed', { source, card: cid, targets });
+    emitEvent(s, 'cardUsed', { source, card: cid, targets, ...renamed });
     handleResolveCardUseTask(s, { kind: 'resolveCardUse', source, cid, targets }, runtime);
   } else {
-    push(s, { kind: 'openTriggers', signal: { kind: 'cardUsed', data: { source, card: cid, targets } },
+    push(s, { kind: 'openTriggers', signal: { kind: 'cardUsed', data: { source, card: cid, targets, ...renamed } },
       then: [{ kind: 'resolveCardUse', source, cid, targets }] });
   }
 }
@@ -43,14 +44,14 @@ function playCard(s: GameState, source: number, data: Extract<ActionMap["play"],
 export function handleResolveCardUseTask(s: GameState, task: TaskOf<'resolveCardUse'>,
   runtime: ContentRuntime = getStandardRuntime()): void {
   const { source, cid, targets } = task;
-  const cname = name(s, cid);
+  const cname = runtime.queries.cardName(s, source, s.cards[cid]);
   const definition = runtime.content.card(cname);
   if (definition.effect === 'attack') {
     if (source === s.active) s.shaUsed++;
     if (source === s.active && s.phase === 'play' && s.shaPlayedOrRespondedInPlay !== undefined) {
       s.shaPlayedOrRespondedInPlay = true;
     }
-    beginAttackUse(s, source, cid, targets, runtime, { ignoreDistance: false });
+    beginAttackUse(s, source, cname === s.cards[cid].name ? cid : { ...s.cards[cid], name: cname }, targets, runtime, { ignoreDistance: false });
   } else if (definition.useEffect) {
     definition.useEffect(s, source, cid, runtime);
   } else if (definition.effect === 'recover') {
@@ -121,7 +122,7 @@ export function handleCardUseStartTask(s: GameState, runtime: ContentRuntime = g
       throw new Error('转化酒使用已失效');
     spendCard(s, source, action.ids, action.cname, 'use', runtime, action.transformation);
     emitEvent(s, 'transformationUsed', { ability: action.transformation, label: runtime.content.skillForTransformation(action.transformation).label ?? action.transformation, owner: source, produces: action.cname });
-    emitEvent(s, 'cardUsed', { source, card: action.ids[0], effectiveName: action.cname, targets: [] });
+    if (action.ids.length) emitEvent(s, 'cardUsed', { source, card: action.ids[0], effectiveName: action.cname, targets: [] });
     definition.useEffect!(s, source, action.ids[0], runtime);
   } else if (action.type === 'virtualDelay') {
     const definition = runtime.content.card(action.cname);

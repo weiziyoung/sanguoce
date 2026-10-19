@@ -39,6 +39,7 @@ import { AttackRedirectFlow } from '../rules/flows/attack-redirect-flow.ts';
 
 export function createStandardResolution(modes: ModeRegistry, triggers: TriggerRegistry = standardTriggers,
   runtime: ContentRuntime = new ContentRuntime(standardContent, triggers)) {
+  const watchedEvents = new Set(runtime.content.skills().flatMap(skill => [...(skill.events ?? [])]));
   const resolver = new TriggerResolver(triggers, runtime.abilities, runtime);
   const deaths = new DeathFlow(modes, runtime);
   const skills = new SkillFlow(runtime);
@@ -93,6 +94,10 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     pindianResolve: s => pindian.resolve(s),
     contentChoiceOffer: s => offerContentChoice(s, runtime),
     contentCallback: (s, task) => runtime.content.requireSkill(task.ability).callback?.(s, task.owner, task.context, runtime),
+    contentEvent: (s, task) => {
+      if (s.players[task.owner].alive && runtime.abilities.has(s, task.owner, task.ability))
+        runtime.content.requireSkill(task.ability).onEvent?.(s, task.owner, s.events[task.eventId - 1], runtime);
+    },
     contentHpChanged: (s, task) => {
       for (const skill of runtime.abilities.list(s, task.player)) skill.hpChanged?.(s, task.player, task.before, task.after, runtime);
     },
@@ -134,6 +139,16 @@ export function createStandardResolution(modes: ModeRegistry, triggers: TriggerR
     for (const event of state.events.slice(beforeEventCount).filter(event => event.kind === 'hpChanged').reverse()) {
       if (event.kind === 'hpChanged' && runtime.abilities.list(state, event.data.player).some(skill => skill.hpChanged))
         resolutionStack.enqueue(state, { kind: 'contentHpChanged', ...event.data });
+    }
+    for (const event of state.events.slice(beforeEventCount).filter(e => watchedEvents.has(e.kind)).reverse()) {
+      const tasks: import('../domain/state.ts').Task[] = [];
+      for (let offset = 0; offset < state.players.length; offset++) {
+        const owner = (state.active + offset) % state.players.length;
+        if (!state.players[owner].alive) continue;
+        for (const skill of runtime.abilities.list(state, owner)) if (skill.events?.includes(event.kind))
+          tasks.push({ kind: 'contentEvent', owner, ability: skill.id, eventId: event.id });
+      }
+      if (tasks.length) resolutionStack.enqueue(state, ...tasks);
     }
     const hasLossTriggers = runtime.triggers.forEvent('cardsLost').length > 0;
     const movements = state.events.slice(beforeEventCount).filter(event => event.kind === 'cardsMoved').reverse();

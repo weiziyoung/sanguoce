@@ -55,7 +55,7 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
   const { cname, source, target, cid } = task;
   if (!person(s, target).alive) return;
   const definition = runtime.content.card(cname);
-  if (!runtime.queries.trickEffective(s, target, cname)) return;
+  if (!runtime.queries.trickEffective(s, target, cname, source)) return;
   if (definition.trickEffect) { definition.trickEffect(s, task, runtime); return; }
   const trick = resolutionStack.get(s, task.trickFrameId, 'trick').data;
   const effectiveCard = trick.card;
@@ -101,7 +101,7 @@ export function resolveTrick(s: GameState, task: TrickContext, runtime: ContentR
 export function handleTrickTargetTask(s: GameState, task: TaskOf<"trickTarget">,
   runtime: ContentRuntime = getStandardRuntime()): void {
   if (runtime.queries.canTarget(s, task.source, task.target, task.cname, task.source === task.target, resolutionStack.get(s, task.trickFrameId, 'trick').data.card ?? s.cards[task.cid], false) &&
-    runtime.queries.trickEffective(s, task.target, task.cname)) {
+    runtime.queries.trickEffective(s, task.target, task.cname, task.source)) {
     const effect: Task = { ...task, kind: "resolveTrick" };
     beginNullify(s, effect, null, task.source, task.target, task.cname);
   }
