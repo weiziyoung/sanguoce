@@ -1,3 +1,5 @@
+import type { Card } from '../../catalog.ts';
+import type { OpeningOptions } from './browser-opening.ts';
 import type { Decision, DecisionPolicy, Observation } from '../../contracts.ts';
 import type { GeneralCandidate } from './duel-general-selector.ts';
 import type { WebGameDocument } from './web-game-record.ts';
@@ -14,7 +16,9 @@ export interface BrowserSession {
   readonly observation: Observation;
   readonly finished: boolean;
   gameDocument(): WebGameDocument;
-  start(generalId: string): void;
+  readonly pointCandidates?: readonly GeneralCandidate[];
+  openingHand?(generalId: string, options?: OpeningOptions): Card[];
+  start(generalId: string, options?: OpeningOptions): void;
   choose(optionId: string, decisionId: string): void;
   computerStep(policy?: DecisionPolicy, beforeCommit?: () => Promise<void>): void | Promise<void>;
 }

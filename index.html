@@ -39,6 +39,7 @@
     <p id="music-unlock" class="music-unlock hidden" role="status">点击任意位置开启音乐</p>
     <section id="mode-select" class="screen-overlay mode-screen hidden" aria-labelledby="mode-title">
       <nav class="home-links" aria-label="主页功能">
+        <button id="shop-home" class="small-control" aria-haspopup="dialog">商店</button>
         <button id="player-home" class="small-control" aria-haspopup="dialog">玩家</button>
         <a class="small-control" href="https://github.com/weiziyoung/sanguoce" target="_blank" rel="noopener noreferrer" title="查看 GitHub 仓库（在新标签页打开）">GitHub ↗</a>
         <button id="leaderboard-toggle" class="small-control" aria-expanded="false" aria-controls="home-leaderboard">积分榜</button>
@@ -71,13 +72,14 @@
         <p id="mode-seed" class="sr-only"></p>
       </div>
     </section>
+    <nav id="selection-tools" class="selection-tools hidden" aria-label="选将道具"><button id="shop-selection" class="small-control" aria-haspopup="dialog">商店</button><button id="point-general" class="small-control" aria-haspopup="dialog">使用点将卡</button></nav>
     <div id="game-canvas" aria-label="三国策略卡牌牌桌，拖动手牌至武将或桌面出牌"></div>
     <audio id="bgm" preload="auto" loop aria-hidden="true"></audio>
     <audio id="battle-bgm" preload="auto" loop aria-hidden="true"></audio>
     <div id="hud" class="hidden">
       <header class="topbar">
         <div class="brand"><span id="brand-mode">对决</span></div>
-        <div class="topright"><span id="seed"></span><button id="player-game" class="small-control" aria-haspopup="dialog">玩家</button><button id="fullscreen" class="small-control">全屏</button><button id="mute" class="small-control">声音</button><button id="settings" class="small-control" aria-haspopup="dialog">设置</button><button id="restart" class="small-control">重开</button><button id="return-home" class="small-control" title="结束当前对局，返回玩法选择页">返回主页</button></div>
+        <div class="topright"><span id="seed"></span><button id="shop-game" class="small-control" aria-haspopup="dialog">商店</button><button id="player-game" class="small-control" aria-haspopup="dialog">玩家</button><button id="fullscreen" class="small-control">全屏</button><button id="mute" class="small-control">声音</button><button id="settings" class="small-control" aria-haspopup="dialog">设置</button><button id="restart" class="small-control">重开</button><button id="return-home" class="small-control" title="结束当前对局，返回玩法选择页">返回主页</button></div>
       </header>
       <div class="turnbox" aria-label="当前回合与牌堆"><strong id="turn"></strong><span id="phase"></span><small id="pile"></small></div>
       <aside class="battle-log"><div class="panel-title">战斗记录 <span>◇</span></div><div id="log"></div></aside>
@@ -107,12 +109,14 @@
         <p id="settlement-detail" class="screen-intro"></p>
         <div id="settlement-players" class="settlement-players"></div>
         <div class="settlement-reward"><div><span>本局获得积分</span><strong id="settlement-earned-points">—</strong></div><p id="settlement-reward-detail"></p><small id="settlement-total-points"></small></div>
+        <div class="settlement-reward"><div><span>本局获得金币</span><strong id="settlement-earned-coins">—</strong></div><p id="settlement-coins-detail"></p><small id="settlement-wallet"></small></div>
         <div class="settlement-section-title"><span>本局贡献榜</span><small>按贡献分排名 · MVP 仅从胜方评选</small></div>
         <div class="settlement-report-wrap"><table id="settlement-scoreboard" class="settlement-report settlement-scoreboard" aria-label="本局贡献积分排名"></table></div>
         <details class="settlement-scoring"><summary>贡献分与累计积分怎么算？</summary><p id="settlement-score-rules"></p><p id="settlement-reward-rules"></p></details>
         <details class="settlement-damage-details"><summary>查看伤害明细 <span>每名武将的伤害去向与实际治疗</span></summary><div class="settlement-report-wrap"><table id="settlement-report" class="settlement-report" aria-label="每名武将的对局战绩"></table></div></details>
         <p id="settlement-upload" class="settlement-upload" role="status"></p>
         <div class="settlement-actions">
+          <button id="shop-settlement" aria-haspopup="dialog">商店</button>
           <button id="player-settlement" aria-haspopup="dialog">玩家</button>
           <button id="settlement-download" class="hidden">下载轨迹</button>
           <button id="settlement-retry" class="hidden">重试保存</button>
@@ -121,6 +125,25 @@
         </div>
       </div>
     </section>
+    <dialog id="shop-dialog" class="economy-dialog" aria-labelledby="shop-title">
+      <header class="settings-heading"><div><p class="settings-eyebrow">三 国 策</p><h2 id="shop-title">商店</h2></div><button id="shop-close" class="settings-close" autofocus>完成</button></header>
+      <div class="shop-wallet"><span>我的金币</span><strong id="shop-coins">0</strong></div>
+      <p class="settings-description">只有对战胜利才获得金币。对决胜利 20～50 金币，身份局胜利 40～120 金币；贡献越高，奖励越多。伤害、治疗与有效击杀增加贡献，友伤与误杀扣除贡献。金币和道具随账号保存，游客认领时一并转入。</p>
+      <div class="shop-products">
+        <article class="shop-product"><span class="shop-item-symbol" aria-hidden="true">将</span><h3>点将卡</h3><p id="shop-general-description"></p><small id="shop-owned-general"></small><button id="shop-buy-general" class="settings-secondary">100 金币 · 购买一张</button></article>
+        <article class="shop-product"><span class="shop-item-symbol" aria-hidden="true">运</span><h3>重抽卡</h3><p id="shop-redraw-description"></p><small id="shop-owned-redraw"></small><button id="shop-buy-redraw" class="settings-secondary">50 金币 · 购买一张</button></article>
+      </div><p id="shop-status" role="status" aria-live="polite"></p>
+    </dialog>
+    <dialog id="point-dialog" class="economy-dialog" aria-labelledby="point-title">
+      <header class="settings-heading"><h2 id="point-title">点将出战</h2><button id="point-close" class="settings-close" autofocus>返回</button></header>
+      <label class="point-search">寻找武将<input id="point-search" type="search" placeholder="武将名或技能名" /></label>
+      <p id="point-status" role="status" aria-live="polite"></p><div id="point-generals" class="point-generals"></div>
+    </dialog>
+    <dialog id="opening-dialog" class="economy-dialog" aria-labelledby="opening-title">
+      <header class="settings-heading"><div><p class="settings-eyebrow">出 征 前</p><h2 id="opening-title">确认起手牌</h2></div></header>
+      <div id="opening-cards" class="opening-cards"></div><p id="opening-status" role="status" aria-live="polite"></p>
+      <footer class="settings-footer"><button id="opening-redraw" class="settings-secondary">使用重抽卡</button><button id="opening-start" class="settings-secondary" autofocus>就此开战</button></footer>
+    </dialog>
     <dialog id="player-dialog" aria-labelledby="player-title" aria-describedby="player-description">
       <header class="settings-heading">
         <div><p id="player-kind" class="settings-eyebrow">游客 · 无需注册</p><h2 id="player-title">玩家与战绩</h2></div>
@@ -128,6 +151,7 @@
       </header>
       <p id="player-description" class="settings-description">直接开局即可游玩，登录后可跨设备保存战绩。</p>
       <div class="player-points-card"><span>累计积分</span><strong id="player-points">0</strong><small>每局完成都会攒积分，游客登录后可一起保存到账号。</small></div>
+      <p class="player-wallet">可用金币 <strong id="player-coins">0</strong> · 可在商店购买道具</p>
       <form id="player-profile-form" class="player-profile">
         <img id="player-avatar" alt="玩家头像" referrerpolicy="no-referrer" hidden />
         <label for="player-nickname">游戏昵称<input id="player-nickname" name="nickname" maxlength="48" autocomplete="nickname" placeholder="正在读取玩家身份" /></label>

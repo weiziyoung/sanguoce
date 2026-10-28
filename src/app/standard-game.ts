@@ -17,10 +17,10 @@ import { TriggerRegistry } from "../rules/trigger-registry.ts";
 import { standardContent } from '../content/standard/content.ts';
 import { ContentRegistry } from '../rules/content-registry.ts';
 import { ContentRuntime } from '../rules/content-runtime.ts';
+import { cardMovement } from '../rules/operations/card-movement-service.ts';
 import { random } from '../rules/operations/random.ts';
 
-export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry | undefined = undefined, content: ContentRegistry = contentForCards(config.cards, config.generalPacks)): GameState {
-  const runtime = new ContentRuntime(content, triggers);
+export function createOpeningState(config: GameConfig = {}, modes: ModeRegistry = standardModes, content: ContentRegistry = contentForCards(config.cards, config.generalPacks)): GameState {
   const {
     seed = 1, players = [
       { label: "你", sex: "male" }, { label: "电脑", sex: "female" },
@@ -63,7 +63,24 @@ export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameS
     player.hp = player.maxHp;
   }
   deckService.shuffle(s);
-  for (const p of s.players) draw(s, p.id, 4);
+  if (config.opening && (!Number.isInteger(config.opening.humanSeat) || !s.players[config.opening.humanSeat] || typeof config.opening.redraw !== 'boolean'))
+    throw new Error('起手牌配置无效');
+  for (const p of s.players) draw(s, p.id, config.opening ? 5 : 4);
+  if (config.opening?.redraw) {
+    const p = s.players[config.opening.humanSeat];
+    const previous = [...p.hand];
+    // Hold old cards outside the draw pile until five new cards are dealt.
+    cardMovement.move(s, previous, { kind: 'table' });
+    draw(s, p.id, previous.length);
+    cardMovement.move(s, previous, { kind: 'deck' });
+    deckService.shuffle(s);
+  }
+  return s;
+}
+
+export function createGame(config: GameConfig = {}, trace?: TransitionSink<GameState>, modes: ModeRegistry = standardModes, triggers: TriggerRegistry | undefined = undefined, content: ContentRegistry = contentForCards(config.cards, config.generalPacks)): GameState {
+  const runtime = new ContentRuntime(content, triggers);
+  const s = createOpeningState(config, modes, content);
   startTurn(s);
   resolutionStack.enqueue(s, ...s.players.flatMap(p => runtime.abilities.list(s, p.id).filter(skill => skill.gameStart)
     .map(skill => ({ kind: 'gameStartSkill' as const, owner: p.id, ability: skill.id }))));

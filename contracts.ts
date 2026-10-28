@@ -19,6 +19,8 @@ export interface GameConfig {
   seed?: number;
   players?: PlayerConfig[];
   initialHp?: number;
+  /** Browser pregame: five cards per player, optional one-time whole-hand redraw before skills/turns. */
+  opening?: { humanSeat: number; redraw: boolean };
   first?: number;
   /** Standard remains available for reproducible legacy games. */
   cards?: 'standard' | 'junzheng';

@@ -10,7 +10,7 @@ test('浏览器 1v1 和 CLI 共用选将、种子、决策与规则，可完整�
   const browser = new BrowserDuel(42);
   const selected = browser.offer.player[0];
   browser.start(selected.id);
-  const direct = new GameEngine(new StandardRuleset(), { seed: 42, players: [
+  const direct = new GameEngine(new StandardRuleset(), { seed: 42, opening: { humanSeat: browser.humanSeat, redraw: false }, players: [
     { label: selected.label, sex: selected.sex, general: selected.id },
     { label: browser.offer.computerPick.label, sex: browser.offer.computerPick.sex,
       general: browser.offer.computerPick.id },

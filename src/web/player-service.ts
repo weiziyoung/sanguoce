@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { PlayerStore, tokenHash } from './player-store.ts';
 import type { PersonalGame, PlayerProfile, PlayerSession } from './player-types.ts';
 import { saveWebGame } from './web-game-upload.ts';
+import { coinReward, isShopItem } from './shop.ts';
 import { matchReward } from './match-reward.ts';
 
 const GUEST_COOKIE = 'sanguoce_guest';
@@ -70,6 +71,17 @@ export class PlayerService {
         this.checkPlayer(request, player);
         const cursor = new URL(request.url ?? '/', 'http://localhost').searchParams.get('cursor');
         this.json(response, this.store.history(player.id, cursor));
+      } else if (pathname === '/api/player/shop' || pathname === '/api/player/items/use') {
+        this.requireMethod(request, 'POST'); this.checkPlayer(request, player);
+        const { item, orderId, ticket } = await this.body(request);
+        if (!isShopItem(item)) throw new HttpError(400, '无效的商品');
+        if (pathname === '/api/player/shop' && (typeof orderId !== 'string' || !/^[\w-]{16,100}$/.test(orderId)))
+          throw new HttpError(400, '无效的购买编号');
+        if (pathname.endsWith('/use') && typeof ticket !== 'string') throw new HttpError(400, '缺少本局道具凭据');
+        try {
+          this.json(response, pathname.endsWith('/use') ? this.store.useItem(player.id, ticket as string, item)
+            : this.store.purchase(player.id, item, orderId as string));
+        } catch (error) { throw new HttpError(409, error instanceof Error ? error.message : '道具操作失败'); }
       } else if (pathname === '/api/player/profile') {
         this.requireMethod(request, 'PATCH'); this.checkPlayer(request, player);
         const { nickname } = await this.body(request);
@@ -109,10 +121,11 @@ export class PlayerService {
           const hash = tokenHash(JSON.stringify(game));
           if (match.document_hash && match.document_hash !== hash) throw new Error('已保存的对局不能覆盖');
           const reward = matchReward(game);
+          const gold = coinReward(game);
           const summary: PersonalGame = { id: match.id, finishedAt: new Date(game.finishedAt).toISOString(),
             mode, general: typeof human.general === 'string' ? human.general.slice(0, 120) : '',
             result: game.outcome.status === 'draw' ? 'draw' : game.outcome.winners.includes(game.humanSeat) ? 'win' : 'loss',
-            turn: game.turn, source: 'browser', earnedPoints: reward.total, reward };
+            turn: game.turn, source: 'browser', earnedPoints: reward.total, reward, earnedCoins: gold.total, coinReward: gold };
           return { id: match.id, commit: () => this.store.finish(match.id, hash, summary),
             receipt: () => this.store.receipt(match.id, player.id) };
         });

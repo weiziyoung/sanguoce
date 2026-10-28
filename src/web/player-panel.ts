@@ -88,6 +88,7 @@ export class PlayerPanel {
   private render(): void {
     const session = this.client.session;
     document.getElementById('player-points')!.textContent = session?.auth === 'unavailable' ? '—' : String(session?.player.points ?? 0);
+    document.getElementById('player-coins')!.textContent = String(session?.player.wallet?.coins ?? 0);
     const member = session?.auth === 'signed-in';
     const owner = session?.auth !== 'unavailable' ? session?.player.id ?? null : null;
     if (owner !== this.historyOwner) {
@@ -167,6 +168,8 @@ export class PlayerPanel {
     const points = document.createElement('span'); points.className = 'player-history-points';
     points.textContent = game.reward ? `积分 +${game.earnedPoints}` : '积分规则启用前的记录';
     if (game.reward) points.title = rewardDescription(game.reward);
-    row.append(result, detail, points, date); return row;
+    const coins = document.createElement('span'); coins.className = 'player-history-points';
+    coins.textContent = `金币 +${game.earnedCoins ?? 0}`;
+    row.append(result, detail, points, coins, date); return row;
   }
 }

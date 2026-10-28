@@ -56,6 +56,7 @@ test('结算渲染胜方 MVP、每人本局总积分、排名和分项，平局�
     assert.match(words(get('settlement-score-rules')), /只从胜方评选/);
     assert.match(words(get('settlement-score-rules')), /内奸获胜改为 \+30/);
     assert.equal(get('settlement-earned-points').textContent, '+80');
+    assert.equal(get('settlement-earned-coins').textContent, '+40');
     assert.match(get('settlement-reward-detail').textContent, /完成对局 \+40.*获胜 \+40/);
     assert.match(get('settlement-reward-rules').textContent, /未完成对局不加分/);
     assert.equal(get('settlement-report').children[1].children.length, 5, '伤害矩阵仍保留');
@@ -65,6 +66,7 @@ test('结算渲染胜方 MVP、每人本局总积分、排名和分项，平局�
     s.outcome = { status: 'draw', reason: 'no-survivors' }; game.outcome = s.outcome;
     showSettlement(observe(s, 0), 'identity', game);
     assert.equal(get('settlement').dataset.result, 'draw');
+    assert.equal(get('settlement-earned-coins').textContent, '+0');
     assert.match(words(get('settlement-mvp')), /不评 MVP/);
     assert.ok(get('settlement-players').children.every(card => !card.className.includes('mvp')));
     await new Promise(resolve => setImmediate(resolve));

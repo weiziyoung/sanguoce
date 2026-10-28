@@ -1,3 +1,4 @@
+import type { Wallet, ShopItem } from './shop.ts';
 import { appUrl } from './deployment.ts';
 import type { PlayerHistory, PlayerProfile, PlayerSession, PlayerLeaderboard } from './player-types.ts';
 
@@ -13,6 +14,17 @@ export class PlayerClient {
   private changed(): void { for (const listener of this.listeners) listener(); }
   updatePoints(points: number): void {
     if (this.session) { this.session.player.points = points; this.changed(); }
+  }
+  updateWallet(wallet: Wallet): void {
+    if (this.session) { this.session.player.wallet = wallet; this.changed(); }
+  }
+  async purchase(item: ShopItem, orderId: string): Promise<void> {
+    this.updateWallet(await this.request<Wallet>('/api/player/shop', 'POST', { item, orderId }));
+  }
+  async useItem(item: ShopItem): Promise<void> {
+    const ticket = await this.matchTicket;
+    if (!ticket) throw new Error('本局未连接账号服务，暂时不能使用道具');
+    this.updateWallet(await this.request<Wallet>('/api/player/items/use', 'POST', { item, ticket }));
   }
   async refresh(): Promise<PlayerSession> {
     if (this.pending) return this.pending;

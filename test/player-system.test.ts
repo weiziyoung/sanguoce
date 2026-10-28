@@ -293,3 +293,71 @@ test('排行榜同分顺序稳定，改名即时显示，游客认领合并后�
     await f.restart(); assert.deepEqual(await board(), after);
   } finally { await f.close(); }
 });
+
+test('金币仅胜利发放，结算重试不重复；购买原子扣费，库存与使用随认领和重启迁移', async () => {
+  const f = await fixture();
+  try {
+    const actor = f.actor(); const guest = await actor.me();
+    assert.deepEqual(guest.player.wallet, { coins: 0, items: { general: 0, redraw: 0 } });
+    const buy = (item: string, orderId: string = crypto.randomUUID()) => actor.request('/api/player/shop', 'POST', { item, orderId });
+    assert.equal((await buy('general')).status, 409);
+    assert.equal((await buy('fake')).status, 400);
+    assert.equal((await buy('redraw', 'bad')).status, 400);
+    const firstTicket = await actor.start();
+    const fake = { ...game(), earnedCoins: 99999, coinReward: { total: 99999 } };
+    const first = await actor.save(firstTicket, fake);
+    assert.equal((await first.json() as { earnedCoins: number }).earnedCoins, 20);
+    assert.equal((await actor.save(firstTicket, fake)).status, 201);
+    for (let seed = 20; seed < 24; seed++) await actor.save(await actor.start(seed), game(seed));
+    for (const status of ['loss', 'draw']) {
+      const seed = status === 'loss' ? 40 : 41;
+      const doc = { ...game(seed), outcome: status === 'loss'
+        ? { status: 'finished', winners: [1], losers: [0], reason: 'last-survivor' }
+        : { status: 'draw', reason: 'test' } };
+      const saved = await actor.save(await actor.start(seed), doc);
+      assert.equal((await saved.json() as { earnedCoins: number }).earnedCoins, 0);
+    }
+    assert.equal((await actor.me()).player.wallet.coins, 100);
+    const order = crypto.randomUUID();
+    const purchases = await Promise.all([buy('general', order), buy('general', order)]);
+    assert.deepEqual(purchases.map(reply => reply.status), [200, 200]);
+    assert.deepEqual((await actor.me()).player.wallet, { coins: 0, items: { general: 1, redraw: 0 } });
+    assert.equal((await buy('redraw')).status, 409);
+    const pending = await actor.start(60);
+    const use = (ticket: string, item: string) => actor.request('/api/player/items/use', 'POST', { ticket, item });
+    const other = f.actor(); await other.me();
+    assert.equal((await other.request('/api/player/items/use', 'POST', { ticket: pending, item: 'general' })).status, 409);
+    assert.equal((await use(firstTicket, 'general')).status, 409, '已结算对局不能用道具');
+    const uses = await Promise.all([use(pending, 'general'), use(pending, 'general')]);
+    assert.deepEqual(uses.map(reply => reply.status), [200, 200]);
+    assert.equal((await actor.me()).player.wallet.items.general, 0);
+    assert.equal((await use(await actor.start(61), 'general')).status, 409);
+    for (let seed = 70; seed < 78; seed++) await actor.save(await actor.start(seed), game(seed));
+    assert.equal((await buy('redraw')).status, 200);
+    assert.equal((await buy('general')).status, 200);
+    assert.equal((await actor.me()).player.wallet.coins, 10);
+    const history = await actor.history();
+    assert.equal(history.games.reduce((sum, row) => sum + (row.earnedCoins ?? 0), 0), 260);
+    actor.cookies.set('better-auth.session_token', 'alice'); await actor.me();
+    assert.equal((await actor.request('/api/player/claim', 'POST', { guestId: guest.player.id })).status, 200);
+    await f.restart();
+    const device = f.actor('alice'); const wallet = (await device.me()).player.wallet;
+    assert.deepEqual(wallet, { coins: 10, items: { general: 1, redraw: 1 } });
+    assert.equal((await use(pending, 'general')).status, 200, '认领后同一局的使用记录仍然去重');
+    assert.equal((await use(pending, 'redraw')).status, 200);
+    assert.deepEqual((await device.me()).player.wallet, { coins: 10, items: { general: 1, redraw: 0 } });
+  } finally { await f.close(); }
+});
+
+test('不同购买编号并发时不超扣金币，金币 API 校验 Origin 与当前玩家', async () => {
+  const f = await fixture();
+  try {
+    const actor = f.actor(); await actor.me();
+    for (let seed = 100; seed < 105; seed++) await actor.save(await actor.start(seed), game(seed));
+    const buys = await Promise.all([1, 2].map(() => actor.request('/api/player/shop', 'POST', { item: 'general', orderId: crypto.randomUUID() })));
+    assert.deepEqual(buys.map(reply => reply.status).sort(), [200, 409]);
+    assert.deepEqual((await actor.me()).player.wallet, { coins: 0, items: { general: 1, redraw: 0 } });
+    assert.equal((await actor.request('/api/player/shop', 'POST', { item: 'redraw', orderId: crypto.randomUUID() }, { origin: 'https://evil.example' })).status, 403);
+    assert.equal((await actor.request('/api/player/shop', 'POST', { item: 'redraw', orderId: crypto.randomUUID() }, { 'X-Sanguoce-Player': 'fake' })).status, 409);
+  } finally { await f.close(); }
+});

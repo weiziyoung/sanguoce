@@ -1,3 +1,4 @@
+import { openingGenerals, openingCards, pointCandidates, type OpeningOptions } from './browser-opening.ts';
 import { contentForCards, type GeneralPack, type CardSet } from './game-content.ts';
 import { GameEngine } from '../core/game-engine.ts';
 import { StandardRuleset } from './standard-game.ts';
@@ -32,16 +33,17 @@ export class BrowserDuel implements BrowserSession {
 
   get candidates() { return this.offer.player; }
 
-  start(playerGeneralId: string): void {
-    const player = this.offer.player.find(general => general.id === playerGeneralId);
-    if (!player) throw new Error('武将不在本局候选中');
-    const config = { cards: this.cards, generalPacks: [...this.generalPacks], seed: this.seed,
-      players: [
-        { label: player.label, sex: player.sex, general: player.id },
-        { label: this.offer.computerPick.label, sex: this.offer.computerPick.sex,
-          general: this.offer.computerPick.id },
-      ],
-    };
+  get pointCandidates() { return pointCandidates({ cards: this.cards, generalPacks: [...this.generalPacks] }); }
+  private openingConfig(generalId: string, options: OpeningOptions = {}) {
+    const base = { cards: this.cards, generalPacks: [...this.generalPacks], seed: this.seed };
+    const generals = openingGenerals(base, this.candidates, [this.offer.demoPick, this.offer.computerPick], this.humanSeat, generalId, options);
+    return { ...base, opening: { humanSeat: this.humanSeat, redraw: !!options.redraw },
+      players: generals.map(general => ({ label: general.label, sex: general.sex, general: general.id })) };
+  }
+  openingHand(generalId: string, options: OpeningOptions = {}) { return openingCards(this.openingConfig(generalId, options)); }
+  start(generalId: string, options: OpeningOptions = {}): void {
+    if (this.game) throw new Error('对局已经开始');
+    const config = this.openingConfig(generalId, options);
     this.record = new WebGameRecord(config, this.humanSeat);
     this.game = new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(this.cards, this.generalPacks)), config, this.record);
   }

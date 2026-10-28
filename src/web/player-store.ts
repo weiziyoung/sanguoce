@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { PersonalGame, PlayerHistory, PlayerProfile, PlayerLeaderboard } from './player-types.ts';
+import { SHOP_ITEMS, type ShopItem, type Wallet, type CoinReward } from './shop.ts';
 import type { MatchReward } from './match-reward.ts';
 
 export const tokenHash = (token: string): string => createHash('sha256').update(token).digest('hex');
@@ -39,7 +40,15 @@ export class PlayerStore {
         guest_id TEXT PRIMARY KEY REFERENCES players(id), member_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS match_rewards (
         match_id TEXT PRIMARY KEY REFERENCES matches(id), points INTEGER NOT NULL CHECK(points>=0), breakdown TEXT NOT NULL);
-      PRAGMA user_version=2;`);
+      CREATE TABLE IF NOT EXISTS coin_rewards (
+        match_id TEXT PRIMARY KEY REFERENCES matches(id), coins INTEGER NOT NULL CHECK(coins>=0), breakdown TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS shop_orders (
+        id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), item TEXT NOT NULL,
+        price INTEGER NOT NULL CHECK(price>0), created_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS item_uses (
+        match_id TEXT NOT NULL REFERENCES matches(id), item TEXT NOT NULL, PRIMARY KEY(match_id,item));
+      CREATE INDEX IF NOT EXISTS shop_orders_player ON shop_orders(player_id,item);
+      PRAGMA user_version=3;`);
   }
   close(): void { this.db.close(); }
 
@@ -56,7 +65,7 @@ export class PlayerStore {
     const row = this.row(this.canonical(id));
     const points = Number(this.db.prepare(`SELECT coalesce(sum(r.points),0) AS points FROM match_rewards r
       JOIN matches m ON m.id=r.match_id WHERE m.player_id=?`).get(row.id)!.points);
-    return { id: row.id, nickname: row.nickname, avatar: row.avatar, kind: row.blog_id ? 'member' : 'guest', points };
+    return { id: row.id, nickname: row.nickname, avatar: row.avatar, kind: row.blog_id ? 'member' : 'guest', points, wallet: this.wallet(row.id) };
   }
   private createGuest(): PlayerProfile {
     const id = randomUUID();
@@ -108,6 +117,7 @@ export class PlayerStore {
       if (guest.blog_id || guest.merged_into || !member.blog_id) throw new Error('游客记录不可认领');
       const count = this.count(guestId);
       this.db.prepare('UPDATE matches SET player_id=? WHERE player_id=?').run(memberId, guestId);
+      this.db.prepare('UPDATE shop_orders SET player_id=? WHERE player_id=?').run(memberId, guestId);
       this.db.prepare('UPDATE players SET merged_into=? WHERE id=?').run(memberId, guestId);
       this.db.prepare('INSERT INTO player_merges VALUES(?,?,?)').run(guestId, memberId, Date.now());
       this.db.prepare('DELETE FROM guest_sessions WHERE player_id=?').run(guestId);
@@ -127,11 +137,16 @@ export class PlayerStore {
   finish(id: string, hash: string, summary: PersonalGame): void {
     if (!summary.reward || summary.earnedPoints !== summary.reward.total || !Number.isSafeInteger(summary.earnedPoints) || summary.earnedPoints < 0)
       throw new Error('无效的积分记录');
+    if (summary.coinReward && (summary.earnedCoins !== summary.coinReward.total || !Number.isSafeInteger(summary.earnedCoins) ||
+        summary.earnedCoins < 0 || (summary.result !== 'win' && summary.earnedCoins !== 0))) throw new Error('无效的金币记录');
     this.transaction(() => {
       const updated = this.db.prepare(`UPDATE matches SET document_hash=?,finished_at=?,result=?,summary=?
         WHERE id=? AND document_hash IS NULL`).run(hash, summary.finishedAt, summary.result, JSON.stringify(summary), id);
-      if (updated.changes) this.db.prepare('INSERT INTO match_rewards VALUES(?,?,?)')
-        .run(id, summary.earnedPoints, JSON.stringify(summary.reward));
+      if (updated.changes) {
+        this.db.prepare('INSERT INTO match_rewards VALUES(?,?,?)').run(id, summary.earnedPoints, JSON.stringify(summary.reward));
+        if (summary.coinReward) this.db.prepare('INSERT INTO coin_rewards VALUES(?,?,?)')
+          .run(id, summary.coinReward.total, JSON.stringify(summary.coinReward));
+      }
     });
   }
   history(id: string, cursor: string | null = null): PlayerHistory {
@@ -155,11 +170,45 @@ export class PlayerStore {
     const games = rows.slice(0, 20).map(row => ({ earnedPoints: 0, reward: null, ...JSON.parse(row.summary) }) as PersonalGame);
     return { ...totals, games, nextCursor: rows.length > 20 ? games.at(-1)!.id : null };
   }
-  receipt(matchId: string, playerId: string): { earnedPoints: number; totalPoints: number; reward: MatchReward | null } {
+  receipt(matchId: string, playerId: string): { earnedPoints: number; totalPoints: number; reward: MatchReward | null; earnedCoins: number; coinReward: CoinReward | null; wallet: Wallet } {
     const row = this.db.prepare('SELECT points,breakdown FROM match_rewards WHERE match_id=?')
       .get(matchId) as { points: number; breakdown: string } | undefined;
-    return { earnedPoints: row?.points ?? 0, reward: row ? JSON.parse(row.breakdown) as MatchReward : null,
+    const coins = this.db.prepare('SELECT coins,breakdown FROM coin_rewards WHERE match_id=?').get(matchId) as { coins: number; breakdown: string } | undefined;
+    return { earnedCoins: coins?.coins ?? 0, coinReward: coins ? JSON.parse(coins.breakdown) : null, wallet: this.wallet(this.canonical(playerId)), earnedPoints: row?.points ?? 0, reward: row ? JSON.parse(row.breakdown) as MatchReward : null,
       totalPoints: this.profile(playerId).points };
+  }
+  wallet(id: string): Wallet {
+    const playerId = this.canonical(id);
+    const earned = Number(this.db.prepare(`SELECT coalesce(sum(r.coins),0) AS n FROM coin_rewards r
+      JOIN matches m ON m.id=r.match_id WHERE m.player_id=?`).get(playerId)!.n);
+    const spent = Number(this.db.prepare('SELECT coalesce(sum(price),0) AS n FROM shop_orders WHERE player_id=?').get(playerId)!.n);
+    const count = (item: ShopItem) => Number(this.db.prepare('SELECT count(*) AS n FROM shop_orders WHERE player_id=? AND item=?').get(playerId, item)!.n)
+      - Number(this.db.prepare(`SELECT count(*) AS n FROM item_uses u JOIN matches m ON m.id=u.match_id WHERE m.player_id=? AND u.item=?`).get(playerId, item)!.n);
+    return { coins: earned - spent, items: { general: count('general'), redraw: count('redraw') } };
+  }
+  purchase(id: string, item: ShopItem, orderId: string): Wallet {
+    return this.transaction(() => {
+      const playerId = this.canonical(id);
+      const existing = this.db.prepare('SELECT player_id,item FROM shop_orders WHERE id=?').get(orderId);
+      if (existing) {
+        if (existing.player_id !== playerId || existing.item !== item) throw new Error('购买编号已被使用');
+        return this.wallet(playerId);
+      }
+      if (this.wallet(playerId).coins < SHOP_ITEMS[item].price) throw new Error('金币不足，赢得对局可获得金币');
+      this.db.prepare('INSERT INTO shop_orders VALUES(?,?,?,?,?)').run(orderId, playerId, item, SHOP_ITEMS[item].price, Date.now());
+      return this.wallet(playerId);
+    });
+  }
+  useItem(id: string, token: string, item: ShopItem): Wallet {
+    return this.transaction(() => {
+      const playerId = this.canonical(id), match = this.match(token);
+      if (!match || this.canonical(match.player_id) !== playerId || match.expires_at < Date.now() || match.document_hash)
+        throw new Error('本局道具凭据无效或对局已结束');
+      if (this.db.prepare('SELECT 1 FROM item_uses WHERE match_id=? AND item=?').get(match.id, item)) return this.wallet(playerId);
+      if (this.wallet(playerId).items[item] < 1) throw new Error('道具不足，请先前往商店购买');
+      this.db.prepare('INSERT INTO item_uses VALUES(?,?)').run(match.id, item);
+      return this.wallet(playerId);
+    });
   }
   leaderboard(): PlayerLeaderboard {
     const rows = this.db.prepare(`SELECT p.id,p.nickname,p.blog_id IS NOT NULL AS member,sum(r.points) AS points

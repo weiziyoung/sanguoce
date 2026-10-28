@@ -11,6 +11,7 @@ import { SettingsPanel } from './settings-panel.ts';
 import { resourceUrl, resolveAssetManifest } from './deployment.ts';
 import { bindModeSelection, generalPacksFromQuery, cardsFromQuery, createBrowserSession, gameUrl, type WebMode } from './game-setup.ts';
 import './style.css';
+import { ShopPanel } from './shop-panel.ts';
 import { PlayerPanel } from './player-panel.ts';
 import { playerClient } from './player-client.ts';
 import { HomeLeaderboard } from './home-leaderboard.ts';
@@ -34,6 +35,7 @@ async function main(boot: BootScreen) {
   audio.onMusicBlocked = blocked => musicHint.classList.toggle('hidden', !blocked);
   const settings = browserSettings();
   const players = new PlayerPanel(settings);
+  new ShopPanel(settings);
   new HomeLeaderboard();
   new SettingsPanel(settings, audio, manifest.cardAudio.wuzhong?.male ?? manifest.cardAudio.sha?.male
     ?? manifest.cardAudio.sha?.female ?? manifest.systemAudio.game_start);

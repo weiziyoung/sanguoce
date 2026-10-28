@@ -1,3 +1,4 @@
+import { PregameItems } from './pregame-items.ts';
 import Phaser from 'phaser';
 import type { BrowserSession } from '../app/browser-session.ts';
 import type { TableAssets } from './assets.ts';
@@ -28,6 +29,15 @@ export class SelectionScene extends Phaser.Scene {
   create() {
     background(this);
     this.assets.prepareHealthPips(this);
+    const pregame = new PregameItems(this.session, this.assets.manifest, (generalId, options) => {
+      this.audio.startGame();
+      document.getElementById('outside-mute')?.classList.add('hidden');
+      document.getElementById('outside-settings')?.classList.add('hidden');
+      this.audio.playButton();
+      this.audio.playEffect(this.assets.manifest.systemAudio.game_start);
+      this.session.start(generalId, options);
+      this.scene.start('table');
+    });
     const preview = new SelectionPreview();
     this.events.once('shutdown', () => preview.dispose());
     const lordSkillsAvailable = this.session.mode === 'identity' && this.session.humanSeat === this.session.lordSeat;
@@ -89,13 +99,8 @@ export class SelectionScene extends Phaser.Scene {
       button.view.on('pointerout', () => { button.state('rest'); leave(general.id); });
       button.view.once('pointerdown', () => {
         button.state('pressed');
-        this.audio.startGame();
-        document.getElementById('outside-mute')?.classList.add('hidden');
-        document.getElementById('outside-settings')?.classList.add('hidden');
-        this.audio.playButton();
-        this.audio.playEffect(this.assets.manifest.systemAudio.game_start);
-        this.session.start(general.id);
-        this.scene.start('table');
+        preview.hide();
+        pregame.open(general.id);
       });
     });
     if (!lordDraft) text(this, 800, 764, '悬停武将查看技能 · 点击出战入局', 15, '#b3a384');

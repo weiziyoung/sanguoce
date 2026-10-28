@@ -1,3 +1,4 @@
+import type { Wallet, CoinReward } from './shop.ts';
 import type { MatchReward } from './match-reward.ts';
 
 /** Public player data. Authentication cookies and blog emails never enter this contract. */
@@ -7,6 +8,7 @@ export interface PlayerProfile {
   avatar: string | null;
   kind: 'guest' | 'member';
   points: number;
+  wallet: Wallet;
 }
 
 export interface PlayerSession {
@@ -27,6 +29,8 @@ export interface PersonalGame {
   source: 'browser';
   earnedPoints: number;
   reward: MatchReward | null;
+  earnedCoins?: number;
+  coinReward?: CoinReward | null;
 }
 
 export interface PlayerHistory {

@@ -7,6 +7,7 @@ import { battleScores, BATTLE_SCORE_WEIGHTS, type BattleAwards, type BattleScore
 import { appUrl } from './deployment.ts';
 import { generalPackLabel } from '../app/game-content.ts';
 import { gameUrl } from './game-setup.ts';
+import { coinReward, type Wallet, type CoinReward } from './shop.ts';
 import { playerClient } from './player-client.ts';
 import { matchReward, rewardDescription, MATCH_REWARD_RULES, type MatchReward } from './match-reward.ts';
 
@@ -78,6 +79,11 @@ export function showSettlement(obs: Observation, mode: 'duel' | 'identity', game
   const stats = battleReport(summary.rows.map(row => row.seat - 1), roles, game.events);
   const awards = battleScores(stats, obs.outcome, roles);
   const reward = matchReward(game);
+  const coins = coinReward(game);
+  document.getElementById('settlement-earned-coins')!.textContent = `+${coins.total}`;
+  document.getElementById('settlement-coins-detail')!.textContent = coins.total
+    ? `胜利 +${coins.victory} · 贡献 +${coins.contribution}` : '本局未获胜，不发放金币';
+  document.getElementById('settlement-wallet')!.textContent = '保存成功后计入可用金币';
   document.getElementById('settlement-earned-points')!.textContent = `+${reward.total}`;
   document.getElementById('settlement-reward-detail')!.textContent = rewardDescription(reward);
   document.getElementById('settlement-total-points')!.textContent = '保存成功后计入累计积分';
@@ -216,7 +222,7 @@ async function uploadGame(game: WebGameDocument): Promise<void> {
       const failure = await response.json().catch(() => null) as { error?: string } | null;
       throw new Error(failure?.error || `HTTP ${response.status}`);
     }
-    const saved = await response.json() as { id: string; playerSaved?: boolean; earnedPoints?: number; totalPoints?: number; reward?: MatchReward | null };
+    const saved = await response.json() as { id: string; playerSaved?: boolean; earnedPoints?: number; totalPoints?: number; reward?: MatchReward | null; earnedCoins?: number; coinReward?: CoinReward | null; wallet?: Wallet };
     status.textContent = saved.playerSaved ? '本局战绩、积分与决策轨迹已保存' : '决策轨迹已保存';
     if (saved.playerSaved && typeof saved.earnedPoints === 'number' && typeof saved.totalPoints === 'number') {
       document.getElementById('settlement-earned-points')!.textContent = `+${saved.earnedPoints}`;
@@ -224,11 +230,21 @@ async function uploadGame(game: WebGameDocument): Promise<void> {
       else document.getElementById('settlement-reward-detail')!.textContent = '积分规则启用前保存的对局，重试不补发积分';
       document.getElementById('settlement-total-points')!.textContent = `累计积分 ${saved.totalPoints}`;
       if (playerClient.session) playerClient.updatePoints(saved.totalPoints);
-    } else document.getElementById('settlement-total-points')!.textContent = '本局未绑定玩家，积分未入账';
+      document.getElementById('settlement-earned-coins')!.textContent = `+${saved.earnedCoins ?? 0}`;
+      document.getElementById('settlement-coins-detail')!.textContent = saved.coinReward
+        ? saved.coinReward.total ? `胜利 +${saved.coinReward.victory} · 贡献 +${saved.coinReward.contribution}` : '本局未获胜，不发放金币'
+        : '金币规则启用前保存的对局，重试不补发金币';
+      document.getElementById('settlement-wallet')!.textContent = saved.wallet ? `可用金币 ${saved.wallet.coins}` : '金币规则启用前的对局不补发金币';
+      if (saved.wallet) playerClient.updateWallet(saved.wallet);
+    } else {
+      document.getElementById('settlement-total-points')!.textContent = '本局未绑定玩家，积分未入账';
+      document.getElementById('settlement-wallet')!.textContent = '本局未绑定玩家，金币未入账';
+    }
     status.title = `轨迹编号：${saved.id}`;
     retry.classList.add('hidden');
   } catch (error) {
     status.textContent = '自动保存失败，请点击下载轨迹留存';
+    document.getElementById('settlement-wallet')!.textContent = '金币尚未保存，重试成功后入账';
     status.title = error instanceof Error ? error.message : '';
     document.getElementById('settlement-total-points')!.textContent = '积分尚未保存，重试成功后入账';
     const download = document.getElementById('settlement-download') as HTMLButtonElement;

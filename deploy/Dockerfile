@@ -3,7 +3,7 @@ WORKDIR /app
 COPY server.ts ./
 COPY src/web/production-server.ts src/web/web-game-upload.ts src/web/jev-proxy.ts ./src/web/
 COPY src/web/player-service.ts src/web/player-store.ts ./src/web/
-COPY src/web/match-reward.ts src/web/battle-score.ts src/web/battle-report.ts ./src/web/
+COPY src/web/shop.ts src/web/match-reward.ts src/web/battle-score.ts src/web/battle-report.ts ./src/web/
 COPY src/policies/model-endpoint.ts ./src/policies/
 COPY dist/ ./dist/
 ENV NODE_ENV=production PORT=8080 SANGUOCE_TRACE_DIR=/app/traces

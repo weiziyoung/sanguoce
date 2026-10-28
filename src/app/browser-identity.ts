@@ -1,3 +1,4 @@
+import { openingGenerals, openingCards, pointCandidates, type OpeningOptions } from './browser-opening.ts';
 import { contentForCards, type GeneralPack, type CardSet } from './game-content.ts';
 import { GameEngine } from '../core/game-engine.ts';
 import { StandardRuleset } from './standard-game.ts';
@@ -40,16 +41,20 @@ export class BrowserIdentity implements BrowserSession {
   get offer() { return this.pregame.offer; }
   get candidates() { return this.pregame.candidates; }
 
-  start(generalId: string): void {
-    const player = this.candidates.find(general => general.id === generalId);
-    if (!player) throw new Error('武将不在本局候选中');
-    const generals = this.pregame.generals(player);
-    const config = { cards: this.cards, generalPacks: [...this.generalPacks], mode: 'identity', seed: this.seed,
-      players: generals.map((general, seat) => ({
-        label: seat === this.humanSeat ? '你' : `电脑${seat + 1}`,
-        sex: general.sex, general: general.id,
-      })),
-    };
+  get pointCandidates() { return pointCandidates({ mode: 'identity', cards: this.cards, generalPacks: [...this.generalPacks] }); }
+  private openingConfig(generalId: string, options: OpeningOptions = {}) {
+    const base = { mode: 'identity', cards: this.cards, generalPacks: [...this.generalPacks], seed: this.seed };
+    const chosen = this.candidates.find(general => general.id === generalId);
+    const picks = !options.pointGeneral && chosen ? this.pregame.generals(chosen) : this.offer.computerPicks;
+    const generals = openingGenerals(base, this.candidates, picks, this.humanSeat, generalId, options);
+    return { ...base, opening: { humanSeat: this.humanSeat, redraw: !!options.redraw },
+      players: generals.map((general, seat) => ({ label: seat === this.humanSeat ? '你' : `电脑${seat + 1}`,
+        sex: general.sex, general: general.id })) };
+  }
+  openingHand(generalId: string, options: OpeningOptions = {}) { return openingCards(this.openingConfig(generalId, options)); }
+  start(generalId: string, options: OpeningOptions = {}): void {
+    if (this.game) throw new Error('对局已经开始');
+    const config = this.openingConfig(generalId, options);
     this.record = new WebGameRecord(config, this.humanSeat);
     this.game = new GameEngine(new StandardRuleset(undefined, undefined, contentForCards(this.cards, this.generalPacks)), config, this.record);
   }

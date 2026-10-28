@@ -109,7 +109,7 @@ button:disabled { cursor: default; }
 .player-history-note { color: #a6b0a5; font-size: 12px; }
 .player-history { list-style: none; padding: 0; margin: 12px 0 18px; }
 .player-history-row { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid #68726750; font-size: 13px; }
-.player-history-row strong { grid-row: span 3; align-self: center; color: #c2c6b6; font-size: 18px; }
+.player-history-row strong { grid-row: span 4; align-self: center; color: #c2c6b6; font-size: 18px; }
 .player-history-points { color: #ddc79d; font-size: 12px; }
 .settlement-reward { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5cqw 2cqw; align-items: center; margin: 1.4cqw 0; padding: 1.1cqw 1.4cqw; border: 1px solid #a5947080; background: #bfa16a0d; }
 .settlement-reward > div { grid-row: span 2; display: flex; align-items: center; gap: 1cqw; }
@@ -282,3 +282,30 @@ button:not(:disabled):hover { filter: brightness(1.25); border-color: #f5d49b; }
 .settlement-scoring p { color: #b8bea6; line-height: 1.75; margin: .4cqw 0; padding: .6cqw .8cqw; border-left: 2px solid #9a8751; background: #00000015; }
 .settlement-damage-details summary span { margin-left: .5cqw; color: #718777; font-size: .7cqw; }
 .settlement-upload { min-height: 1.3cqw; margin: .6cqw 0 0; color: #7f9684; font-size: .75cqw; text-align: center; overflow-wrap: anywhere; }
+
+
+.economy-dialog { box-sizing: border-box; width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: clamp(18px, 3vw, 30px); overflow-y: auto; color: #ede5d5; background: linear-gradient(145deg, #243531, #101e1d); border: 1px solid #a59470; border-radius: 12px; box-shadow: 0 24px 90px #0009; font-size: 16px; }
+.economy-dialog::backdrop { background: #050e12bd; backdrop-filter: blur(5px); }
+.economy-dialog button:disabled { opacity: .45; cursor: default; }
+.economy-dialog button:focus-visible, .economy-dialog input:focus-visible { outline: 2px solid #ffe0a0; outline-offset: 3px; }
+.shop-wallet { display: flex; align-items: baseline; gap: 16px; padding: 20px 0 10px; color: #e9c477; }
+.shop-wallet strong { font-size: 38px; }
+.shop-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.shop-product { display: flex; flex-direction: column; gap: 12px; padding: 20px; border: 1px solid #a5947059; border-radius: 8px; background: #08181766; }
+.shop-product h3, .shop-product p { margin: 0; }
+.shop-product p { line-height: 1.6; color: #c4c2af; flex: 1; }
+.shop-product small { color: #dfc997; }
+.shop-item-symbol { display: grid; place-items: center; width: 52px; height: 64px; border: 1px solid #c4a26e; border-radius: 5px; background: linear-gradient(150deg, #765936, #273b34); color: #f8dfab; font-family: STKaiti, KaiTi, serif; font-size: 32px; }
+.selection-tools { position: absolute; bottom: 3%; left: 2%; z-index: 40; display: flex; gap: 10px; pointer-events: auto; }
+.point-search { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.point-search input { flex: 1; min-width: 0; padding: 10px; color: #eee4cf; background: #071715; border: 1px solid #8c8068; border-radius: 5px; }
+.point-generals { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.point-candidate { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid #bba77a77; background: #0d1e1b; color: #ecd5a6; padding: 10px; border-radius: 6px; cursor: pointer; }
+.point-candidate img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; border-radius: 3px; }
+.point-candidate small { font-size: 12px; line-height: 1.5; }
+.opening-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 24px 0; }
+.opening-card img { width: 100%; border-radius: 6px; }
+.opening-card span { display: block; text-align: center; font-size: 13px; margin-top: 8px; }
+#opening-status, #point-status, #shop-status { min-height: 24px; line-height: 1.6; color: #decba0; }
+.player-wallet strong { color: #edc671; }
+@media (max-width: 520px) { .shop-products { grid-template-columns: 1fr; } .opening-cards { gap: 4px; } .opening-card span { font-size: 11px; } .selection-tools { bottom: 1%; } }

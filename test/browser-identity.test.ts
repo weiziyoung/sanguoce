@@ -15,7 +15,7 @@ test('网页五人局沿用选将、身份、共用规则和 AI 决策，可从�
   const selected = browser.candidates[0];
   browser.start(selected.id);
   const generals = browser.offer.computerPicks.map((pick, seat) => seat === browser.humanSeat ? selected : pick);
-  const direct = new GameEngine(new StandardRuleset(), { mode: 'identity', seed: browser.seed,
+  const direct = new GameEngine(new StandardRuleset(), { mode: 'identity', seed: browser.seed, opening: { humanSeat: browser.humanSeat, redraw: false },
     players: generals.map((general, seat) => ({
       label: seat === browser.humanSeat ? '你' : `电脑${seat + 1}`,
       sex: general.sex, general: general.id,

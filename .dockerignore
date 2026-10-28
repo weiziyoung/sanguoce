@@ -16,3 +16,5 @@
 !deploy/Dockerfile
 !dist/
 !dist/**
+
+!src/web/shop.ts
